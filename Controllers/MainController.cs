@@ -7,8 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QuadMasterApp.Data;
 using QuadMasterApp.Models;
-using QuadTest.Data;
-using QuadTest.Models;
+using QuadMasterApp.Data;
+using QuadMasterApp.Models;
 
 namespace QuadTest.Controllers
 {
@@ -153,10 +153,11 @@ namespace QuadTest.Controllers
                             .Select(tp => new
                             {
                                 tp.Player.Id,
-                                tp.Player.Name,
-                                tp.Player.Rating,
-                                QuadId = tp.Player.QuadId,
-                                QuadName = tp.Player.Quad.Name
+                                tp.Player.FirstName,
+                                tp.Player.LastName,
+                                tp.Player.Ranking,
+                                tp.Player.Email,
+                                tp.Player.TournamentPlayers
                             })
                             .ToList()
                     })
@@ -215,16 +216,22 @@ namespace QuadTest.Controllers
             try
             {
                 var players = await _context.Players
-                    .OrderByDescending(p => p.Rating)
+                    .OrderByDescending(p => p.Ranking)
                     .Select(p => new
                     {
                         p.Id,
-                        p.Name,
-                        p.Rating,
-                        TournamentId = p.TournamentPlayer != null ? p.TournamentPlayer.TournamentId : (int?)null,
-                        TournamentName = p.TournamentPlayer != null ? p.TournamentPlayer.Tournament.Name : null,
-                        QuadId = p.QuadId,
-                        QuadName = p.Quad != null ? p.Quad.Name : null
+                        p.FirstName,
+                        p.LastName,
+                        p.Ranking,
+                        TournamentPlayers = p.TournamentPlayers
+                            .Select(tp => new
+                            {
+                                tp.TournamentId,
+                                tp.Tournament.Name
+                            })
+                            .ToList(),
+                        QuadId = p.TournamentPlayers.Select(qd => qd.QuadId),
+                        QuadName = p.TournamentPlayers.Select(qd => qd.Quad.Title)
                     })
                     .ToListAsync();
 
@@ -247,16 +254,17 @@ namespace QuadTest.Controllers
                     .Select(q => new
                     {
                         q.Id,
-                        q.Name,
+                        q.Title,
                         q.TournamentId,
                         TournamentName = q.Tournament.Name,
                         Players = q.Players
-                            .OrderByDescending(p => p.Rating)
+                            .OrderByDescending(p => p.Player.Ranking)
                             .Select(p => new
                             {
-                                p.Id,
-                                p.Name,
-                                p.Rating
+                                p.Player.Id,
+                                p.Player.FirstName,
+                                p.Player.LastName,
+                                p.Player.Ranking
                             })
                             .ToList()
                     })

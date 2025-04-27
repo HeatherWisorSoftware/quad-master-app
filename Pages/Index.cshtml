@@ -1,0 +1,229 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Quad Tournament Dashboard";
+    ViewData["IsSpaIndex"] = true;
+}
+
+<!--Dashboard SPA content with own nav-->
+<div class="container-fluid" style="margin-top: 20px;">
+    <div class="row">
+        <!-- Left Navigation - with spa-sidebar class -->
+        <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar spa-sidebar">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-page="dashboard">
+                            Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="tournaments">
+                            Tournaments
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="players">
+                            Players
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="quads">
+                            Quads
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="create-tournament">
+                            Create Tournament
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <!-- The main content container -->
+            <div id="page-content">
+                <!-- Content will be dynamically loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Page Templates -->
+<template id="dashboard-template">
+    <div class="dashboard-page">
+        <!-- Test database button -->
+        <div style="margin: 20px 0; position: relative; z-index: 200;">
+            <button id="test-database-btn" class="btn btn-warning mb-3">Test Database Access</button>
+            <div id="test-result" class="alert alert-info mb-4" style="display: none;"></div>
+        </div>
+
+        <!-- Dashboard content -->
+        <h1 class="display-4">Quad Tournament Dashboard</h1>
+
+        <div id="dashboard-welcome">
+            <!-- Welcome message will be inserted here based on whether there are tournaments -->
+        </div>
+
+        <!-- Latest Tournaments Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5>Latest Tournaments</h5>
+            </div>
+            <div class="card-body">
+                <div id="no-tournaments-message" style="display: none;">
+                    <p>No tournaments found in database.</p>
+                </div>
+                <div id="tournaments-table-container">
+                    <h6>Last 5 Tournaments:</h6>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Date</th>
+                                <th>Players</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="latest-tournaments-tbody">
+                            <!-- Tournament rows will be inserted here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="tournaments-template">
+    <div class="tournaments-page">
+        <h1 class="mb-4">Tournaments</h1>
+        <button class="btn btn-success mb-3" onclick="navigateTo('create-tournament')">Create New Tournament</button>
+
+        <div class="card">
+            <div class="card-body">
+                <div id="all-tournaments-table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Date</th>
+                                <th>Venue</th>
+                                <th>Location</th>
+                                <th>Players</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="all-tournaments-tbody">
+                            <!-- Tournament rows will be inserted here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="no-all-tournaments-message" style="display: none;">
+                    <p>No tournaments found. Create your first tournament to get started.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="players-template">
+    <div class="players-page">
+        <h1 class="mb-4">Players</h1>
+        <button class="btn btn-success mb-3" id="add-player-btn">Add New Player</button>
+
+        <div class="card">
+            <div class="card-body">
+                <div id="players-table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Rating</th>
+                                <th>Tournament</th>
+                                <th>Quad</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="players-tbody">
+                            <!-- Player rows will be inserted here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="no-players-message" style="display: none;">
+                    <p>No players found. Add your first player to get started.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="quads-template">
+    <div class="quads-page">
+        <h1 class="mb-4">Quads</h1>
+        <button class="btn btn-success mb-3" id="create-quad-btn">Create New Quad</button>
+
+        <div id="quads-container" class="row">
+            <!-- Quad cards will be inserted here by JavaScript -->
+        </div>
+        <div id="no-quads-message" style="display: none;">
+            <p>No quads found. Create your first quad to get started.</p>
+        </div>
+    </div>
+</template>
+
+<template id="create-tournament-template">
+    <div class="create-tournament-page">
+        <h1 class="mb-4">Create New Tournament</h1>
+
+        <div class="card">
+            <div class="card-body">
+                <form id="create-tournament-form">
+                    <div class="mb-3">
+                        <label for="tournamentName" class="form-label">Tournament Name</label>
+                        <input type="text" class="form-control" id="tournamentName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tournamentDate" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="tournamentDate" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="venueName" class="form-label">Venue Name</label>
+                        <input type="text" class="form-control" id="venueName" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="street" class="form-label">Street</label>
+                            <input type="text" class="form-control" id="street" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="city" class="form-label">City</label>
+                            <input type="text" class="form-control" id="city" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="state" class="form-label">State</label>
+                            <input type="text" class="form-control" id="state" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="postalCode" class="form-label">Postal Code</label>
+                            <input type="text" class="form-control" id="postalCode" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Tournament</button>
+                    <button type="button" class="btn btn-secondary" onclick="navigateTo('dashboard')">Cancel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</template>
+
+@section Scripts {
+    <script src="~/js/spa.js" asp-append-version="true"></script>
+}

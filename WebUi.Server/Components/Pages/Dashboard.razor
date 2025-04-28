@@ -1,0 +1,44 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using System.Diagnostics  
+@using WebUi.Server.Components.Pages.TournamentPage
+@using Microsoft.AspNetCore.Components.Web
+@inject TournamentContext DbContext
+@inject NavigationManager NavigationManager
+
+<PageTitle>Quad Master Dashboard</PageTitle>  
+<h1>Quad Master Dashboard</h1>
+
+<div style="margin-bottom: 20px;">
+  <button class="btn btn-primary" style="margin-right: 10px;" @onclick="CreateTournament">Create Tournament</button>
+  <button class="btn btn-secondary" @onclick="ManageTournament" disabled="@(_hasTournaments == false)">Manage Tournament</button>
+</div>  
+
+@code {  
+  private bool _hasTournaments = false;
+
+  protected override async Task OnInitializedAsync()
+  {
+    _hasTournaments = await CheckForTournamentsAsync();
+  }
+
+  private async Task<bool> CheckForTournamentsAsync()
+  {
+      return await DbContext.Tournaments.AnyAsync();
+  }
+
+  private void CreateTournament()
+  {
+      // Logic for creating a tournament  
+      Debug.WriteLine("Create Tournament clicked");
+
+      // Example: Redirect to a tournament creation page or show a modal
+      NavigationManager.NavigateTo("TournamentPage/Create");
+  }  
+
+  private void ManageTournament()  
+  {  
+      // Logic for managing a tournament  
+      Console.WriteLine("Manage Tournament clicked");  
+  }  
+}

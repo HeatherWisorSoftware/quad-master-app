@@ -1,0 +1,17 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "WebUi\\WebUi.Client\\WebUi.Client.csproj",
+        "Action": "Start",
+        "DebugTarget": "WebUi.Client"
+      },
+      {
+        "Path": "WebUi\\WebUi.Server\\WebUi.Server.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      }
+    ]
+  }
+]

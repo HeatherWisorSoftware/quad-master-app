@@ -1,0 +1,128 @@
+﻿@page
+@model QuadTest.Pages.TournamentPage.EditModel
+
+@{
+    ViewData["Title"] = "Edit Tournament";
+}
+
+<h1>Edit Tournament</h1>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+        <form method="post">
+            <div asp-validation-summary="All" class="text-danger"></div>
+            <input type="hidden" asp-for="Tournament.Id" />
+            <input type="hidden" asp-for="Tournament.Country" value="USA" />
+            <input type="hidden" asp-for="Tournament.FormattedAddress" value="" />
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Tournament Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label asp-for="Tournament.Name" class="control-label"></label>
+                        <input asp-for="Tournament.Name" class="form-control" />
+                        <span asp-validation-for="Tournament.Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Tournament.Date" class="control-label"></label>
+                        <input asp-for="Tournament.Date" class="form-control" type="date" />
+                        <span asp-validation-for="Tournament.Date" class="text-danger"></span>
+                    </div>
+
+                    <!-- Other tournament fields -->
+                    <div class="form-group">
+                        <label asp-for="Tournament.VenueName" class="control-label"></label>
+                        <input asp-for="Tournament.VenueName" class="form-control" />
+                        <span asp-validation-for="Tournament.VenueName" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Tournament.Street" class="control-label"></label>
+                        <input asp-for="Tournament.Street" class="form-control" />
+                        <span asp-validation-for="Tournament.Street" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Tournament.City" class="control-label"></label>
+                        <input asp-for="Tournament.City" class="form-control" />
+                        <span asp-validation-for="Tournament.City" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Tournament.State" class="control-label"></label>
+                        <input asp-for="Tournament.State" class="form-control" />
+                        <span asp-validation-for="Tournament.State" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Tournament.PostalCode" class="control-label"></label>
+                        <input asp-for="Tournament.PostalCode" class="form-control" />
+                        <span asp-validation-for="Tournament.PostalCode" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player Selection section -->
+            <div class="card mb-4 border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Select Tournament Players</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <select asp-for="SelectedPlayerIds" asp-items="Model.PlayerList"
+                                class="form-control" multiple="multiple"
+                                style="min-height: 200px; padding: 10px;">
+                        </select>
+                        <small class="form-text text-muted mt-2">
+                            <strong>Hold Ctrl (or Cmd on Mac) to select multiple players.</strong>
+                        </small>
+                    </div>
+
+                    <div class="mt-4">
+                        <input type="submit" value="Save Changes" class="btn btn-primary btn-lg" />
+                        <a asp-page="./Index" class="btn btn-secondary ml-2">Cancel</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Current Tournament Players</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.CurrentPlayers != null && Model.CurrentPlayers.Any())
+                {
+                    <ul class="list-group">
+                        @foreach (var player in Model.CurrentPlayers)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                @player.FirstName @player.LastName
+                                @if (player.Ranking > 0)
+                                {
+                                    <span class="badge badge-primary badge-pill">Ranking: @player.Ranking</span>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="card-text">No players are currently assigned to this tournament.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

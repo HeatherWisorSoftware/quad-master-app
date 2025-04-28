@@ -1,0 +1,85 @@
+﻿@page
+@model QuadTest.Pages.TournamentPage.TournamentIndexModel
+
+@{
+    ViewData["Title"] = "Tournaments";
+}
+
+<h1>Tournament</h1>
+
+<p>
+    <!-- Links to create a new tournament or manage players -->
+    <a asp-page="Create" class="btn btn-primary">Create New Tournament</a>
+    <a asp-page="/PlayerPage/Index" class="btn btn-secondary">Manage Players</a>
+</p>
+
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Tournaments[0].Name)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Tournaments[0].Date)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Tournaments[0].VenueName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Tournaments[0].Street)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Tournaments[0].City)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Tournaments[0].State)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Tournaments[0].PostalCode)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Tournaments[0].Country)
+            </th>
+            <th>Players</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var tournament in Model.Tournaments)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => tournament.Name)</td>
+                <td>@Html.DisplayFor(modelItem => tournament.Date)</td>
+                <td>@Html.DisplayFor(modelItem => tournament.VenueName)</td>
+                <td>@Html.DisplayFor(modelItem => tournament.Street)</td>
+                <td>@Html.DisplayFor(modelItem => tournament.City)</td>
+                <td>@Html.DisplayFor(modelItem => tournament.State)</td>
+                <td>@Html.DisplayFor(modelItem => tournament.PostalCode)</td>
+                <td>@Html.DisplayFor(modelItem => tournament.Country)</td>
+                <td>
+                    <!-- This section displays the list of players for each tournament -->
+                    @if (tournament.TournamentPlayers?.Any() == true)
+                    {
+                        <!-- If there are players, display them as a list -->
+                        <ul class="list-unstyled">
+                            @foreach (var tp in tournament.TournamentPlayers)
+                            {
+                                <li>@tp.Player.FirstName @tp.Player.LastName</li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <!-- If there are no players, show a message -->
+                        <span class="text-muted">No players</span>
+                    }
+                </td>
+                <td>
+                    <a asp-page="./Edit" asp-route-id="@tournament.Id">Edit</a> |
+                    <a asp-page="./Delete" asp-route-id="@tournament.Id">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

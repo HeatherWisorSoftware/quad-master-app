@@ -1,4 +1,4 @@
-/bin/*
-/obj/*
+/WebUi.Server/bin/*
+/WebUi.Server/obj/*
 /.vs/*
-/wwwroot/lib/*
+/WebUi.Server/wwwroot/lib/*

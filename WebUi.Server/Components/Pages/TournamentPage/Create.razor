@@ -1,0 +1,174 @@
+﻿@page "/TournamentPage/Create"
+@rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Create Tournament</PageTitle>
+
+<h1>Create Tournament</h1>
+
+@if (!string.IsNullOrEmpty(ValidationErrors))
+{
+  <div class="alert alert-danger">
+    Validation errors: @ValidationErrors
+  </div>
+}
+
+<h4>Tournament</h4>
+<hr />
+<div class="row">
+  <div class="col-md-4">
+    <EditForm Model="@Tournament" OnValidSubmit="HandleValidSubmit">
+      <DataAnnotationsValidator />
+      <ValidationSummary class="text-danger" />
+
+      <div class="form-group mb-3">
+        <label for="name" class="control-label">Name</label>
+        <InputText id="name" @bind-Value="Tournament.Name" class="form-control" />
+        <ValidationMessage For="@(() => Tournament.Name)" class="text-danger" />
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="date" class="control-label">Date</label>
+        <InputDate id="date" @bind-Value="Tournament.Date" class="form-control" />
+        <ValidationMessage For="@(() => Tournament.Date)" class="text-danger" />
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="venueName" class="control-label">Venue Name</label>
+        <InputText id="venueName" @bind-Value="Tournament.VenueName" class="form-control" />
+        <ValidationMessage For="@(() => Tournament.VenueName)" class="text-danger" />
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="street" class="control-label">Street</label>
+        <InputText id="street" @bind-Value="Tournament.Street" class="form-control" />
+        <ValidationMessage For="@(() => Tournament.Street)" class="text-danger" />
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="city" class="control-label">City</label>
+        <InputText id="city" @bind-Value="Tournament.City" class="form-control" />
+        <ValidationMessage For="@(() => Tournament.City)" class="text-danger" />
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="state" class="control-label">State</label>
+        <InputText id="state" @bind-Value="Tournament.State" class="form-control" />
+        <ValidationMessage For="@(() => Tournament.State)" class="text-danger" />
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="postalCode" class="control-label">Postal Code</label>
+        <InputText id="postalCode" @bind-Value="Tournament.PostalCode" class="form-control" />
+        <ValidationMessage For="@(() => Tournament.PostalCode)" class="text-danger" />
+      </div>
+
+      <div class="form-group mb-3">
+        <label class="control-label">Select Players</label>
+        <InputSelect @bind-Value="SelectedPlayerIds" class="form-control select2" multiple="multiple">
+          @foreach (var player in Players)
+          {
+            <option value="@player.Id">@player.Name</option>
+          }
+        </InputSelect>
+      </div>
+
+      <div class="form-group mt-3">
+        <button type="submit" class="btn btn-primary">Create</button>
+
+        @if (Tournament.Id > 0)
+        {
+          <a href="/TournamentPage/Edit?tournamentId=@Tournament.Id" class="btn btn-success ms-2">
+            Manage Tournament
+          </a>
+        }
+      </div>
+    </EditForm>
+  </div>
+</div>
+
+<div class="mt-3">
+  <a href="/TournamentPage/Index">Back to List</a>
+</div>
+
+@code {
+  public class TournamentModel
+  {
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "Tournament name is required")]
+    public string Name { get; set; }
+
+    [Required(ErrorMessage = "Tournament date is required")]
+    public DateTime Date { get; set; } = DateTime.Today;
+
+    [Required(ErrorMessage = "Venue name is required")]
+    public string VenueName { get; set; }
+
+    [Required(ErrorMessage = "Street address is required")]
+    public string Street { get; set; }
+
+    [Required(ErrorMessage = "City is required")]
+    public string City { get; set; }
+
+    [Required(ErrorMessage = "State is required")]
+    public string State { get; set; }
+
+    [Required(ErrorMessage = "Postal code is required")]
+    public string PostalCode { get; set; }
+  }
+
+  public class PlayerModel
+  {
+    public int Id { get; set; }
+    public string Name { get; set; }
+  }
+
+  private TournamentModel Tournament { get; set; } = new TournamentModel();
+  private string[] SelectedPlayerIds { get; set; } = [];
+  private List<PlayerModel> Players { get; set; } = [];
+  private string ValidationErrors { get; set; } = string.Empty;
+
+  protected override async Task OnInitializedAsync()
+  {
+    // Here you would typically fetch players from a service or database
+    // For demo purposes, adding some sample players
+    Players =
+    [
+        new PlayerModel { Id = 1, Name = "Player 1" },
+        new PlayerModel { Id = 2, Name = "Player 2" },
+        new PlayerModel { Id = 3, Name = "Player 3" },
+        new PlayerModel { Id = 4, Name = "Player 4" }
+    ];
+  }
+
+  protected override async Task OnAfterRenderAsync(bool firstRender)
+  {
+    if (firstRender)
+    {
+      // Initialize Select2 after the component has rendered
+      await JSRuntime.InvokeVoidAsync("initializeSelect2");
+    }
+  }
+
+  private async Task HandleValidSubmit()
+  {
+    try
+    {
+      // Convert selected player IDs to integers
+      var playerIds = SelectedPlayerIds.Select(id => int.Parse(id)).ToList();
+
+      // Here you would typically save the tournament data to your database
+      // For demo purposes, just setting the ID to indicate success
+      Tournament.Id = 1;
+
+      // Navigate to edit page - in a real application, you would use
+      // NavigationManager.NavigateTo($"/TournamentPage/Edit?tournamentId={Tournament.Id}");
+    }
+    catch (Exception ex)
+    {
+      ValidationErrors = $"Error creating tournament: {ex.Message}";
+    }
+  }
+}

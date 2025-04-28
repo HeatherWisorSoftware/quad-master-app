@@ -14,7 +14,7 @@
   <button class="btn btn-secondary" @onclick="ManageTournament" disabled="@(_hasTournaments == false)">Manage Tournament</button>
 </div>  
 
-@code {  
+@code {
   private bool _hasTournaments = false;
 
   protected override async Task OnInitializedAsync()
@@ -24,21 +24,26 @@
 
   private async Task<bool> CheckForTournamentsAsync()
   {
-      return await DbContext.Tournaments.AnyAsync();
+    return await DbContext.Tournaments.AnyAsync();
   }
 
   private void CreateTournament()
   {
-      // Logic for creating a tournament  
-      Debug.WriteLine("Create Tournament clicked");
+    // Logic for creating a tournament  
+    Debug.WriteLine("Create Tournament clicked");
 
-      // Example: Redirect to a tournament creation page or show a modal
-      NavigationManager.NavigateTo("TournamentPage/Create");
+    // Example: Redirect to a tournament creation page or show a modal
+    NavigationManager.NavigateTo("TournamentPage/Create");
   }  
 
   private void ManageTournament()  
   {  
-      // Logic for managing a tournament  
-      Console.WriteLine("Manage Tournament clicked");  
+    // Logic for managing a tournament  
+    Console.WriteLine("Manage Tournament clicked");
+
+    // CHANGE??
+    var tournamentId = 1;
+
+    NavigationManager.NavigateTo($"/QuadsPage/{tournamentId}/Quads");
   }  
 }

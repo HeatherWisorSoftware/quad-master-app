@@ -1,4 +1,7 @@
 ﻿@inherits LayoutComponentBase
+@using Blazored.Toast.Configuration
+
+
 
 <div class="page">
     <div class="sidebar">
@@ -15,6 +18,15 @@
         </article>
     </main>
 </div>
+
+<BlazoredToasts Position="ToastPosition.TopRight"
+                Timeout="5"
+                IconType="IconType.FontAwesome"
+                SuccessClass="success-toast-override"
+                SuccessIcon="fa fa-check"
+                ErrorIcon="fa fa-times"
+                InfoIcon="fa fa-info"
+                WarningIcon="fa fa-exclamation" />
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>

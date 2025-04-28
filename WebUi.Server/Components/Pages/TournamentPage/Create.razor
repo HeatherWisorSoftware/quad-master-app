@@ -1,6 +1,7 @@
 ﻿@page "/TournamentPage/Create"
-@rendermode InteractiveServer
+@rendermode InteractiveServer 
 @using System.ComponentModel.DataAnnotations
+@using WebUi.Server.Data.Models
 @inject IJSRuntime JSRuntime
 
 <PageTitle>Create Tournament</PageTitle>
@@ -93,6 +94,7 @@
 </div>
 
 @code {
+  //TODO: Shawnie - use our own models
   public class TournamentModel
   {
     public int Id { get; set; }

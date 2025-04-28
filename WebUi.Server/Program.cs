@@ -1,3 +1,4 @@
+using Blazored.Toast;
 using Microsoft.EntityFrameworkCore;
 using WebUi.Server.Data;
 using WebUi.Server.Components;
@@ -10,6 +11,8 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddDbContext<TournamentContext>(options =>
     options.UseSqlite("Data Source = tournament.db"));
+
+builder.Services.AddBlazoredToast();
 
 var app = builder.Build();
 
@@ -29,5 +32,7 @@ app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+
 
 app.Run();

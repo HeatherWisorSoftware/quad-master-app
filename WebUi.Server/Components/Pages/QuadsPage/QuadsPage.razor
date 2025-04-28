@@ -1,0 +1,205 @@
+﻿@page "/QuadsPage/{TournamentId:int}/Quads"
+@rendermode InteractiveServer
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+@inject IToastService ToastService
+
+
+<h1 class="text-2xl font-bold mb-4">Chess Tournament Quads</h1>
+
+@if (IsLoading)
+{
+    <div class="p-4">Loading tournament data...</div>
+}
+else if (ErrorMessage != null)
+{
+    <div class="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+        Error: @ErrorMessage
+    </div>
+}
+else
+{
+    <div class="mb-4">
+        <h2 class="text-xl">@QuadsData.TournamentName</h2>
+        <div class="flex justify-between">
+            <div class="text-sm text-gray-600">
+                Page @QuadsData.CurrentPage of @QuadsData.TotalPages
+            </div>
+            <div>
+                @if (QuadsData.CurrentPage > 1)
+                {
+                    <button @onclick="@(() => NavigatePage(QuadsData.CurrentPage - 1))" 
+                            class="px-2 py-1 bg-blue-100 rounded hover:bg-blue-200">Previous</button>
+                }
+                @if (QuadsData.CurrentPage < QuadsData.TotalPages)
+                {
+                    <button @onclick="@(() => NavigatePage(QuadsData.CurrentPage + 1))" 
+                            class="ml-2 px-2 py-1 bg-blue-100 rounded hover:bg-blue-200">Next</button>
+                }
+            </div>
+        </div>
+    </div>
+    
+    <div id="chess-scoreboard-container">
+        <ChessScoreboard ViewModel="@QuadsData" OnDataChanged="@HandleDataChanged" />
+    </div>
+    
+    <div class="mt-4 flex justify-between">
+        <div>
+            @if (QuadsData.AllowQuadGeneration && !QuadsData.AreAllQuadsFull)
+            {
+                <button @onclick="GenerateQuads" 
+                        class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                    Generate Quads
+                </button>
+            }
+        </div>
+        
+        <div>
+            <form @onsubmit="SaveQuadAssignments">
+                <button type="submit" 
+                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    Save Quad Assignments
+                </button>
+            </form>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int TournamentId { get; set; }
+    
+    private bool IsLoading = true;
+    private string ErrorMessage;
+    private QuadsViewModel QuadsData = new();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTournamentData(1);
+    }
+    
+    private async Task LoadTournamentData(int page)
+    {
+        try
+        {
+            IsLoading = true;
+            ErrorMessage = null;
+            
+            // Fetch tournament data from server
+            var response = await Http.GetFromJsonAsync<QuadsViewModel>($"/api/tournaments/{TournamentId}/quads?page={page}");
+            QuadsData = response;
+            await JSRuntime.InvokeVoidAsync("setLatestChessScoreboardData", QuadsData);
+            
+            IsLoading = false;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to load tournament data: {ex.Message}";
+            IsLoading = false;
+        }
+    }
+    
+    private async Task NavigatePage(int page)
+    {
+        await LoadTournamentData(page);
+    }
+    
+    private async Task HandleDataChanged(QuadsViewModel updatedData)
+    {
+        QuadsData = updatedData;
+        await JSRuntime.InvokeVoidAsync("setLatestChessScoreboardData", updatedData);
+    }
+    
+    private async Task GenerateQuads()
+    {
+        try
+        {
+            IsLoading = true;
+            
+            var response = await Http.PostAsync($"/api/tournaments/{TournamentId}/quads/generate", null);
+            if (response.IsSuccessStatusCode)
+            {
+                ToastService.ShowSuccess("Quads generated successfully!");
+                await LoadTournamentData(1);
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                ToastService.ShowError($"Failed to generate quads: {errorContent}");
+                ErrorMessage = $"Failed to generate quads: {response.StatusCode}";
+                IsLoading = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error: {ex.Message}");
+            ErrorMessage = $"Error generating quads: {ex.Message}";
+            IsLoading = false;
+        }
+    }
+    
+    private async Task SaveQuadAssignments()
+    {
+        try
+        {
+            IsLoading = true;
+            
+            var latestData = await JSRuntime.InvokeAsync<QuadsViewModel>("getLatestChessScoreboardData");
+            
+            // Prepare data for saving
+            var saveModel = new QuadAssignmentSaveModel
+            {
+                TournamentId = TournamentId,
+                QuadAssignments = new List<QuadAssignment>()
+            };
+            
+            // Add all player assignments
+            foreach (var quad in latestData.Quads)
+            {
+                foreach (var player in quad.Players)
+                {
+                    saveModel.QuadAssignments.Add(new QuadAssignment
+                    {
+                        PlayerId = player.PlayerId,
+                        QuadId = quad.Id
+                    });
+                }
+            }
+            
+            var response = await Http.PostAsJsonAsync($"/api/tournaments/{TournamentId}/quads/save", saveModel);
+            if (response.IsSuccessStatusCode)
+            {
+                ToastService.ShowSuccess("Quad assignments saved successfully!");
+                NavigationManager.NavigateTo($"/tournaments/{TournamentId}/dashboard");
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                ToastService.ShowError($"Failed to save: {errorContent}");
+                ErrorMessage = $"Failed to save quad assignments: {response.StatusCode}";
+                IsLoading = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error: {ex.Message}");
+            ErrorMessage = $"Error saving quad assignments: {ex.Message}";
+            IsLoading = false;
+        }
+    }
+    
+    // Model for saving quad assignments
+    public class QuadAssignmentSaveModel
+    {
+        public int TournamentId { get; set; }
+        public List<QuadAssignment> QuadAssignments { get; set; } = new();
+    }
+    
+    public class QuadAssignment
+    {
+        public int PlayerId { get; set; }
+        public int QuadId { get; set; }
+    }
+}

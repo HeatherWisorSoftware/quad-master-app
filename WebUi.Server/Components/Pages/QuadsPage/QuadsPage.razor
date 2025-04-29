@@ -1,16 +1,17 @@
-﻿@page "/QuadsPage/{TournamentId:int}/Quads"
+﻿
+@rendermode InteractiveServer
+@page "/QuadsPage/{TournamentId:int}/Quads"
 @inject TournamentContext DbContext
 @inject NavigationManager NavigationManager
 @inject IToastService ToastService
-@rendermode InteractiveServer
-<h3>Tournament Quads - @ViewModel?.TournamentName</h3>
 
+<h3>Tournament Quads - @ViewModel?.TournamentName</h3>
 
 @if (AllTournamentPlayers?.Any() ?? false)
 {
     <div class="card mb-3">
         <div class="card-header bg-info text-white">
-            All Players in Tournament 1
+            All Players in Tournament @TournamentId
         </div>
         <div class="card-body">
             <div class="row">
@@ -27,11 +28,6 @@
     </div>
 }
 
-
-
-
-
-
 <div class="row mb-3">
     <div class="col-12 col-md-6">
         @if (ViewModel != null)
@@ -47,8 +43,6 @@
     </div>
 </div>
 
-
-
 @if (ViewModel == null)
 {
     <p>Loading...</p>
@@ -58,16 +52,12 @@ else
     <div class="row">
         <div class="col-12 col-lg-8">
             <h4>Current Quads</h4>
-            <div class="row">
-                @foreach (var quad in ViewModel.Quads)
-                {
-                    <div class="col-12 col-md-6 mb-4">
-                        <QuadsScoreBoard Quad="quad" 
-                        AllowPlayerRemoval="ViewModel.AllowPlayerRemoval" 
-                        OnPlayerRemoved="RemovePlayerFromQuad" />
-                    </div>
-                }
-            </div>
+            @foreach (var quad in ViewModel.Quads)
+            {
+                <QuadsScoreBoard Quad="quad"
+                                 AllowPlayerRemoval="ViewModel.AllowPlayerRemoval"
+                                 OnPlayerRemoved="RemovePlayerFromQuad" />
+            }
         </div>
         <div class="col-12 col-lg-4">
             <h4>Unassigned Players (@ViewModel.UnassignedPlayers.Count)</h4>
@@ -90,9 +80,9 @@ else
                                                     <option value="@quad.Id">@quad.Title</option>
                                                 }
                                             </select>
-                                            <button class="btn btn-outline-secondary" 
-                                            @onclick="() => AssignPlayerToQuad(player.Id)"
-                                            disabled="@(string.IsNullOrEmpty(selectedQuadId?.ToString()))">
+                                            <button class="btn btn-outline-secondary"
+                                                    @onclick="() => AssignPlayerToQuad(player.Id)"
+                                                    disabled="@(string.IsNullOrEmpty(selectedQuadId?.ToString()))">
                                                 Assign
                                             </button>
                                         </div>
@@ -120,6 +110,7 @@ else
 
     //List of tournamentplayers for testing
     private List<TournamentPlayer>? AllTournamentPlayers { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
@@ -138,29 +129,25 @@ else
         }
 
         //Load Tournament Players for testing
-            AllTournamentPlayers = await DbContext.TournamentPlayers
+        AllTournamentPlayers = await DbContext.TournamentPlayers
             .Include(tp => tp.Player)
             .Where(tp => tp.TournamentId == TournamentId)
             .ToListAsync();
-
-
 
         // Get all quads for this tournament
         var allQuads = await DbContext.Quads
             .Where(q => q.TournamentId == TournamentId)
             .ToListAsync();
 
-        // Calculate total pages based on 4 quads per page
+        // Calculate total pages based on 2 quads per page (changed from 4)
         int totalQuads = allQuads.Count;
-        int totalPages = (int)Math.Ceiling(totalQuads / 4.0);
+        int pageSize = 2; // Changed from 4 to 2 quads per page
+        int totalPages = (int)Math.Ceiling(totalQuads / (double)pageSize);
         totalPages = totalPages == 0 ? 1 : totalPages;
 
         // Get current page quads
-        //new code
-		int currentPage = ViewModel?.CurrentPage ?? 1;
-        //end new code
-        int pageSize = 4;
-        int skip = (ViewModel?.CurrentPage ?? 1) - 1 * pageSize;
+        int currentPage = ViewModel?.CurrentPage ?? 1;
+        int skip = (currentPage - 1) * pageSize;
         var currentPageQuads = allQuads
             .OrderBy(q => q.QuadGroupNumber)
             .Skip(skip)
@@ -184,20 +171,19 @@ else
 
         // Update ViewModel
         ViewModel = new QuadsViewModel
-        {
-            TournamentId = TournamentId,
-            TournamentName = tournament.Name,
-            Quads = currentPageQuads,
-            AllQuads = allQuads,
-            UnassignedPlayers = unassignedPlayers,
-            CurrentPage = ViewModel?.CurrentPage ?? 1,
-            TotalPages = totalPages,
-            AllowQuadGeneration = true,
-            //AllowQuadGeneration = unassignedPlayers.Count >= 4,
-            AllowPlayerRemoval = true,
-            AllowPlayerAssignment = true,
-            AreAllQuadsFull = allQuads.Count > 0 && allQuads.All(q => q.Players.Count == 4)
-        };
+            {
+                TournamentId = TournamentId,
+                TournamentName = tournament.Name,
+                Quads = currentPageQuads,
+                AllQuads = allQuads,
+                UnassignedPlayers = unassignedPlayers,
+                CurrentPage = currentPage,
+                TotalPages = totalPages,
+                AllowQuadGeneration = true,
+                AllowPlayerRemoval = true,
+                AllowPlayerAssignment = true,
+                AreAllQuadsFull = allQuads.Count > 0 && allQuads.All(q => q.Players.Count == 4)
+            };
     }
 
     private void NavigateToPage(int page)
@@ -237,11 +223,11 @@ else
             {
                 quadCounter++;
                 currentQuad = new Quad
-                {
-                    Title = $"Quad {quadCounter}",
-                    TournamentId = TournamentId,
-                    QuadGroupNumber = highestGroupNumber + (int)Math.Ceiling(quadCounter / 4.0)
-                };
+                    {
+                        Title = $"Quad {quadCounter}",
+                        TournamentId = TournamentId,
+                        QuadGroupNumber = highestGroupNumber + (int)Math.Ceiling(quadCounter / 4.0)
+                    };
 
                 DbContext.Quads.Add(currentQuad);
                 await DbContext.SaveChangesAsync(); // Save to get Id

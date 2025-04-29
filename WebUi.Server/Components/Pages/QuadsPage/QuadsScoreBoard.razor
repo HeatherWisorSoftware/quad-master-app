@@ -1,407 +1,138 @@
-﻿@page "/QuadsPage/QuadsScoreBoard"
-@rendermode InteractiveServer
-@inject IJSRuntime JSRuntime
+﻿@inject TournamentContext DbContext
 
-<div class="chess-scoreboard">
-  @* Quad selection tabs *@
-  @if (ViewModel.Quads.Any())
-  {
-    <div class="mb-4 border-b border-gray-200">
-      <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
-        @foreach (var quad in ViewModel.Quads)
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        @Quad.Title
+    </div>
+    <div class="card-body">
+        @if (Quad.Players.Count == 0)
         {
-          <li class="mr-2" key="@quad.Id">
-            <button class="inline-block p-4 rounded-t-lg @(SelectedQuad == quad.Id
-                            ? "text-blue-600 bg-gray-100 border-b-2 border-blue-600 active"
-                            : "hover:text-gray-600 hover:border-gray-300")"
-                    @onclick="() => HandleQuadChange(quad.Id)">
-              @quad.Title
-            </button>
-          </li>
+            <p>No players assigned to this quad yet.</p>
         }
-      </ul>
-    </div>
-  }
+        else
+        {
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Player</th>
+                        <th>Ranking</th>
+                        @if (AllowPlayerRemoval)
+                        {
+                            <th>Actions</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var player in Quad.Players.OrderBy(p => p.Player.Ranking))
+                    {
+                        <tr>
+                            <td>@(Quad.Players.OrderBy(p => p.Player.Ranking).ToList().IndexOf(player) + 1)</td>
+                            <td>@player.Player.FirstName @player.Player.LastName</td>
+                            <td>@player.Player.Ranking</td>
+                            @if (AllowPlayerRemoval)
+                            {
+                                <td>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => RemovePlayer(player.Id)">
+                                        Remove
+                                    </button>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
 
-  @* Player selection panel *@
-  <div class="mb-6 p-4 border border-gray-400 bg-blue-50"
-       ondragover="event.preventDefault();"
-       @ondrop="@(() => HandleDrop("available"))">
-    <h3 class="font-bold mb-2">Available Players</h3>
-    <div class="flex flex-wrap gap-2">
-      @foreach (var player in ViewModel.UnassignedPlayers)
-      {
-        <div draggable="true"
-             @ondragstart="@(() => HandleDragStart(player, "available"))"
-             class="bg-white p-2 border border-gray-300 cursor-move hover:bg-blue-100">
-          @player.Player.FirstName @player.Player.LastName (@player.Player.Ranking)
+            @if (ShowScores && Quad.Players.Count == 4)
+            {
+                <div class="mt-3">
+                    <h5>Scores</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Player</th>
+                                    @foreach (var player in Quad.Players.OrderBy(p => p.Player.Ranking))
+                                    {
+                                        <th>vs @player.Player.FirstName.Substring(0, 1). @player.Player.LastName</th>
+                                    }
+                                    <th>Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var player in Quad.Players.OrderBy(p => p.Player.Ranking))
+                                {
+                                    <tr>
+                                        <td>@player.Player.FirstName @player.Player.LastName</td>
+                                        @foreach (var opponent in Quad.Players.OrderBy(p => p.Player.Ranking))
+                                        {
+                                            <td>
+                                                @if (player.Id == opponent.Id)
+                                                {
+                                                    <span>X</span>
+                                                }
+                                                else
+                                                {
+                                                    <select class="form-select form-select-sm">
+                                                        <option value="">-</option>
+                                                        <option value="1">Win</option>
+                                                        <option value="0.5">Draw</option>
+                                                        <option value="0">Loss</option>
+                                                    </select>
+                                                }
+                                            </td>
+                                        }
+                                        <td>0</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+    <div class="card-footer">
+        <div class="d-flex justify-content-between">
+            <span>Players: @Quad.Players.Count/4</span>
+            @if (Quad.Players.Count == 4 && !ShowScores)
+            {
+                <button class="btn btn-sm btn-outline-primary" @onclick="ToggleScores">
+                    Show Scores
+                </button>
+            }
+            else if (Quad.Players.Count == 4 && ShowScores)
+            {
+                <button class="btn btn-sm btn-outline-primary" @onclick="ToggleScores">
+                    Hide Scores
+                </button>
+            }
         </div>
-      }
-      @if (!ViewModel.UnassignedPlayers.Any())
-      {
-        <div class="text-gray-500 italic">No available players</div>
-      }
     </div>
-    <p class="mt-2 text-sm text-gray-600">Drag players to quads below, or drag players from quads here to remove them</p>
-  </div>
-
-  @* Tournament table *@
-  @if (CurrentQuad != null)
-  {
-    <div class="border border-gray-400">
-      <table class="w-full border-collapse">
-        <thead>
-          <tr>
-            <th class="bg-lime-200 p-2 border border-gray-400 font-bold text-2xl text-center" rowspan="2">
-              @CurrentQuad.Title
-            </th>
-            <th class="border border-gray-400 p-2 text-center">Player</th>
-            <th class="border border-gray-400 p-2 text-center">Rd 1</th>
-            <th class="border border-gray-400 p-2 text-center">Rd 2</th>
-            <th class="border border-gray-400 p-2 text-center">Rd 3</th>
-            <th class="border border-gray-400 p-2 text-center">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          @foreach (var playerSlot in GetPlayersWithEmptySlots(CurrentQuad))
-          {
-            <tr>
-              <td class="pl-2 border border-gray-400"
-                  rowspan="3"
-                  ondragover="event.preventDefault();"
-                  @ondrop="@(() => HandleDrop(CurrentQuad.Id.ToString(), playerSlot.Id))">
-                @(playerSlot.Id > 0 ? playerSlot.Position.ToString() : "?")
-                <span class="font-bold text-xl cursor-move"
-                      draggable="@(!playerSlot.IsEmpty)"
-                      @ondragstart="@(() => HandleDragStart(playerSlot.Player, $"quad-{CurrentQuad.Id}-{playerSlot.Id}"))">
-                  @(playerSlot.IsEmpty
-                      ? "EMPTY POSITION"
-                      : $"{playerSlot.Player.Player.FirstName} {playerSlot.Player.Player.LastName}")
-                </span>
-              </td>
-              <td class="border-t border-r border-gray-400 p-1">@(playerSlot.Round1Format)</td>
-              <td class="border-t border-r border-gray-400 p-1">@(playerSlot.Round2Format)</td>
-              <td class="border-t border-r border-gray-400 p-1">@(playerSlot.Round3Format)</td>
-              <td class="border border-gray-400 p-1 font-bold text-3xl text-center" rowspan="3">
-                @(playerSlot.Total)
-              </td>
-            </tr>
-            <tr>
-              <td class="bg-lime-200 border-l border-r border-gray-400 p-1 text-center">
-                @(playerSlot.Round1Result)
-              </td>
-              <td class="border-l border-r border-gray-400 p-1">@(playerSlot.Round2Result)</td>
-              <td class="border-l border-r border-gray-400 p-1">@(playerSlot.Round3Result)</td>
-            </tr>
-            <tr>
-              <td class="border-l border-r border-b border-gray-400 p-1">
-                @(playerSlot.IsEmpty ? "0" : playerSlot.Player.Player.Ranking.ToString())
-              </td>
-              <td class="border-l border-r border-b border-gray-400 p-1">@(playerSlot.Round1Table)</td>
-              <td class="border-l border-r border-b border-gray-400 p-1">@(playerSlot.Round2Table)</td>
-              <td class="border-l border-r border-b border-gray-400 p-1">@(playerSlot.Round3Table)</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  }
 </div>
 
 @code {
-  [Parameter]
-  public QuadsViewModel ViewModel { get; set; }
+    [Parameter]
+    public Quad Quad { get; set; }
 
-  [Parameter]
-  public EventCallback<QuadsViewModel> OnDataChanged { get; set; }
+    [Parameter]
+    public bool AllowPlayerRemoval { get; set; } = true;
 
-  private int? SelectedQuad { get; set; }
+    [Parameter]
+    public EventCallback<int> OnPlayerRemoved { get; set; }
 
-  private TournamentPlayer DraggedPlayer { get; set; }
-  private string DraggedPlayerSource { get; set; }
+    private bool ShowScores { get; set; } = false;
 
-  private Quad CurrentQuad => ViewModel.Quads.FirstOrDefault(q => q.Id == SelectedQuad) ??
-                             (ViewModel.Quads.Any() ? ViewModel.Quads[0] : null);
-
-  protected override void OnInitialized()
-  {
-    if (ViewModel?.Quads != null && ViewModel.Quads.Any())
+    private async Task RemovePlayer(int playerId)
     {
-      SelectedQuad = ViewModel.Quads[0].Id;
-    }
-  }
-
-  protected override async Task OnParametersSetAsync()
-  {
-    if (ViewModel?.Quads != null && ViewModel.Quads.Any() && !SelectedQuad.HasValue)
-    {
-      SelectedQuad = ViewModel.Quads[0].Id;
-    }
-  }
-
-  private List<PlayerSlotViewModel> GetPlayersWithEmptySlots(Quad quad)
-  {
-    var result = new List<PlayerSlotViewModel>();
-
-    // Add existing players
-    for (int i = 0; i < quad.Players.Count; i++)
-    {
-      result.Add(new PlayerSlotViewModel
+        if (OnPlayerRemoved.HasDelegate)
         {
-          Id = quad.Players[i].Id,
-          Position = i + 1,
-          Player = quad.Players[i],
-          IsEmpty = false,
-          Round1Format = $"W v {4}",
-          Round2Format = $"B v {3}",
-          Round3Format = $"W v {2}",
-          Round1Result = "",
-          Round2Result = "",
-          Round3Result = "",
-          Round1Table = $"TBL {quad.Id}A",
-          Round2Table = $"TBL {quad.Id}A",
-          Round3Table = $"TBL {quad.Id}B",
-          Total = 0
-        });
-    }
-
-    // Add empty slots if needed
-    for (int i = quad.Players.Count; i < 4; i++)
-    {
-      result.Add(new PlayerSlotViewModel
-        {
-          Id = -1 - i,
-          Position = i + 1,
-          Player = null,
-          IsEmpty = true,
-          Round1Format = $"W v {4}",
-          Round2Format = $"B v {3}",
-          Round3Format = $"W v {2}",
-          Round1Result = "",
-          Round2Result = "",
-          Round3Result = "",
-          Round1Table = $"TBL {quad.Id}A",
-          Round2Table = $"TBL {quad.Id}A",
-          Round3Table = $"TBL {quad.Id}B",
-          Total = 0
-        });
-    }
-
-    return result;
-  }
-
-  private void HandleQuadChange(int quadId)
-  {
-    SelectedQuad = quadId;
-  }
-
-  private async Task HandleDragStart(TournamentPlayer player, string source)
-  {
-    if (player != null)
-    {
-      DraggedPlayer = player;
-      DraggedPlayerSource = source;
-
-      // Use JS interop to set data for drag and drop
-      await JSRuntime.InvokeVoidAsync("setDragData",
-          System.Text.Json.JsonSerializer.Serialize(new { player, source }));
-    }
-  }
-
-  private async Task HandleDrop(string quadId, int? playerId = null)
-  {
-    if (DraggedPlayer == null) return;
-
-    var newViewModel = new QuadsViewModel
-      {
-        TournamentId = ViewModel.TournamentId,
-        TournamentName = ViewModel.TournamentName,
-        Quads = new List<Quad>(ViewModel.Quads.Select(q => new Quad
-        {
-          Id = q.Id,
-          Title = q.Title,
-          TournamentId = q.TournamentId,
-          QuadGroupNumber = q.QuadGroupNumber,
-          Players = new List<TournamentPlayer>(q.Players.Select(p => p))
-        })),
-        UnassignedPlayers = new List<TournamentPlayer>(ViewModel.UnassignedPlayers),
-        AllQuads = ViewModel.AllQuads,
-        CurrentPage = ViewModel.CurrentPage,
-        TotalPages = ViewModel.TotalPages,
-        AllowQuadGeneration = ViewModel.AllowQuadGeneration,
-        AllowPlayerRemoval = ViewModel.AllowPlayerRemoval,
-        AllowPlayerAssignment = ViewModel.AllowPlayerAssignment,
-        AreAllQuadsFull = ViewModel.AreAllQuadsFull
-      };
-
-    // Handle dropping from available players to quad
-    if (DraggedPlayerSource == "available")
-    {
-      int targetQuadId;
-      if (int.TryParse(quadId, out targetQuadId))
-      {
-        // Find the target quad
-        var targetQuad = newViewModel.Quads.FirstOrDefault(q => q.Id == targetQuadId);
-        if (targetQuad != null && playerId.HasValue)
-        {
-          // If dropping to an empty position, just add the player
-          if (playerId < 0 || targetQuad.Players.Count < 4)
-          {
-            // Create a new instance of the dragged player
-            var playerToAdd = new TournamentPlayer
-              {
-                Id = DraggedPlayer.Id,
-                PlayerId = DraggedPlayer.PlayerId,
-                TournamentId = DraggedPlayer.TournamentId,
-                Player = DraggedPlayer.Player,
-                QuadId = targetQuadId
-              };
-
-            // Add to the target quad
-            targetQuad.Players.Add(playerToAdd);
-
-            // Remove from unassigned players
-            var availableIndex = newViewModel.UnassignedPlayers.FindIndex(p => p.Id == DraggedPlayer.Id);
-            if (availableIndex != -1)
-            {
-              newViewModel.UnassignedPlayers.RemoveAt(availableIndex);
-            }
-          }
-          else
-          {
-            // Find the player to replace in the quad
-            var playerIndex = targetQuad.Players.FindIndex(p => p.Id == playerId);
-            if (playerIndex != -1)
-            {
-              // Store the player being replaced
-              var replacedPlayer = targetQuad.Players[playerIndex];
-
-              // Add the replaced player to unassigned players
-              replacedPlayer.QuadId = null;
-              newViewModel.UnassignedPlayers.Add(replacedPlayer);
-
-              // Create a new instance of the dragged player
-              var playerToAdd = new TournamentPlayer
-                {
-                  Id = DraggedPlayer.Id,
-                  PlayerId = DraggedPlayer.PlayerId,
-                  TournamentId = DraggedPlayer.TournamentId,
-                  Player = DraggedPlayer.Player,
-                  QuadId = targetQuadId
-                };
-
-              // Replace the player in the quad
-              targetQuad.Players[playerIndex] = playerToAdd;
-
-              // Remove from unassigned players
-              var availableIndex = newViewModel.UnassignedPlayers.FindIndex(p => p.Id == DraggedPlayer.Id);
-              if (availableIndex != -1)
-              {
-                newViewModel.UnassignedPlayers.RemoveAt(availableIndex);
-              }
-            }
-          }
+            await OnPlayerRemoved.InvokeAsync(playerId);
         }
-      }
     }
-    // Handle dropping from quad to available players or another quad
-    else if (DraggedPlayerSource != null && DraggedPlayerSource.StartsWith("quad-"))
+
+    private void ToggleScores()
     {
-      // Parse the quad source to get the relevant IDs
-      var sourceParts = DraggedPlayerSource.Split('-');
-      if (sourceParts.Length >= 3 &&
-          int.TryParse(sourceParts[1], out var sourceQuadId) &&
-          int.TryParse(sourceParts[2], out var sourcePlayerId))
-      {
-        // Find the source quad
-        var sourceQuad = newViewModel.Quads.FirstOrDefault(q => q.Id == sourceQuadId);
-
-        // If dropping to available players section
-        if (quadId == "available" && sourceQuad != null)
-        {
-          // Find the player in the source quad
-          var sourcePlayer = sourceQuad.Players.FirstOrDefault(p => p.Id == sourcePlayerId);
-          if (sourcePlayer != null)
-          {
-            // Add to unassigned players
-            sourcePlayer.QuadId = null;
-            newViewModel.UnassignedPlayers.Add(sourcePlayer);
-
-            // Remove from source quad
-            sourceQuad.Players.Remove(sourcePlayer);
-          }
-        }
-        // If dropping to another quad position
-        else if (int.TryParse(quadId, out var targetQuadId) && sourceQuad != null && playerId.HasValue)
-        {
-          var targetQuad = newViewModel.Quads.FirstOrDefault(q => q.Id == targetQuadId);
-          if (targetQuad != null)
-          {
-            // Find the player in the source quad
-            var sourcePlayer = sourceQuad.Players.FirstOrDefault(p => p.Id == sourcePlayerId);
-
-            if (sourcePlayer != null)
-            {
-              // If dropping to an empty position
-              if (playerId < 0 || targetQuad.Players.Count < 4)
-              {
-                // Update the player's quad
-                sourcePlayer.QuadId = targetQuadId;
-
-                // Add to target quad
-                targetQuad.Players.Add(sourcePlayer);
-
-                // Remove from source quad
-                sourceQuad.Players.Remove(sourcePlayer);
-              }
-              else
-              {
-                // Find the player to swap with
-                var targetPlayer = targetQuad.Players.FirstOrDefault(p => p.Id == playerId);
-
-                if (targetPlayer != null)
-                {
-                  // Update quad assignments
-                  sourcePlayer.QuadId = targetQuadId;
-                  targetPlayer.QuadId = sourceQuadId;
-
-                  // Swap the players
-                  sourceQuad.Players.Remove(sourcePlayer);
-                  targetQuad.Players.Remove(targetPlayer);
-
-                  sourceQuad.Players.Add(targetPlayer);
-                  targetQuad.Players.Add(sourcePlayer);
-                }
-              }
-            }
-          }
-        }
-      }
+        ShowScores = !ShowScores;
     }
-
-    ViewModel = newViewModel;
-    DraggedPlayer = null;
-    DraggedPlayerSource = null;
-
-    await OnDataChanged.InvokeAsync(ViewModel);
-  }
-
-  // View model for player slots in the UI
-  public class PlayerSlotViewModel
-  {
-    public int Id { get; set; }
-    public int Position { get; set; }
-    public TournamentPlayer Player { get; set; }
-    public bool IsEmpty { get; set; }
-    public string Round1Format { get; set; }
-    public string Round2Format { get; set; }
-    public string Round3Format { get; set; }
-    public string Round1Result { get; set; }
-    public string Round2Result { get; set; }
-    public string Round3Result { get; set; }
-    public string Round1Table { get; set; }
-    public string Round2Table { get; set; }
-    public string Round3Table { get; set; }
-    public int Total { get; set; }
-  }
 }

@@ -1,32 +1,10 @@
-﻿
-@rendermode InteractiveServer
-@page "/QuadsPage/{TournamentId:int}/Quads"
+﻿@page "/QuadsPage/{TournamentId:int}/Quads"
 @inject TournamentContext DbContext
 @inject NavigationManager NavigationManager
 @inject IToastService ToastService
+@rendermode InteractiveServer
 
 <h3>Tournament Quads - @ViewModel?.TournamentName</h3>
-
-@if (AllTournamentPlayers?.Any() ?? false)
-{
-    <div class="card mb-3">
-        <div class="card-header bg-info text-white">
-            All Players in Tournament @TournamentId
-        </div>
-        <div class="card-body">
-            <div class="row">
-                @foreach (var player in AllTournamentPlayers)
-                {
-                    <div class="col-md-4 mb-2">
-                        <strong>@player.Player.FirstName @player.Player.LastName</strong>
-                        (Rank: @player.Player.Ranking,
-                        QuadId: @(player.QuadId.HasValue ? player.QuadId.ToString() : "None"))
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
-}
 
 <div class="row mb-3">
     <div class="col-12 col-md-6">
@@ -34,11 +12,12 @@
         {
             @if (ViewModel.AllowQuadGeneration)
             {
-                <button class="btn btn-primary" @onclick="GenerateQuads">Generate Quads</button>
+                <button class="btn btn-primary" style="padding: 8px 16px; margin: 10px;" @onclick ="GenerateQuads">Generate Quads</button>
             }
-            <button class="btn btn-secondary" @onclick="() => NavigateToPage(ViewModel.CurrentPage - 1)" disabled="@(ViewModel.CurrentPage <= 1)">Previous</button>
+            <button class="btn btn-primary" style="padding: 8px 16px; margin: 10px;" @onclick="() => NavigateToPage(ViewModel.CurrentPage + 1)" disabled="@(ViewModel.CurrentPage >= ViewModel.TotalPages)">Next</button>
+            <button class="btn btn-primary" style="padding: 8px 16px;margin: 10px:" @onclick="() => NavigateToPage(ViewModel.CurrentPage - 1)" disabled="@(ViewModel.CurrentPage <= 1)">Previous</button>
             <span class="mx-2">Page @ViewModel.CurrentPage of @ViewModel.TotalPages</span>
-            <button class="btn btn-secondary" @onclick="() => NavigateToPage(ViewModel.CurrentPage + 1)" disabled="@(ViewModel.CurrentPage >= ViewModel.TotalPages)">Next</button>
+            
         }
     </div>
 </div>
@@ -54,7 +33,8 @@ else
             <h4>Current Quads</h4>
             @foreach (var quad in ViewModel.Quads)
             {
-                <QuadsScoreBoard Quad="quad"
+                <QuadsScoreBoard @key="quad.Id"
+                                 Quad="quad"
                                  AllowPlayerRemoval="ViewModel.AllowPlayerRemoval"
                                  OnPlayerRemoved="RemovePlayerFromQuad" />
             }
@@ -81,7 +61,7 @@ else
                                                 }
                                             </select>
                                             <button class="btn btn-outline-secondary"
-                                                    @onclick="() => AssignPlayerToQuad(player.Id)"
+                                                    @onclick="async () => await AssignPlayerToQuad(player.Id)"
                                                     disabled="@(string.IsNullOrEmpty(selectedQuadId?.ToString()))">
                                                 Assign
                                             </button>
@@ -108,10 +88,12 @@ else
     private QuadsViewModel? ViewModel { get; set; }
     private int? selectedQuadId;
 
-    //List of tournamentplayers for testing
-    private List<TournamentPlayer>? AllTournamentPlayers { get; set; }
-
     protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    protected override async Task OnParametersSetAsync()
     {
         await LoadData();
     }
@@ -128,25 +110,26 @@ else
             return;
         }
 
-        //Load Tournament Players for testing
-        AllTournamentPlayers = await DbContext.TournamentPlayers
-            .Include(tp => tp.Player)
-            .Where(tp => tp.TournamentId == TournamentId)
-            .ToListAsync();
+        int currentPage = ViewModel?.CurrentPage ?? 1;
 
         // Get all quads for this tournament
         var allQuads = await DbContext.Quads
             .Where(q => q.TournamentId == TournamentId)
             .ToListAsync();
 
-        // Calculate total pages based on 2 quads per page (changed from 4)
+        // Calculate total pages based on 2 quads per page
         int totalQuads = allQuads.Count;
-        int pageSize = 2; // Changed from 4 to 2 quads per page
+        int pageSize = 2; // 2 quads per page
         int totalPages = (int)Math.Ceiling(totalQuads / (double)pageSize);
         totalPages = totalPages == 0 ? 1 : totalPages;
 
+        // Ensure current page is valid
+        if (currentPage > totalPages)
+        {
+            currentPage = totalPages;
+        }
+
         // Get current page quads
-        int currentPage = ViewModel?.CurrentPage ?? 1;
         int skip = (currentPage - 1) * pageSize;
         var currentPageQuads = allQuads
             .OrderBy(q => q.QuadGroupNumber)
@@ -186,13 +169,13 @@ else
             };
     }
 
-    private void NavigateToPage(int page)
+    private async Task NavigateToPage(int page)
     {
         if (page < 1 || page > ViewModel.TotalPages)
             return;
 
         ViewModel.CurrentPage = page;
-        LoadData();
+        await LoadData();
     }
 
     private async Task GenerateQuads()

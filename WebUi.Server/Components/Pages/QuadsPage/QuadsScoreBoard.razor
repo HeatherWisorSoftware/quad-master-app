@@ -1,86 +1,61 @@
 ﻿@inject TournamentContext DbContext
 
 <div class="mb-4">
-    <table class="table table-bordered">
+    <table class="table" style="border-collapse: collapse; border: 2px solid #000; width: 100%;min-width:500px; max-width: 800px;">
         <tr>
-            <td rowspan="13" style="width: 50px; writing-mode: vertical-lr; transform: rotate(180deg); background-color: #8bcc9c; text-align: center; font-weight: bold; font-size: 20px;">@Quad.Title</td>
-            <th style="width: 5%"></th>
-            <th style="width: 30%">Player</th>
-            <th style="width: 15%">Rd 1</th>
-            <th style="width: 15%">Rd 2</th>
-            <th style="width: 15%">Rd 3</th>
-            <th style="width: 10%">Total</th>
-            <th style="width: 10%">Actions</th>
+            <td rowspan="13" style="width: 50px; writing-mode: vertical-lr; transform: rotate(180deg); background-color: @TableColor; color: #000; text-align: center; font-weight: bold; font-size: 40px; border: 2px solid #000;">@Quad.Title</td>
+            <th style="width: 5%; border: 2px solid #000; font-weight: bold; text-align: center"></th>
+            <th style="width: 30%; border: 2px solid #000; font-weight: bold;">Player</th>
+            <th style="width: 15%; border: 2px solid #000; font-weight: bold;">Rd 1</th>
+            <th style="width: 15%; border: 2px solid #000; font-weight: bold;">Rd 2</th>
+            <th style="width: 15%; border: 2px solid #000; font-weight: bold;">Rd 3</th>
+            <th style="width: 10%; border: 2px solid #000; font-weight: bold;">Total</th>
+            <th style="width: 10%; border: 2px solid #000; font-weight: bold;">Actions</th>
         </tr>
-        
+
         @if (Quad.Players.Count == 0)
         {
             <tr>
-                <td colspan="7">No players assigned to this quad yet.</td>
+                <td colspan="7" style="border: 2px solid #000; padding: 4px; text-align: center;">No players assigned to this quad yet.</td>
             </tr>
         }
         else if (Quad.Players.Count < 4)
         {
             <tr>
-                <td colspan="7">A quad requires exactly 4 players. Current players: @Quad.Players.Count</td>
+                <td colspan="7" style="border: 2px solid #000; padding: 4px; text-align: center;">A quad requires exactly 4 players. Current players: @Quad.Players.Count</td>
             </tr>
         }
         else
         {
             var orderedPlayers = Quad.Players.OrderBy(p => p.Player.Ranking).ToList();
 
-            // Define match pairings and tables
-            var matchData = new Dictionary<int, Dictionary<int, (int opponent, string color, int table, bool editable)>>
+            @for (int playerNum = 0; playerNum < 4; playerNum++)
             {
-                { 1, new Dictionary<int, (int, string, int, bool)> {
-                    { 1, (4, "W", 1, true) },
-                    { 2, (3, "W", 2, true) },
-                    { 3, (2, "B", 2, true) },
-                    { 4, (1, "B", 1, true) }
-                }},
-                { 2, new Dictionary<int, (int, string, int, bool)> {
-                    { 1, (3, "B", 1, true) },
-                    { 2, (4, "B", 2, true) },
-                    { 3, (1, "W", 1, true) },
-                    { 4, (2, "W", 2, true) }
-                }},
-                { 3, new Dictionary<int, (int, string, int, bool)> {
-                    { 1, (2, "W", 1, true) },
-                    { 2, (1, "B", 1, true) },
-                    { 3, (4, "W", 2, true) },
-                    { 4, (3, "B", 2, true) }
-                }}
-            };
-
-            for (int playerIndex = 1; playerIndex <= Math.Min(4, orderedPlayers.Count); playerIndex++)
-            {
-                var player = orderedPlayers[playerIndex - 1];
+                int playerIndex = playerNum + 1;
+                var player = orderedPlayers[playerNum];
 
                 <tr>
-                    <td rowspan="3" class="text-center" style="background-color: #f0f0f0;">@playerIndex</td>
-                    <td style="font-weight: bold; text-align: left;">@player.Player.FirstName @player.Player.LastName</td>
+                    <td rowspan="3" style="text-align: center; font-weight: bold; border: 2px solid #000;">@playerIndex</td>
+                    <td style="font-weight: bold; text-align: left; border: 2px solid #000; padding: 4px;">
+                        @player.Player.FirstName @player.Player.LastName
+                    </td>
 
                     @for (int round = 1; round <= 3; round++)
                     {
-                        if (matchData.ContainsKey(playerIndex) && matchData[playerIndex].ContainsKey(round))
-                        {
-                            var match = matchData[playerIndex][round];
-                            <td>@match.color v @match.opponent</td>
-                        }
-                        else
-                        {
-                            <td>-</td>
-                        }
+                        var (opponent, color) = GetOpponentAndColor(playerIndex, round);
+                        <td style="border: 2px solid #000; padding: 4px; text-align: center;">
+                            @color v @opponent
+                        </td>
                     }
 
-                    <td rowspan="3" style="font-weight: bold; font-size: 18px; text-align: center; vertical-align: middle;">
-                        @GetPlayerTotal(playerIndex)
+                    <td rowspan="3" style="font-weight: bold; font-size: 18px; text-align: center; vertical-align: middle; border: 2px solid #000;">
+                        @CalculateTotal(playerIndex)
                     </td>
 
-                    <td rowspan="3" style="text-align: center; vertical-align: middle;">
+                    <td rowspan="3" style="text-align: center; vertical-align: middle; border: 2px solid #000;">
                         @if (AllowPlayerRemoval)
                         {
-                            <div @onclick="() => RemovePlayer(player.Id)" style="border: 1px solid #000; border-radius: 5px; width: 25px; height: 25px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer;">
+                            <div @onclick="() => RemovePlayer(player.Id)" style="border: 2px solid #000; border-radius: 5px; width: 25px; height: 25px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer;">
                                 X
                             </div>
                         }
@@ -88,61 +63,43 @@
                 </tr>
 
                 <tr>
-                    <td style="text-align: left; color: #444; font-size: 14px;">
+                    <td style="text-align: left; color: #444; font-size: 16px; border: 1px solid #000; padding: 4px;">
                         Rank @player.Player.Ranking
                     </td>
 
+
                     @for (int round = 1; round <= 3; round++)
                     {
-                        if (matchData.ContainsKey(playerIndex) && matchData[playerIndex].ContainsKey(round))
-                        {
-                            var match = matchData[playerIndex][round];
-                            <td style="background-color: #8bcc9c;">
-                                @if (match.editable)
-                                {
-                                    <select class="form-select form-select-sm"
-                                            style="background-color: #8bcc9c; border: none;"
-                                            @onchange="(e) => UpdateScore(playerIndex, round, e.Value.ToString())">
-                                        <option value="">-</option>
-                                        <option value="1" selected="@(GetScore(playerIndex, round) == 1)">1</option>
-                                        <option value="0" selected="@(GetScore(playerIndex, round) == 0)">0</option>
-                                    </select>
-                                }
-                                else
-                                {
-                                    @GetScore(playerIndex, round)
-                                }
-                            </td>
-                        }
-                        else
-                        {
-                            <td style="background-color: #8bcc9c;">-</td>
-                        }
+                        int displayedRound = round;
+                        int displayedPlayer = playerIndex;
+                        <td style="background-color: @TableColor;font-size: 16px; border: 1px solid #000; padding: 4px; text-align: center;">
+                            <select class="form-select form-select-sm"
+                                    style="background-color: @TableColor; border: none; text-align: center; text-align-last: center; -moz-text-align-last: center;"
+                                    @onchange="(e) => UpdateScore(displayedPlayer, displayedRound, e.Value.ToString())">
+                                <option value="" selected="@(GetScore(displayedPlayer, displayedRound) == null)">-</option>
+                                <option value="1" selected="@(GetScore(displayedPlayer, displayedRound) == 1)">1</option>
+                                <option value="0" selected="@(GetScore(displayedPlayer, displayedRound) == 0)">0</option>
+                            </select>
+                        </td>
                     }
                 </tr>
 
                 <tr>
-                    <td></td>
+                    <td style="border: 2px solid #000; padding: 4px;"></td>
 
                     @for (int round = 1; round <= 3; round++)
                     {
-                        if (matchData.ContainsKey(playerIndex) && matchData[playerIndex].ContainsKey(round))
-                        {
-                            var match = matchData[playerIndex][round];
-                            <td>TBL @match.table</td>
-                        }
-                        else
-                        {
-                            <td>-</td>
-                        }
+                        int tableNumber = GetTableNumber(playerIndex, round);
+                        <td style="border: 2px solid #000; padding: 4px; text-align: center;">
+                            TBL @tableNumber
+                        </td>
                     }
                 </tr>
             }
         }
-        }
-        
+
         <tr>
-            <td colspan="7">
+            <td colspan="7" style="border: 2px solid #000; padding: 4px;">
                 <div class="d-flex justify-content-between">
                     <span>Players: @Quad.Players.Count/4</span>
                 </div>
@@ -161,128 +118,240 @@
     [Parameter]
     public EventCallback<int> OnPlayerRemoved { get; set; }
 
-    // Store scores in a dictionary: {playerIndex: {round: score}}
-    private Dictionary<int, Dictionary<int, int>> Scores { get; set; } = new Dictionary<int, Dictionary<int, int>>();
+    // Player scores: Dictionary<PlayerIndex, Dictionary<Round, Score>>
+    private Dictionary<int, Dictionary<int, int?>> playerScores = new Dictionary<int, Dictionary<int, int?>>();
 
-    // Match tables by round
-    private Dictionary<int, Dictionary<int, int>> TableAssignments { get; set; } = new Dictionary<int, Dictionary<int, int>>
+    // Match pairings for each round
+    private Dictionary<int, Dictionary<int, (int opponent, string color, int table)>> matchPairings =
+        new Dictionary<int, Dictionary<int, (int, string, int)>>
+        {
+        // Round 1
+        { 1, new Dictionary<int, (int, string, int)>
+            {
+                { 1, (4, "W", 1) },
+                { 2, (3, "W", 2) },
+                { 3, (2, "B", 2) },
+                { 4, (1, "B", 1) }
+            }
+        },
+        // Round 2
+        { 2, new Dictionary<int, (int, string, int)>
+            {
+                { 1, (3, "B", 1) },
+                { 2, (4, "B", 2) },
+                { 3, (1, "W", 1) },
+                { 4, (2, "W", 2) }
+            }
+        },
+        // Round 3
+        { 3, new Dictionary<int, (int, string, int)>
+            {
+                { 1, (2, "W", 1) },
+                { 2, (1, "B", 1) },
+                { 3, (4, "W", 2) },
+                { 4, (3, "B", 2) }
+            }
+        }
+        };
+
+    // Color palette for tables
+    private List<string> ColorPalette = new List<string>
     {
-        { 1, new Dictionary<int, int> { { 1, 1 }, { 2, 2 } } },
-        { 2, new Dictionary<int, int> { { 1, 1 }, { 2, 2 } } },
-        { 3, new Dictionary<int, int> { { 1, 1 }, { 2, 2 } } }
+        "#0A3D4F", // Deep Teal - a rich alternative to the black in the logo
+        "#1C2C4C", // Navy Blue - sophisticated and elegant
+        "#4A235A", // Royal Purple - adds richness with noble associations
+        "#0B5345", // Forest Green - earthy and grounding
+        "#D4AF37", // Gold - matches the gold accents in your logo
+        "#C9AE5D", // Brass - a slightly muted gold alternative
+        "#E8ECEF", // Silver Gray - for lighter elements
+        "#FFF8E1"  // Cream - warm alternative to white
     };
 
-    // Opponent pairings by round
-    private Dictionary<int, Dictionary<int, int>> Pairings { get; set; } = new Dictionary<int, Dictionary<int, int>>
-    {
-        // Round 1: Player 1 vs 4 (Table 1), Player 2 vs 3 (Table 2)
-        { 1, new Dictionary<int, int> { { 1, 4 }, { 4, 1 }, { 2, 3 }, { 3, 2 } } },
-        // Round 2: Player 1 vs 3 (Table 1), Player 2 vs 4 (Table 2)
-        { 2, new Dictionary<int, int> { { 1, 3 }, { 3, 1 }, { 2, 4 }, { 4, 2 } } },
-        // Round 3: Player 1 vs 2 (Table 1), Player 3 vs 4 (Table 2)
-        { 3, new Dictionary<int, int> { { 1, 2 }, { 2, 1 }, { 3, 4 }, { 4, 3 } } }
-    };
+    private Random random = new Random();
+    private string TableColor { get; set; }
 
     protected override void OnInitialized()
     {
-        // Initialize scores dictionary for all player indices
-        for (int i = 1; i <= 4; i++)
+        // Set random table color
+        int colorIndex = random.Next(ColorPalette.Count);
+        TableColor = ColorPalette[colorIndex];
+
+        // Initialize scores
+        InitializeScores();
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Re-initialize if needed
+        if (playerScores.Count == 0)
         {
-            if (!Scores.ContainsKey(i))
+            InitializeScores();
+        }
+    }
+
+    private void InitializeScores()
+    {
+        // Initialize all player scores
+        for (int player = 1; player <= 4; player++)
+        {
+            if (!playerScores.ContainsKey(player))
             {
-                Scores[i] = new Dictionary<int, int>();
+                playerScores[player] = new Dictionary<int, int?>();
             }
-            
-            // Set initial scores for all rounds
+
             for (int round = 1; round <= 3; round++)
             {
-                if (!Scores[i].ContainsKey(round))
+                if (!playerScores[player].ContainsKey(round))
                 {
-                    Scores[i][round] = 0;
+                    playerScores[player][round] = null;
                 }
             }
         }
 
-        // If we have 4 players and no existing scores, set example scores as per the HTML document
-        if (Quad.Players.Count == 4 && Scores.All(s => s.Value.All(r => r.Value == 0)))
+        // Set example scores if we have 4 players
+        if (Quad.Players.Count == 4)
         {
-            // From HTML example:
-            // Player 1: Wins all three rounds
-            Scores[1][1] = 1;
-            Scores[1][2] = 1;
-            Scores[1][3] = 1;
-            
-            // Player 2: Wins round 2 only
-            Scores[2][1] = 0;
-            Scores[2][2] = 1;
-            Scores[2][3] = 0;
-            
-            // Player 3: Wins round 1 only
-            Scores[3][1] = 1;
-            Scores[3][2] = 0;
-            Scores[3][3] = 0;
-            
-            // Player 4: Wins round 3 only
-            Scores[4][1] = 0;
-            Scores[4][2] = 0;
-            Scores[4][3] = 1;
+            bool hasAnyScores = false;
+
+            // Check if any scores are set
+            foreach (var playerDict in playerScores.Values)
+            {
+                foreach (var score in playerDict.Values)
+                {
+                    if (score.HasValue && score.Value > 0)
+                    {
+                        hasAnyScores = true;
+                        break;
+                    }
+                }
+                if (hasAnyScores) break;
+            }
+
+            // Only set example scores if none exist
+            if (!hasAnyScores)
+            {
+                // Example scores
+                playerScores[1][1] = 1;
+                playerScores[1][2] = 1;
+                playerScores[1][3] = 1;
+
+                playerScores[2][1] = 0;
+                playerScores[2][2] = 1;
+                playerScores[2][3] = 0;
+
+                playerScores[3][1] = 1;
+                playerScores[3][2] = 0;
+                playerScores[3][3] = 0;
+
+                playerScores[4][1] = 0;
+                playerScores[4][2] = 0;
+                playerScores[4][3] = 1;
+            }
         }
     }
 
-    private int GetScore(int playerIndex, int round)
+    private (int opponent, string color) GetOpponentAndColor(int playerIndex, int round)
     {
-        if (Scores.ContainsKey(playerIndex) && Scores[playerIndex].ContainsKey(round))
+        if (matchPairings.ContainsKey(round) && matchPairings[round].ContainsKey(playerIndex))
         {
-            return Scores[playerIndex][round];
+            var matchInfo = matchPairings[round][playerIndex];
+            return (matchInfo.opponent, matchInfo.color);
+        }
+        return (0, "");
+    }
+
+    private int GetTableNumber(int playerIndex, int round)
+    {
+        if (matchPairings.ContainsKey(round) && matchPairings[round].ContainsKey(playerIndex))
+        {
+            return matchPairings[round][playerIndex].table;
         }
         return 0;
     }
 
-    private int GetPlayerTotal(int playerIndex)
+    private int? GetScore(int playerIndex, int round)
     {
-        if (!Scores.ContainsKey(playerIndex))
+        if (playerScores.ContainsKey(playerIndex) && playerScores[playerIndex].ContainsKey(round))
         {
-            return 0;
+            return playerScores[playerIndex][round];
+        }
+        return null;
+    }
+
+    private int CalculateTotal(int playerIndex)
+    {
+        int total = 0;
+
+        if (playerScores.ContainsKey(playerIndex))
+        {
+            for (int round = 1; round <= 3; round++)
+            {
+                var score = GetScore(playerIndex, round);
+                if (score.HasValue && score.Value > 0)
+                {
+                    total += score.Value;
+                }
+            }
         }
 
-        return Scores[playerIndex].Values.Sum();
+        return total;
     }
 
     private void UpdateScore(int playerIndex, int round, string value)
     {
-        int score;
-        if (int.TryParse(value, out score) && Pairings.ContainsKey(round) && Pairings[round].ContainsKey(playerIndex))
+        // Parse score value
+        int? score = null;
+        if (!string.IsNullOrEmpty(value) && int.TryParse(value, out int parsedValue))
         {
-            // Get current player's opponent for this round
-            int opponentIndex = Pairings[round][playerIndex];
-
-            // Ensure dictionary entries exist
-            if (!Scores.ContainsKey(playerIndex))
-            {
-                Scores[playerIndex] = new Dictionary<int, int>();
-            }
-            if (!Scores.ContainsKey(opponentIndex))
-            {
-                Scores[opponentIndex] = new Dictionary<int, int>();
-            }
-            
-            if (!Scores[playerIndex].ContainsKey(round))
-            {
-                Scores[playerIndex][round] = 0;
-            }
-            if (!Scores[opponentIndex].ContainsKey(round))
-            {
-                Scores[opponentIndex][round] = 0;
-            }
-
-            // Update this player's score
-            Scores[playerIndex][round] = score;
-
-            // Update opponent's score (opposite of this player's score)
-            Scores[opponentIndex][round] = score == 1 ? 0 : 1;
-
-            StateHasChanged();
+            score = parsedValue;
         }
+
+        // Get opponent
+        int opponentIndex = 0;
+        if (matchPairings.ContainsKey(round) && matchPairings[round].ContainsKey(playerIndex))
+        {
+            opponentIndex = matchPairings[round][playerIndex].opponent;
+        }
+        else
+        {
+            return; // No valid opponent found
+        }
+
+        // Ensure dictionaries exist
+        if (!playerScores.ContainsKey(playerIndex))
+        {
+            playerScores[playerIndex] = new Dictionary<int, int?>();
+        }
+        if (!playerScores.ContainsKey(opponentIndex))
+        {
+            playerScores[opponentIndex] = new Dictionary<int, int?>();
+        }
+
+        // Make sure round entries exist
+        if (!playerScores[playerIndex].ContainsKey(round))
+        {
+            playerScores[playerIndex][round] = null;
+        }
+        if (!playerScores[opponentIndex].ContainsKey(round))
+        {
+            playerScores[opponentIndex][round] = null;
+        }
+
+        // Set scores
+        playerScores[playerIndex][round] = score;
+
+        // Opponent gets opposite score
+        if (score.HasValue)
+        {
+            playerScores[opponentIndex][round] = score.Value == 1 ? 0 : 1;
+        }
+        else
+        {
+            playerScores[opponentIndex][round] = null;
+        }
+
+        // Force UI refresh
+        StateHasChanged();
     }
 
     private async Task RemovePlayer(int playerId)

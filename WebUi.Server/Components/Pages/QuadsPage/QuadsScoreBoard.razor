@@ -4,13 +4,13 @@
     <table class="table" style="border-collapse: collapse; border: 2px solid #000; width: 100%;min-width:500px; max-width: 800px;">
         <tr>
             <td rowspan="13" style="width: 50px; writing-mode: vertical-lr; transform: rotate(180deg); background-color: @TableColor; color: #000; text-align: center; font-weight: bold; font-size: 40px; border: 2px solid #000;">@Quad.Title</td>
-            <th style="width: 5%; border: 2px solid #000; font-weight: bold; text-align: center"></th>
-            <th style="width: 30%; border: 2px solid #000; font-weight: bold;">Player</th>
-            <th style="width: 15%; border: 2px solid #000; font-weight: bold;">Rd 1</th>
-            <th style="width: 15%; border: 2px solid #000; font-weight: bold;">Rd 2</th>
-            <th style="width: 15%; border: 2px solid #000; font-weight: bold;">Rd 3</th>
-            <th style="width: 10%; border: 2px solid #000; font-weight: bold;">Total</th>
-            <th style="width: 10%; border: 2px solid #000; font-weight: bold;">Actions</th>
+            <th style="width: 5%; border: 2px solid #000; font-weight: bold; text-align: center;"></th>
+            <th style="width: 30%; border: 2px solid #000; font-weight: bold;text-align: center;">Player</th>
+            <th style="width: 15%; border: 2px solid #000; font-weight: bold;text-align: center;">Rd 1</th>
+            <th style="width: 15%; border: 2px solid #000; font-weight: bold;text-align: center;">Rd 2</th>
+            <th style="width: 15%; border: 2px solid #000; font-weight: bold;text-align: center;">Rd 3</th>
+            <th style="width: 10%; border: 2px solid #000; font-weight: bold;text-align: center;">Total</th>
+            <th style="width: 10%; border: 2px solid #000; font-weight: bold;text-align: center;">Actions</th>
         </tr>
 
         @if (Quad.Players.Count == 0)
@@ -63,7 +63,7 @@
                 </tr>
 
                 <tr>
-                    <td style="text-align: left; color: #444; font-size: 16px; border: 1px solid #000; padding: 4px;">
+                    <td style="text-align: left; color: #000; font-size: 16px; border: 2px solid #000; padding: 4px;">
                         Rank @player.Player.Ranking
                     </td>
 
@@ -72,7 +72,7 @@
                     {
                         int displayedRound = round;
                         int displayedPlayer = playerIndex;
-                        <td style="background-color: @TableColor;font-size: 16px; border: 1px solid #000; padding: 4px; text-align: center;">
+                        <td style="background-color: @TableColor;font-size: 16px; border: 2px solid #000; padding: 4px; text-align: center;">
                             <select class="form-select form-select-sm"
                                     style="background-color: @TableColor; border: none; text-align: center; text-align-last: center; -moz-text-align-last: center;"
                                     @onchange="(e) => UpdateScore(displayedPlayer, displayedRound, e.Value.ToString())">
@@ -99,11 +99,7 @@
         }
 
         <tr>
-            <td colspan="7" style="border: 2px solid #000; padding: 4px;">
-                <div class="d-flex justify-content-between">
-                    <span>Players: @Quad.Players.Count/4</span>
-                </div>
-            </td>
+            
         </tr>
     </table>
 </div>
@@ -124,7 +120,7 @@
     // Match pairings for each round
     private Dictionary<int, Dictionary<int, (int opponent, string color, int table)>> matchPairings =
         new Dictionary<int, Dictionary<int, (int, string, int)>>
-        {
+                {
         // Round 1
         { 1, new Dictionary<int, (int, string, int)>
             {
@@ -152,19 +148,17 @@
                 { 4, (3, "B", 2) }
             }
         }
-        };
+                };
 
     // Color palette for tables
     private List<string> ColorPalette = new List<string>
     {
-        "#0A3D4F", // Deep Teal - a rich alternative to the black in the logo
-        "#1C2C4C", // Navy Blue - sophisticated and elegant
-        "#4A235A", // Royal Purple - adds richness with noble associations
-        "#0B5345", // Forest Green - earthy and grounding
-        "#D4AF37", // Gold - matches the gold accents in your logo
-        "#C9AE5D", // Brass - a slightly muted gold alternative
-        "#E8ECEF", // Silver Gray - for lighter elements
-        "#FFF8E1"  // Cream - warm alternative to white
+        "#d1dce0", //cool soft blue
+        "#d8cce5", // Light Purple
+        "#cae8e6", // Light purple
+        "#E0F0F5", // Misty Blue
+        "#f0e8df", // Pale Taupe
+        "#DDF2F0"  // Gentle Sea Foam
     };
 
     private Random random = new Random();

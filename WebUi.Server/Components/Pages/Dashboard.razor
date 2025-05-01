@@ -1,49 +1,346 @@
 ﻿@page "/"
 @rendermode InteractiveServer
-@using System.Diagnostics  
-@using WebUi.Server.Components.Pages.TournamentPage
-@using Microsoft.AspNetCore.Components.Web
-@inject TournamentContext DbContext
-@inject NavigationManager NavigationManager
+@using WebUi.Server.Data.Models
+@using Microsoft.EntityFrameworkCore
+@inject WebUi.Server.Data.TournamentContext DbContext
+@inject Blazored.Toast.Services.IToastService ToastService
 
-<PageTitle>Quad Master Dashboard</PageTitle>  
-<h1>Quad Master Dashboard</h1>
+<PageTitle>Tournament Dashboard</PageTitle>
 
-<div style="margin-bottom: 20px;">
-  <button class="btn btn-primary" style="margin-right: 10px;" @onclick="CreateTournament">Create Tournament</button>
-  <button class="btn btn-secondary" @onclick="ManageTournament" disabled="@(_hasTournaments == false)">Manage Tournament</button>
-</div>  
+<style>
+    .dashboard-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .dashboard-card .card-header {
+            padding: 1rem 1.5rem;
+        }
+
+        .dashboard-card .card-body {
+            padding: 1.5rem;
+        }
+
+        .dashboard-card .card-footer {
+            background-color: rgba(0, 0, 0, 0.03);
+            padding: 0.75rem 1.5rem;
+        }
+
+        .dashboard-card .card-title {
+            font-weight: 500;
+            margin-bottom: 0;
+        }
+
+        .dashboard-card .card-text {
+            font-weight: 700;
+            font-size: 2.25rem;
+            margin-bottom: 0;
+        }
+
+        .dashboard-card:hover .card-text {
+            transform: scale(1.05);
+            transition: transform 0.3s ease;
+        }
+
+        .dashboard-card:hover .bi {
+            animation: pulseAnimation 1s infinite;
+        }
+
+    1.05);
+    transition: transform 0.3s ease;
+    }
+
+    .dashboard-card:hover .bi {
+        animation: pulseAnimation 1s infinite;
+    }
+
+    /* Note the double @@ for keyframes to escape the Razor syntax */
+    @@keyframes pulseAnimation {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.2);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .data-card {
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
+        .data-card .card-header {
+            background-color: rgba(0,0,0,0.03);
+            border-bottom: none;
+            padding: 1rem 1.5rem;
+        }
+
+        .data-card .card-body {
+            padding: 1.5rem;
+        }
+</style>
+
+<div class="container-fluid mt-3">
+    <h1 class="mb-4">Tournament Dashboard</h1>
+
+    <div class="row">
+        <!-- Summary Cards -->
+        <div class="col-md-3 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-header" style="background-color: #d1dce0; border: none;">
+                    <h5 class="card-title">Total Tournaments</h5>
+                </div>
+                <div class="card-body">
+                    <h2 class="card-text">@Tournaments.Count</h2>
+                </div>
+                <div class="card-footer d-flex">
+                    <a href="/TournamentPage/Index" class="text-decoration-none text-dark">View Details</a>
+                    <span class="ms-auto">
+                        <i class="bi bi-trophy"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-header" style="background-color: #d8cce5; border: none;">
+                    <h5 class="card-title">Total Players</h5>
+                </div>
+                <div class="card-body">
+                    <h2 class="card-text">@Players.Count</h2>
+                </div>
+                <div class="card-footer d-flex">
+                    <span>View Details</span>
+                    <span class="ms-auto">
+                        <i class="bi bi-people"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-header" style="background-color: #cae8e6; border: none;">
+                    <h5 class="card-title">Upcoming Tournaments</h5>
+                </div>
+                <div class="card-body">
+                    <h2 class="card-text">@UpcomingTournaments.Count</h2>
+                </div>
+                <div class="card-footer d-flex">
+                    <span>View Details</span>
+                    <span class="ms-auto">
+                        <i class="bi bi-calendar-event"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-header" style="background-color: #E0F0F5; border: none;">
+                    <h5 class="card-title">Total Quads</h5>
+                </div>
+                <div class="card-body">
+                    <h2 class="card-text">@TotalQuads</h2>
+                </div>
+                <div class="card-footer d-flex">
+                    <span>View Details</span>
+                    <span class="ms-auto">
+                        <i class="bi bi-grid-3x3"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Tournaments -->
+        <div class="col-md-6 mb-4">
+            <div class="card data-card h-100" style="background-color: #f0e8df;">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Recent Tournaments</h5>
+                </div>
+                <div class="card-body">
+                    @if (RecentTournaments.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Date</th>
+                                        <th>Venue</th>
+                                        <th>Players</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var tournament in RecentTournaments)
+                                    {
+                                        <tr>
+                                            <td>@tournament.Name</td>
+                                            <td>@tournament.Date.ToShortDateString()</td>
+                                            <td>@tournament.VenueName</td>
+                                            <td>@(TournamentPlayerCounts.TryGetValue(tournament.Id, out var count) ? count : 0)</td>
+                                            <td>
+                                                <a href="/TournamentPage/Edit/@tournament.Id" class="btn btn-sm btn-primary">Edit</a>
+                                                <a href="/QuadsPage/@tournament.Id/Quads" class="btn btn-sm btn-info">Quads</a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            No tournaments found. <a href="/TournamentPage/Create">Create a tournament</a> to get started.
+
+
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Player Stats -->
+        <div class="col-md-6 mb-4">
+            <div class="card data-card h-100" style="background-color: #DDF2F0;">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Top Players</h5>
+                </div>
+                <div class="card-body">
+                    @if (TopPlayers.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Ranking</th>
+                                        <th>Tournaments</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var player in TopPlayers)
+                                    {
+                                        <tr>
+                                            <td>@player.FirstName @player.LastName</td>
+                                            <td>@player.Ranking</td>
+                                            <td>@(PlayerTournamentCounts.TryGetValue(player.Id, out var count) ? count : 0)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            No players found in the system.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Quick Actions -->
+        <div class="col-12 mb-4">
+            <div class="card data-card" style="background-color: #E0F0F5;">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="/TournamentPage/Create" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Create Tournament
+                        </a>
+                        <a href="/TournamentPage/Index" class="btn btn-secondary">
+                            <i class="bi bi-list-ul me-2"></i>View All Tournaments
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
-  private bool _hasTournaments = false;
+    private List<Tournament> Tournaments { get; set; } = new List<Tournament>();
+    private List<Tournament> RecentTournaments { get; set; } = new List<Tournament>();
+    private List<Tournament> UpcomingTournaments { get; set; } = new List<Tournament>();
+    private List<Player> Players { get; set; } = new List<Player>();
+    private List<Player> TopPlayers { get; set; } = new List<Player>();
+    private Dictionary<int, int> TournamentPlayerCounts { get; set; } = new Dictionary<int, int>();
+    private Dictionary<int, int> PlayerTournamentCounts { get; set; } = new Dictionary<int, int>();
+    private int TotalQuads { get; set; }
 
-  protected override async Task OnInitializedAsync()
-  {
-    _hasTournaments = await CheckForTournamentsAsync();
-  }
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
 
-  private async Task<bool> CheckForTournamentsAsync()
-  {
-    return await DbContext.Tournaments.AnyAsync();
-  }
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            // Load tournaments
+            Tournaments = await DbContext.Tournaments.ToListAsync();
 
-  private void CreateTournament()
-  {
-    // Logic for creating a tournament  
-    Debug.WriteLine("Create Tournament clicked");
+            // Get recent tournaments (last 5)
+            RecentTournaments = await DbContext.Tournaments
+                .OrderByDescending(t => t.Date)
+                .Take(5)
+                .ToListAsync();
 
-    // Example: Redirect to a tournament creation page or show a modal
-    NavigationManager.NavigateTo("TournamentPage/Create");
-  }  
+            // Get upcoming tournaments
+            var today = DateTime.Today;
+            UpcomingTournaments = await DbContext.Tournaments
+                .Where(t => t.Date >= today)
+                .OrderBy(t => t.Date)
+                .ToListAsync();
 
-  private void ManageTournament()  
-  {  
-    // Logic for managing a tournament  
-    Console.WriteLine("Manage Tournament clicked");
+            // Get all players
+            Players = await DbContext.Players.ToListAsync();
 
-    // CHANGE??-Shawnie changed to Tournament it was tournament
-    var TournamentId = 1;
+            // Get top players by ranking (top 5)
+            TopPlayers = await DbContext.Players
+                .OrderBy(p => p.Ranking)
+                .Take(5)
+                .ToListAsync();
 
-    NavigationManager.NavigateTo($"/QuadsPage/{TournamentId}/Quads");
-  }  
+            // Get tournament player counts
+            var tournamentPlayers = await DbContext.TournamentPlayers.ToListAsync();
+            TournamentPlayerCounts = tournamentPlayers
+                .GroupBy(tp => tp.TournamentId)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            // Get player tournament counts
+            PlayerTournamentCounts = tournamentPlayers
+                .GroupBy(tp => tp.PlayerId)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            // Get total quads
+            TotalQuads = await DbContext.Quads.CountAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading dashboard data: {ex}");
+            ToastService.ShowError("Error loading dashboard data");
+        }
+    }
 }

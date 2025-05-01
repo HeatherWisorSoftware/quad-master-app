@@ -1,457 +1,176 @@
 ﻿@page "/TournamentPage/Create"
-@rendermode InteractiveServer
+@rendermode InteractiveServer 
+@using System.ComponentModel.DataAnnotations
 @using WebUi.Server.Data.Models
-@using Microsoft.EntityFrameworkCore
-@inject WebUi.Server.Data.TournamentContext DbContext
-@inject NavigationManager NavigationManager
-@inject Blazored.Toast.Services.IToastService ToastService
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Create Tournament</PageTitle>
 
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-12">
-            <h2>Create New Tournament</h2>
-            <hr />
-        </div>
-    </div>
+<h1>Create Tournament</h1>
 
-    <EditForm Model="@newTournament" OnValidSubmit="SaveTournamentWithPlayers">
-        <DataAnnotationsValidator />
+@if (!string.IsNullOrEmpty(ValidationErrors))
+{
+  <div class="alert alert-danger">
+    Validation errors: @ValidationErrors
+  </div>
+}
 
-        <div class="row">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        Tournament Details
-                    </div>
-                    <div class="card-body">
-                        <ValidationSummary />
+<h4>Tournament</h4>
+<hr />
+<div class="row">
+  <div class="col-md-4">
+    <EditForm Model="@Tournament" OnValidSubmit="HandleValidSubmit">
+      <DataAnnotationsValidator />
+      <ValidationSummary class="text-danger" />
 
-                        <div class="mb-3">
-                            <label for="name" class="form-label">Tournament Name</label>
-                            <InputText id="name" @bind-Value="newTournament.Name" class="form-control" />
-                            <ValidationMessage For="@(() => newTournament.Name)" />
-                        </div>
+      <div class="form-group mb-3">
+        <label for="name" class="control-label">Name</label>
+        <InputText id="name" @bind-Value="Tournament.Name" class="form-control" />
+        <ValidationMessage For="@(() => Tournament.Name)" class="text-danger" />
+      </div>
 
-                        <div class="mb-3">
-                            <label for="date" class="form-label">Date</label>
-                            <InputDate id="date" @bind-Value="newTournament.Date" class="form-control" />
-                            <ValidationMessage For="@(() => newTournament.Date)" />
-                        </div>
+      <div class="form-group mb-3">
+        <label for="date" class="control-label">Date</label>
+        <InputDate id="date" @bind-Value="Tournament.Date" class="form-control" />
+        <ValidationMessage For="@(() => Tournament.Date)" class="text-danger" />
+      </div>
 
-                        <div class="mb-3">
-                            <label for="venueName" class="form-label">Venue Name</label>
-                            <InputText id="venueName" @bind-Value="newTournament.VenueName" class="form-control" />
-                            <ValidationMessage For="@(() => newTournament.VenueName)" />
-                        </div>
+      <div class="form-group mb-3">
+        <label for="venueName" class="control-label">Venue Name</label>
+        <InputText id="venueName" @bind-Value="Tournament.VenueName" class="form-control" />
+        <ValidationMessage For="@(() => Tournament.VenueName)" class="text-danger" />
+      </div>
 
-                        <div class="mb-3">
-                            <label for="street" class="form-label">Street (Required)</label>
-                            <InputText id="street" @bind-Value="newTournament.Street" class="form-control" />
-                            <ValidationMessage For="@(() => newTournament.Street)" />
-                        </div>
+      <div class="form-group mb-3">
+        <label for="street" class="control-label">Street</label>
+        <InputText id="street" @bind-Value="Tournament.Street" class="form-control" />
+        <ValidationMessage For="@(() => Tournament.Street)" class="text-danger" />
+      </div>
 
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="city" class="form-label">City</label>
-                                <InputText id="city" @bind-Value="newTournament.City" class="form-control" />
-                            </div>
-                            <div class="col-md-3">
-                                <label for="state" class="form-label">State</label>
-                                <InputText id="state" @bind-Value="newTournament.State" class="form-control" />
-                            </div>
-                            <div class="col-md-3">
-                                <label for="postalCode" class="form-label">Postal Code</label>
-                                <InputText id="postalCode" @bind-Value="newTournament.PostalCode" class="form-control" />
-                            </div>
-                        </div>
+      <div class="form-group mb-3">
+        <label for="city" class="control-label">City</label>
+        <InputText id="city" @bind-Value="Tournament.City" class="form-control" />
+        <ValidationMessage For="@(() => Tournament.City)" class="text-danger" />
+      </div>
 
-                        <div class="mb-3">
-                            <label for="country" class="form-label">Country</label>
-                            <InputText id="country" @bind-Value="newTournament.Country" class="form-control" />
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <div class="form-group mb-3">
+        <label for="state" class="control-label">State</label>
+        <InputText id="state" @bind-Value="Tournament.State" class="form-control" />
+        <ValidationMessage For="@(() => Tournament.State)" class="text-danger" />
+      </div>
 
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        Player Selection
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Available Players</label>
-                            <div class="border rounded p-2" style="max-height: 300px; overflow-y: auto;">
-                                @foreach (var player in allPlayers)
-                                {
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input"
-                                               type="checkbox"
-                                               id="player-@player.Id"
-                                               checked="@IsPlayerSelected(player.Id)"
-                                               @onchange="@(e => TogglePlayerSelection(player.Id, e.Value))" />
-                                        <label class="form-check-label" for="player-@player.Id">
-                                            @player.FirstName @player.LastName (Rating: @player.Ranking)
-                                        </label>
-                                    </div>
-                                }
-                            </div>
-                        </div>
+      <div class="form-group mb-3">
+        <label for="postalCode" class="control-label">Postal Code</label>
+        <InputText id="postalCode" @bind-Value="Tournament.PostalCode" class="form-control" />
+        <ValidationMessage For="@(() => Tournament.PostalCode)" class="text-danger" />
+      </div>
 
-                        <div class="mb-3">
-                            <h5>Selected Players (@selectedPlayerIds.Count)</h5>
-                            @if (selectedPlayerIds.Count > 0)
-                            {
-                                <div class="table-responsive border rounded">
-                                    <table class="table table-sm mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Name</th>
-                                                <th>Rating</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (var playerId in selectedPlayerIds)
-                                            {
-                                                var player = allPlayers.FirstOrDefault(p => p.Id == playerId);
-                                                if (player != null)
-                                                {
-                                                    <tr>
-                                                        <td>@player.FirstName @player.LastName</td>
-                                                        <td>@player.Ranking</td>
-                                                    </tr>
-                                                }
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="alert alert-info py-2">No players selected yet.</div>
-                            }
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+      <div class="form-group mb-3">
+        <label class="control-label">Select Players</label>
+        <InputSelect @bind-Value="SelectedPlayerIds" class="form-control select2" multiple="multiple">
+          @foreach (var player in Players)
+          {
+            <option value="@player.Id">@player.Name</option>
+          }
+        </InputSelect>
+      </div>
 
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body d-flex justify-content-between">
-                        <button type="submit" class="btn btn-primary">
-                            Create Tournament with Selected Players
-                        </button>
-                        <button type="button" class="btn btn-secondary" @onclick="NavigateToHome">
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+      <div class="form-group mt-3">
+        <button type="submit" class="btn btn-primary">Create</button>
+
+        @if (Tournament.Id > 0)
+        {
+          <a href="/TournamentPage/Edit?tournamentId=@Tournament.Id" class="btn btn-success ms-2">
+            Manage Tournament
+          </a>
+        }
+      </div>
     </EditForm>
+  </div>
+</div>
 
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card @(isTournamentSaved ? "" : "d-none")">
-                <div class="card-header bg-success text-white">
-                    Tournament Summary (Loaded from Database)
-                </div>
-                <div class="card-body">
-                    <h4>@savedTournament.Name</h4>
-                    <p><strong>Date:</strong> @savedTournament.Date.ToShortDateString()</p>
-                    <p><strong>Venue:</strong> @savedTournament.VenueName</p>
-
-                    <h5>Registered Players</h5>
-                    <button type="button" class="btn btn-sm btn-outline-primary mb-3" @onclick="RefreshFromDatabase">
-                        <i class="bi bi-arrow-clockwise"></i> Refresh Player List
-                    </button>
-
-                    @if (assignedPlayers.Count > 0)
-                    {
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Name</th>
-                                    <th>Rating</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @for (int i = 0; i < assignedPlayers.Count; i++)
-                                {
-                                    var player = assignedPlayers[i];
-                                    <tr>
-                                        <td>@(i + 1)</td>
-                                        <td>@player.FirstName @player.LastName</td>
-                                        <td>@player.Ranking</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    }
-                    else
-                    {
-                        <div class="alert alert-info">
-                            No players assigned to this tournament yet.
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-
-    @if (!string.IsNullOrEmpty(errorMessage))
-    {
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card bg-danger text-white">
-                    <div class="card-header">Error Details</div>
-                    <div class="card-body">
-                        <p>@errorMessage</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
+<div class="mt-3">
+  <a href="/TournamentPage/Index">Back to List</a>
 </div>
 
 @code {
-    private Tournament newTournament = new Tournament
-        {
-            Date = DateTime.Today,
-        // Initialize required fields with default values
-            Street = "",
-            City = "",
-            State = "",
-            PostalCode = ""
-        };
+  //TODO: Shawnie - use our own models
+  public class TournamentModel
+  {
+    public int Id { get; set; }
 
-    private Tournament savedTournament = new Tournament();
-    private List<Player> allPlayers = new List<Player>();
-    private List<int> selectedPlayerIds = new List<int>();
-    private List<Player> assignedPlayers = new List<Player>();
-    private bool isTournamentSaved = false;
-    private string errorMessage = "";
+    [Required(ErrorMessage = "Tournament name is required")]
+    public string Name { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    [Required(ErrorMessage = "Tournament date is required")]
+    public DateTime Date { get; set; } = DateTime.Today;
+
+    [Required(ErrorMessage = "Venue name is required")]
+    public string VenueName { get; set; }
+
+    [Required(ErrorMessage = "Street address is required")]
+    public string Street { get; set; }
+
+    [Required(ErrorMessage = "City is required")]
+    public string City { get; set; }
+
+    [Required(ErrorMessage = "State is required")]
+    public string State { get; set; }
+
+    [Required(ErrorMessage = "Postal code is required")]
+    public string PostalCode { get; set; }
+  }
+
+  public class PlayerModel
+  {
+    public int Id { get; set; }
+    public string Name { get; set; }
+  }
+
+  private TournamentModel Tournament { get; set; } = new TournamentModel();
+  private string[] SelectedPlayerIds { get; set; } = [];
+  private List<PlayerModel> Players { get; set; } = [];
+  private string ValidationErrors { get; set; } = string.Empty;
+
+  protected override async Task OnInitializedAsync()
+  {
+    // Here you would typically fetch players from a service or database
+    // For demo purposes, adding some sample players
+    Players =
+    [
+        new PlayerModel { Id = 1, Name = "Player 1" },
+        new PlayerModel { Id = 2, Name = "Player 2" },
+        new PlayerModel { Id = 3, Name = "Player 3" },
+        new PlayerModel { Id = 4, Name = "Player 4" }
+    ];
+  }
+
+  protected override async Task OnAfterRenderAsync(bool firstRender)
+  {
+    if (firstRender)
     {
-        try
-        {
-            await LoadPlayersAsync();
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Error initializing: {ex.Message}";
-            ToastService.ShowError(errorMessage);
-        }
+      // Initialize Select2 after the component has rendered
+      await JSRuntime.InvokeVoidAsync("initializeSelect2");
     }
+  }
 
-    private async Task LoadPlayersAsync()
+  private async Task HandleValidSubmit()
+  {
+    try
     {
-        try
-        {
-            allPlayers = await DbContext.Players
-                .OrderBy(p => p.Ranking)
-                .ToListAsync();
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Error loading players: {ex.Message}";
-            ToastService.ShowError(errorMessage);
-        }
-    }
+      // Convert selected player IDs to integers
+      var playerIds = SelectedPlayerIds.Select(id => int.Parse(id)).ToList();
 
-    private bool IsPlayerSelected(int playerId)
+      // Here you would typically save the tournament data to your database
+      // For demo purposes, just setting the ID to indicate success
+      Tournament.Id = 1;
+
+      // Navigate to edit page - in a real application, you would use
+      // NavigationManager.NavigateTo($"/TournamentPage/Edit?tournamentId={Tournament.Id}");
+    }
+    catch (Exception ex)
     {
-        return selectedPlayerIds.Contains(playerId);
+      ValidationErrors = $"Error creating tournament: {ex.Message}";
     }
-
-    private void TogglePlayerSelection(int playerId, object? isCheckedObj)
-    {
-        if (isCheckedObj is bool isChecked)
-        {
-            if (isChecked && !selectedPlayerIds.Contains(playerId))
-            {
-                selectedPlayerIds.Add(playerId);
-            }
-            else if (!isChecked && selectedPlayerIds.Contains(playerId))
-            {
-                selectedPlayerIds.Remove(playerId);
-            }
-        }
-    }
-
-    private async Task SaveTournamentWithPlayers()
-    {
-        errorMessage = "";
-
-        // Validation
-        if (string.IsNullOrWhiteSpace(newTournament.Name))
-        {
-            ToastService.ShowWarning("Tournament name is required");
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(newTournament.Street))
-        {
-            ToastService.ShowWarning("Street is required");
-            return;
-        }
-
-        if (selectedPlayerIds.Count == 0)
-        {
-            ToastService.ShowWarning("Please select at least one player");
-            return;
-        }
-
-        try
-        {
-            // Check for null values and set defaults
-            newTournament.City = newTournament.City ?? "";
-            newTournament.State = newTournament.State ?? "";
-            newTournament.PostalCode = newTournament.PostalCode ?? "";
-            newTournament.Country = newTournament.Country ?? "";
-
-            Console.WriteLine("Starting transaction...");
-
-            // Begin a database transaction
-            using (var transaction = await DbContext.Database.BeginTransactionAsync())
-            {
-                try
-                {
-                    // Save the tournament first
-                    DbContext.Tournaments.Add(newTournament);
-                    await DbContext.SaveChangesAsync();
-
-                    Console.WriteLine($"Tournament saved with ID: {newTournament.Id}");
-
-                    // Now create TournamentPlayer records for all selected players
-                    foreach (var playerId in selectedPlayerIds)
-                    {
-                        var tournamentPlayer = new TournamentPlayer
-                            {
-                                TournamentId = newTournament.Id,
-                                PlayerId = playerId
-                            };
-
-                        DbContext.TournamentPlayers.Add(tournamentPlayer);
-                        Console.WriteLine($"Added player ID {playerId} to tournament");
-                    }
-
-                    await DbContext.SaveChangesAsync();
-
-                    // Commit the transaction
-                    await transaction.CommitAsync();
-                    Console.WriteLine("Transaction committed successfully");
-
-                    // Save a copy of the tournament for the summary view
-                    savedTournament = new Tournament
-                        {
-                            Id = newTournament.Id,
-                            Name = newTournament.Name,
-                            Date = newTournament.Date,
-                            VenueName = newTournament.VenueName,
-                            Street = newTournament.Street,
-                            City = newTournament.City,
-                            State = newTournament.State,
-                            PostalCode = newTournament.PostalCode,
-                            Country = newTournament.Country
-                        };
-
-                    // Make sure to set this flag to true and call StateHasChanged
-                    isTournamentSaved = true;
-
-                    // Reload assigned players from database to show in the summary
-                    await LoadAssignedPlayersFromDatabase();
-
-                    ToastService.ShowSuccess("Tournament created successfully with all selected players!");
-                    Console.WriteLine("Success notification shown");
-
-                    // Force UI update
-                    StateHasChanged();
-
-                    // Clear the form for a new tournament
-                    newTournament = new Tournament
-                        {
-                            Date = DateTime.Today,
-                            Street = "",
-                            City = "",
-                            State = "",
-                            PostalCode = ""
-                        };
-                    selectedPlayerIds.Clear();
-                }
-                catch (Exception ex)
-                {
-                    // Rollback the transaction on error
-                    await transaction.RollbackAsync();
-                    Console.WriteLine($"Transaction rolled back due to error: {ex.Message}");
-                    throw new Exception($"Transaction failed: {ex.Message}", ex);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Error: {ex.Message}";
-            if (ex.InnerException != null)
-            {
-                errorMessage += $"\nInner Error: {ex.InnerException.Message}";
-            }
-
-            ToastService.ShowError("Error creating tournament. See details below.");
-            Console.WriteLine(errorMessage);
-        }
-    }
-
-    private async Task LoadAssignedPlayersFromDatabase()
-    {
-        if (savedTournament.Id == 0)
-        {
-            Console.WriteLine("Cannot load players: Tournament ID is 0");
-            return;
-        }
-
-        try
-        {
-            Console.WriteLine($"Loading players for tournament ID: {savedTournament.Id}");
-
-            // Get all TournamentPlayer entries for this tournament with player data included
-            var tournamentPlayers = await DbContext.TournamentPlayers
-                .Where(tp => tp.TournamentId == savedTournament.Id)
-                .Include(tp => tp.Player)
-                .ToListAsync();
-
-            Console.WriteLine($"Found {tournamentPlayers.Count} tournament players in database");
-
-            // Extract the player objects
-            assignedPlayers = tournamentPlayers
-                .Select(tp => tp.Player)
-                .ToList();
-
-            Console.WriteLine($"Assigned players list now has {assignedPlayers.Count} players");
-
-            // Force UI update
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Error loading assigned players: {ex.Message}";
-            ToastService.ShowError(errorMessage);
-        }
-    }
-
-    private void NavigateToHome()
-    {
-        NavigationManager.NavigateTo("/");
-    }
-
-    private async Task RefreshFromDatabase()
-    {
-        await LoadAssignedPlayersFromDatabase();
-        ToastService.ShowInfo("Player list refreshed from database");
-    }
+  }
 }

@@ -4,9 +4,12 @@
     {
         public int TournamentId { get; set; }
         public string TournamentName { get; set; } = string.Empty;  // Add this line
-        public List<Quad> Quads { get; set; } = new List<Quad>();
-        public List<Quad> AllQuads { get; set; } = new List<Quad>(); // All quads for the dropdown
-        public List<TournamentPlayer> UnassignedPlayers { get; set; } = new List<TournamentPlayer>();
+        public List<Quad> Quads { get; set; } = [];
+        public List<Quad> AllQuads { get; set; } = []; // All quads for the dropdown
+        public List<TournamentPlayer> UnassignedPlayers { get; set; } = [];
+        public List<TournamentPlayer> UnassignedPlayersSorted { get; set; } = [];
+        public List<TournamentPlayer> AssignedPlayers { get; set; } = [];
+
         public int CurrentPage { get; set; } = 1;
         public int TotalPages { get; set; } = 1;
         public bool AllowQuadGeneration { get; set; } = true;

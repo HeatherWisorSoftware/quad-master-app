@@ -1,0 +1,55 @@
+﻿@page "/"
+@using Microsoft.EntityFrameworkCore
+@using WebUi.Server.Data
+@rendermode InteractiveServer
+@inject TournamentContext DbContext
+@inject NavigationManager NavigationManager
+
+<PageTitle>Quad Master Dashboard</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudPaper Elevation="3" Class="pa-4">
+        <MudGrid>
+            <MudItem xs="12">
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Primary" 
+                           Class="mr-3"
+                           OnClick="CreateTournament">
+                    Create Tournament
+                </MudButton>
+        
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Secondary" 
+                           OnClick="ManageTournament" 
+                           Disabled="@(!_hasTournaments)">
+                    Manage Tournament
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private bool _hasTournaments = false;
+  
+    protected override async Task OnInitializedAsync()
+    {
+        _hasTournaments = await CheckForTournamentsAsync();
+    }
+  
+    private async Task<bool> CheckForTournamentsAsync()
+    {
+        return await DbContext.Tournaments.AnyAsync();
+    }
+  
+    private void CreateTournament()
+    {
+        NavigationManager.NavigateTo("CreateTournament");
+    }  
+  
+    private void ManageTournament()  
+    {  
+        var TournamentId = 1;
+        NavigationManager.NavigateTo($"/QuadsPage/{TournamentId}/Quads");
+    }  
+}

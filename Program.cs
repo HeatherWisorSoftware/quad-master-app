@@ -1,21 +1,21 @@
-using Blazored.Toast;
 using Microsoft.EntityFrameworkCore;
+using MudBlazor.Services;
+using QuadMasteApp.Components;
 using WebUi.Server.Data;
-using WebUi.Server.Components;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<TournamentContext>(options =>
+    options.UseSqlite("Data Source = tournament.db"));
+
+// Add MudBlazor services
+builder.Services.AddMudServices();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddDbContext<TournamentContext>(options =>
-    options.UseSqlite("Data Source = tournament.db"));
-
-builder.Services.AddBlazoredToast();
-
 var app = builder.Build();
-
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -27,12 +27,11 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseStaticFiles();
+
 app.UseAntiforgery();
 
+app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
-
 
 app.Run();

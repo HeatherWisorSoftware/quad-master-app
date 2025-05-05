@@ -4,25 +4,201 @@
 @rendermode InteractiveServer
 @inject TournamentContext DbContext
 @inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
 
 <PageTitle>Quad Master Dashboard</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <MudPaper Elevation="3" Class="pa-4">
+    <MudText Typo="Typo.h3" Class="mb-4">Tournament Dashboard</MudText>
+
+    <MudPaper Elevation="3" Class="pa-4 mb-4">
         <MudGrid>
             <MudItem xs="12">
-                <MudButton Variant="Variant.Filled" 
-                           Color="Color.Primary" 
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
                            Class="mr-3"
                            OnClick="CreateTournament">
                     Create Tournament
                 </MudButton>
-        
-                <MudButton Variant="Variant.Filled" 
-                           Color="Color.Secondary" 
-                           OnClick="ManageTournament" 
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Secondary"
+                           OnClick="ManageTournament"
                            Disabled="@(!_hasTournaments)">
                     Manage Tournament
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <!-- Summary Cards -->
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2" Class="rounded-lg h-100">
+                <MudCardHeader Class="pb-0" Style="background-color: var(--mud-palette-background-gray);">
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6" Color="Color.Primary">Total Tournaments</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Primary" />
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent Class="pt-0">
+                    <MudText Typo="Typo.h3" Class="mt-3 mb-0" Color="Color.Default">@Tournaments.Count</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/TournamentPage/Index">View Details</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2" Class="rounded-lg h-100">
+                <MudCardHeader Class="pb-0" Style="background-color: var(--mud-palette-background-gray);">
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6" Color="Color.Secondary">Total Players</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Secondary" />
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent Class="pt-0">
+                    <MudText Typo="Typo.h3" Class="mt-3 mb-0" Color="Color.Default">@Players.Count</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Secondary">View Details</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2" Class="rounded-lg h-100">
+                <MudCardHeader Class="pb-0" Style="background-color: var(--mud-palette-background-gray);">
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6" Color="Color.Success">Upcoming Tournaments</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudIcon Icon="@Icons.Material.Filled.Event" Color="Color.Success" />
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent Class="pt-0">
+                    <MudText Typo="Typo.h3" Class="mt-3 mb-0" Color="Color.Default">@UpcomingTournaments.Count</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Success">View Details</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2" Class="rounded-lg h-100">
+                <MudCardHeader Class="pb-0" Style="background-color: var(--mud-palette-background-gray);">
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6" Color="Color.Info">Total Quads</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudIcon Icon="@Icons.Material.Filled.GridView" Color="Color.Info" />
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent Class="pt-0">
+                    <MudText Typo="Typo.h3" Class="mt-3 mb-0" Color="Color.Default">@TotalQuads</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info">View Details</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid Class="mt-4">
+        <!-- Recent Tournaments -->
+        <MudItem xs="12" md="6">
+            <MudPaper Elevation="2" Class="pa-4 h-100">
+                <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-4">Recent Tournaments</MudText>
+                @if (RecentTournaments.Any())
+                {
+                    <MudTable Items="@RecentTournaments" Hover="true" Striped="true" Elevation="0">
+                        <HeaderContent>
+                            <MudTh>Name</MudTh>
+                            <MudTh>Date</MudTh>
+                            <MudTh>Venue</MudTh>
+                            <MudTh>Players</MudTh>
+                            <MudTh>Actions</MudTh>
+                        </HeaderContent>
+
+                        <RowTemplate>
+                            <MudTd DataLabel="Name">@context.Name</MudTd>
+                            <MudTd DataLabel="Date">
+                                @(context.Date.HasValue ? String.Format("{0:MM/dd/yyyy}", context.Date.Value) : "Not set")
+                            </MudTd>
+                            <MudTd DataLabel="Venue">@context.VenueName</MudTd>
+                            <MudTd DataLabel="Players">@(TournamentPlayerCounts.TryGetValue(context.Id, out var count) ? count : 0)</MudTd>
+                            <MudTd DataLabel="Actions">
+                                <MudButtonGroup Variant="Variant.Text" Size="Size.Small">
+                                    <MudButton Href="@($"/TournamentPage/Edit/{context.Id}")"
+                                               Color="Color.Primary">Edit</MudButton>
+                                    <MudButton Href="@($"/QuadsPage/{context.Id}/Quads")"
+                                               Color="Color.Info">Quads</MudButton>
+                                </MudButtonGroup>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Info" Class="mt-3">
+                        No tournaments found. <MudLink Href="/TournamentPage/Create">Create a tournament</MudLink> to get started.
+                    </MudAlert>
+                }
+            </MudPaper>
+        </MudItem>
+
+        <!-- Player Stats -->
+        <MudItem xs="12" md="6">
+            <MudPaper Elevation="2" Class="pa-4 h-100">
+                <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mb-4">Top Players</MudText>
+                @if (TopPlayers.Any())
+                {
+                    <MudTable Items="@TopPlayers" Hover="true" Striped="true" Elevation="0">
+                        <HeaderContent>
+                            <MudTh>Name</MudTh>
+                            <MudTh>Ranking</MudTh>
+                            <MudTh>Tournaments</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.FirstName @context.LastName</MudTd>
+                            <MudTd>@context.Ranking</MudTd>
+                            <MudTd>@(PlayerTournamentCounts.TryGetValue(context.Id, out var count) ? count : 0)</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Info" Class="mt-3">
+                        No players found in the system.
+                    </MudAlert>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <!-- Quick Actions -->
+    <MudPaper Elevation="2" Class="pa-4 mt-4" Style="background-color: var(--mud-palette-background-gray);">
+        <MudText Typo="Typo.h6" Class="mb-2">Quick Actions</MudText>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudButton Href="/TournamentPage/Create"
+                           Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Class="me-2">
+                    Create Tournament
+                </MudButton>
+                <MudButton Href="/TournamentPage/Index"
+                           Variant="Variant.Filled"
+                           Color="Color.Secondary"
+                           StartIcon="@Icons.Material.Filled.List">
+                    View All Tournaments
                 </MudButton>
             </MudItem>
         </MudGrid>
@@ -31,25 +207,84 @@
 
 @code {
     private bool _hasTournaments = false;
-  
+    private List<Tournament> Tournaments { get; set; } = new List<Tournament>();
+    private List<Tournament> RecentTournaments { get; set; } = new List<Tournament>();
+    private List<Tournament> UpcomingTournaments { get; set; } = new List<Tournament>();
+    private List<Player> Players { get; set; } = new List<Player>();
+    private List<Player> TopPlayers { get; set; } = new List<Player>();
+    private Dictionary<int, int> TournamentPlayerCounts { get; set; } = new Dictionary<int, int>();
+    private Dictionary<int, int> PlayerTournamentCounts { get; set; } = new Dictionary<int, int>();
+    private int TotalQuads { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         _hasTournaments = await CheckForTournamentsAsync();
+        await LoadDashboardData();
     }
-  
+
     private async Task<bool> CheckForTournamentsAsync()
     {
         return await DbContext.Tournaments.AnyAsync();
     }
-  
+
     private void CreateTournament()
     {
         NavigationManager.NavigateTo("CreateTournament");
-    }  
-  
-    private void ManageTournament()  
-    {  
+    }
+
+    private void ManageTournament()
+    {
         var TournamentId = 1;
         NavigationManager.NavigateTo($"/QuadsPage/{TournamentId}/Quads");
-    }  
+    }
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            // Load tournaments
+            Tournaments = await DbContext.Tournaments.ToListAsync();
+
+            // Get recent tournaments (last 5)
+            RecentTournaments = await DbContext.Tournaments
+                .OrderByDescending(t => t.Date)
+                .Take(5)
+                .ToListAsync();
+
+            // Get upcoming tournaments
+            var today = DateTime.Today;
+            UpcomingTournaments = await DbContext.Tournaments
+                .Where(t => t.Date >= today)
+                .OrderBy(t => t.Date)
+                .ToListAsync();
+
+            // Get all players
+            Players = await DbContext.Players.ToListAsync();
+
+            // Get top players by ranking (top 5)
+            TopPlayers = await DbContext.Players
+                .OrderBy(p => p.Ranking)
+                .Take(5)
+                .ToListAsync();
+
+            // Get tournament player counts
+            var tournamentPlayers = await DbContext.TournamentPlayers.ToListAsync();
+            TournamentPlayerCounts = tournamentPlayers
+                .GroupBy(tp => tp.TournamentId)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            // Get player tournament counts
+            PlayerTournamentCounts = tournamentPlayers
+                .GroupBy(tp => tp.PlayerId)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            // Get total quads
+            TotalQuads = await DbContext.Quads.CountAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading dashboard data: {ex}");
+            Snackbar.Add("Error loading dashboard data", Severity.Error);
+        }
+    }
 }

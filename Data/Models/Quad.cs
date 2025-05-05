@@ -1,10 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace WebUi.Server.Data.Models
+namespace QuadMasterApp.Data.Models
 {
     public class Quad
     {
-
         public int Id { get; set; }
 
         [Required]
@@ -16,6 +15,9 @@ namespace WebUi.Server.Data.Models
 
         //for pagination (1-4 on page 1, 5-8 on page 2 etc)
         public int QuadGroupNumber { get; set; }
+
+        public string Color { get; set; } = "#ffffcc";
+
 
         //Navigation property for players in this quad
         public List<TournamentPlayer> Players { get; set; } = new List<TournamentPlayer>();

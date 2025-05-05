@@ -1,6 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using QuadMasterApp.Data.Models;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace WebUi.Server.Data.Models
+namespace QuadMasterApp.Data.Models
 {
     public class TournamentPlayer
     {
@@ -15,7 +16,6 @@ namespace WebUi.Server.Data.Models
         public int TournamentId { get; set; }
         public Tournament Tournament { get; set; }
 
-
         //Quad Assignment
         public int? QuadId { get; set; }
         public Quad Quad { get; set; }
@@ -23,9 +23,36 @@ namespace WebUi.Server.Data.Models
         //Helper property to check if player is assigned to a quad
         public bool IsAssigned => QuadId.HasValue;
 
-        // Position property used for drag and drop functionality
-        // This is not stored in the database, just used at runtime
+        // Quad position (1-4, with 1 typically being highest rated)
+        public int? QuadPosition { get; set; }
+
+        // Scores for each round
+        public string Round1Score { get; set; }
+        public string Round2Score { get; set; }
+        public string Round3Score { get; set; }
+
+        // Opponent info
+        public string Round1Opponent { get; set; } // Format: "W v 4" or "B v 2" 
+        public string Round2Opponent { get; set; }
+        public string Round3Opponent { get; set; }
+
+        // Table numbers
+        public int? Round1Table { get; set; }
+        public int? Round2Table { get; set; }
+        public int? Round3Table { get; set; }
+
+        // Total score calculation
         [NotMapped]
-        public string PlayerIdentifier { get; set; }
+        public decimal TotalScore
+        {
+            get
+            {
+                decimal total = 0;
+                if (decimal.TryParse(Round1Score, out decimal r1)) total += r1;
+                if (decimal.TryParse(Round2Score, out decimal r2)) total += r2;
+                if (decimal.TryParse(Round3Score, out decimal r3)) total += r3;
+                return total;
+            }
+        }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.ComponentModel.DataAnnotations;
 
-namespace WebUi.Server.Data.Models
+namespace QuadMasterApp.Data.Models
 {
     public class Tournament
     {

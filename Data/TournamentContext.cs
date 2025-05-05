@@ -1,11 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
-using WebUi.Server.Data.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using QuadMasterApp.Data.Models;
 
 
 // manages database connection and coordinates data operations.
 // We could have other database connections here in the future
-namespace WebUi.Server.Data
+namespace QuadMasterApp.Data
 {
     public class TournamentContext :DbContext
     {
@@ -15,7 +14,6 @@ namespace WebUi.Server.Data
         public DbSet<Player> Players { get; set; }
         public DbSet<Tournament> Tournaments { get; set; }
         public DbSet<TournamentPlayer> TournamentPlayers { get; set; }
-
         // DbSet for Quads
         public DbSet<Quad>Quads { get; set; }
         //override base method from DBContext 

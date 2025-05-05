@@ -1,22 +1,34 @@
-﻿@page "/QuadsPage"
-@using WebUi.Server.Data.Models
+﻿@page "/QuadsPage/{TournamentId:int}"
+@using System.Reflection
+@using Microsoft.EntityFrameworkCore
+@using QuadMasterApp.Data
+@using QuadMasterApp.Data.Models
 @inject NavigationManager NavigationManager
+@inject TournamentContext DbContext
 
-<h1>Tournament Quads: @TournamentName</h1>
+<h1>Tournament Quads: @ViewModel?.TournamentName</h1>
 
 <div class="d-flex flex-wrap justify-content-between mb-4">
-  <MudSelect T="int" Label="Select Quad Group" ValueChanged="@OnPageChanged" Value="@CurrentPage">
-    @for (int i = 1; i <= TotalPages; i++)
-    {
-      <MudSelectItem Value="@i">Group @i</MudSelectItem>
-    }
-  </MudSelect>
+  <!-- MudBlazor Pagination Controls -->
+  <div class="pagination-controls d-flex align-items-center">
+    <MudPagination Variant="Variant.Outlined"
+                   Count="@TotalPages"
+                   SelectedChanged="OnPageChanged"
+                   Selected="@CurrentPage"
+                   Color="Color.Primary"
+                   Size="Size.Medium"
+                   Class="my-2" />
+
+    <MudText Typo="Typo.body2" Class="ml-4">
+      Group @CurrentPage of @TotalPages | Total Quads: @(ViewModel?.AllQuads?.Count ?? 0)
+    </MudText>
+  </div>
 
   <div>
     <MudButton Variant="Variant.Filled"
                Color="Color.Primary"
                OnClick="GenerateQuads"
-               Disabled="@(!AllowQuadGeneration)">
+               Disabled="@(!ViewModel.AllowQuadGeneration)">
       Generate Quads
     </MudButton>
     <MudButton Variant="Variant.Outlined"
@@ -27,9 +39,11 @@
   </div>
 </div>
 
+<!-- Pagination summary is now included with the pagination controls -->
+
 <div class="quad-container">
   <MudDropContainer T="TournamentPlayer"
-                    Items="@UnassignedPlayers"
+                    Items="@ViewModel.UnassignedPlayers"
                     ItemsSelector="@((player, quadId) => player.QuadId?.ToString() == quadId)"
                     ItemDropped="PlayerAssigned"
                     Class="d-flex flex-column flex-grow-1">
@@ -37,12 +51,15 @@
       <div class="d-flex">
         <div class="quads-section">
           <div class="d-flex flex-wrap">
-            @for (int i = 0; i < DisplayedQuads.Count; i++)
+            @for (var i = 0; i < DisplayedQuads.Count; i++)
             {
               var quad = DisplayedQuads[i];
               var quadId = quad.Id.ToString();
+              var quadColor = GetQuadColor(quad);
 
-              <MudPaper Class="quad-paper ma-2" Elevation="3">
+              <MudPaper Class="quad-paper ma-2" 
+                        Elevation="3"
+                        Style="@($"--quad-color: {quadColor};")">
                 <div class="quad-table">
                   <div class="quad-side">
                     <div class="quad-identifier">
@@ -111,7 +128,7 @@
 
           <div class="total-cell">
             <span class="total-score">@GetTotalScore(context)</span>
-            @if (AllowPlayerRemoval)
+            @if (ViewModel.AllowPlayerRemoval)
             {
               <MudIconButton Icon="@Icons.Material.Filled.Close"
                              Size="Size.Small"
@@ -155,8 +172,8 @@
 
   .quad-paper {
     width: 48%;
-    margin-bottom: 16px;
-    background-color: #ffffcc;
+    margin: 0 1% 16px 1%;
+    background-color: var(--quad-color, #ffffcc);
     border: 1px solid #ddd;
     display: flex;
     flex-direction: column;
@@ -171,8 +188,8 @@
   }
 
   .quad-side {
-    width: 60px;
-    background-color: #ffffcc;
+    width: 70px;
+    background-color: var(--quad-color, #ffffcc);
     border-right: 1px solid #ddd;
     display: flex;
     align-items: center;
@@ -185,6 +202,8 @@
     font-size: 24px;
     font-weight: bold;
     text-align: center;
+    align-items: center;
+    justify-content: center;
     height: 100%;
     display: flex;
     align-items: center;
@@ -207,6 +226,9 @@
     text-align: center;
     font-weight: bold;
     border-right: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .player-header {
@@ -256,6 +278,7 @@
     display: flex;
     flex-direction: column;
     border-right: 1px solid #ddd;
+    margin: 0;
   }
 
   .opponent {
@@ -270,7 +293,7 @@
     text-align: center;
     font-size: 18px;
     font-weight: bold;
-    background-color: #ffffcc;
+    background-color: var(--quad-color, #ffffcc);
     height: 40px;
     display: flex;
     align-items: center;
@@ -341,17 +364,40 @@
   .player-info {
     flex-grow: 1;
   }
+
+  /* Pagination styles */
+  .pagination-controls {
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+  }
+
+  .mud-pagination {
+    margin-right: 16px;
+  }
 </style>
 
 <style>
   /* Media queries need to be in a separate style block in Blazor */
-  @@media (max-width: 1200px) {
-    .quads-section {
-      flex: 2;
+  @@media (max-width: 1400px) {
+    .quad-paper {
+      width: 31%;
     }
+  }
+
+  @@media (max-width: 1200px) {
+/*     .quads-section {
+      flex: 3;
+    } */
 
     .quad-paper {
-      width: 100%;
+      width: 48%;
+    }
+  }
+
+  @@media (max-width:1080px) {
+    .quad-paper {
+      width: width: 48%; /* Maintain 2 quads per row */
     }
   }
 
@@ -360,131 +406,142 @@
     .d-flex {
       flex-direction: column;
     }
+  }
 
-    .quads-section {
-      width: 100%;
+  .quads-section {
+    width: 100%;
+  }
+
+  .unassigned-paper {
+    width: 100%;
+    max-width: none;
+    margin-top: 16px !important;
+  }
+
+  /* Responsive pagination */
+  .pagination-controls {
+    flex-direction: column;
+    align-items: start;
+  }
+
+    .pagination-controls .mud-pagination {
+      margin-bottom: 12px;
+      margin-right: 0;
     }
 
-    .unassigned-paper {
-      width: 100%;
-      max-width: none;
-      margin-top: 16px !important;
+    .pagination-controls .mud-typography {
+      margin-left: 0;
     }
+
   }
 </style>
 
 @code {
-  [Parameter]
-  public int TournamentId { get; set; }
+  [Parameter] public int TournamentId { get; set; }
 
-  public string TournamentName { get; set; } = "Tournament Name";
-  public List<Quad> AllQuads { get; set; } = new();
+  private QuadsViewModel ViewModel { get; set; } = new QuadsViewModel();
+
+  // Properties from the ViewModel
+  private string TournamentName => ViewModel?.TournamentName ?? "Tournament Name";
   public List<Quad> DisplayedQuads { get; set; } = new();
-  public List<TournamentPlayer> UnassignedPlayers { get; set; } = new();
-  public List<TournamentPlayer> AssignedPlayers { get; set; } = new();
+  private int CurrentPage { get; set; } = 1;
+  private int TotalPages => ViewModel?.TotalPages ?? 1;
 
-  public int CurrentPage { get; set; } = 1;
-  public int TotalPages { get; set; } = 1;
-  public bool AllowQuadGeneration { get; set; } = true;
-  public bool AllowPlayerRemoval { get; set; } = true;
-  public bool AllowPlayerAssignment { get; set; } = true;
-  public bool AreAllQuadsFull { get; set; } = false;
+  // Dictionary to store match results - will be replaced with data from the database
+  private Dictionary<string, string> MatchResults { get; } = new();
 
-  // Dictionary to store match results
-  private Dictionary<string, string> MatchResults { get; set; } = new();
-
-  // Mock data for demonstration
-  protected override void OnInitialized()
+  protected override async Task OnInitializedAsync()
   {
-    // In a real application, you would fetch this data from your service
-    TournamentName = "Chess Masters 2025";
-
-    // Create sample players
-    var players = new List<Player>
-        {
-            new Player { Id = 1, FirstName = "ZHANG", LastName = "LOUIS", Ranking = 1959, Email = "louis.zhang@example.com" },
-            new Player { Id = 2, FirstName = "M REED JR.", LastName = "JONAS", Ranking = 1959, Email = "jonas.reed@example.com" },
-            new Player { Id = 3, FirstName = "CHIEH", LastName = "TING", Ranking = 1927, Email = "ting.chieh@example.com" },
-            new Player { Id = 4, FirstName = "ALEKSA MICIC", LastName = "FM", Ranking = 2278, Email = "aleksa.micic@example.com" },
-            new Player { Id = 5, FirstName = "WANG", LastName = "DANIEL", Ranking = 2100, Email = "daniel.wang@example.com" },
-            new Player { Id = 6, FirstName = "SMITH", LastName = "JOHN", Ranking = 1800, Email = "john.smith@example.com" },
-            new Player { Id = 7, FirstName = "JOHNSON", LastName = "ROBERT", Ranking = 2050, Email = "robert.johnson@example.com" },
-            new Player { Id = 8, FirstName = "LEE", LastName = "ANDREW", Ranking = 1750, Email = "andrew.lee@example.com" }
-        };
-
-    // Create sample quads
-    AllQuads = new List<Quad>
-        {
-            new Quad { Id = 1, Title = "Quad 1", TournamentId = TournamentId, QuadGroupNumber = 1 },
-            new Quad { Id = 2, Title = "Quad 2", TournamentId = TournamentId, QuadGroupNumber = 1 }
-        };
-
-    // Create tournament players
-    var tournamentPlayers = new List<TournamentPlayer>();
-    for (int i = 0; i < players.Count; i++)
-    {
-      var player = players[i];
-      var tp = new TournamentPlayer
-        {
-          Id = i + 1,
-          PlayerId = player.Id,
-          Player = player,
-          TournamentId = TournamentId,
-          QuadId = i < 4 ? 1 : (i < 8 ? 2 : null),
-          PlayerIdentifier = $"player_{player.Id}"
-        };
-      tournamentPlayers.Add(tp);
-    }
-
-    AssignedPlayers = tournamentPlayers.Where(p => p.QuadId.HasValue).ToList();
-    UnassignedPlayers = tournamentPlayers.ToList(); // All players available for drag & drop
-
-    // Update quad players
-    foreach (var quad in AllQuads)
-    {
-      quad.Players = tournamentPlayers.Where(p => p.QuadId == quad.Id).ToList();
-    }
-
-    // Apply initial sorting to each quad based on player rankings
-    foreach (var quad in AllQuads)
-    {
-      RenumberPlayersInQuad(quad.Id);
-    }
-
-    // Set displayed quads for current page
-    DisplayedQuads = AllQuads.Where(q => q.QuadGroupNumber == CurrentPage).ToList();
-
-    // Set total pages based on quad groups
-    TotalPages = AllQuads.Select(q => q.QuadGroupNumber).DefaultIfEmpty(1).Max();
-
-    // Initialize match results (would come from a database in a real app)
-    InitializeMatchResults();
+    await LoadData();
   }
 
-  private void InitializeMatchResults()
+  protected override async Task OnParametersSetAsync()
   {
-    // This would typically come from your database
-    // Format: "quadId-playerId-round" -> "result"
+    // Reload data if the tournament ID changes
+    await LoadData();
+  }
 
-    // Example match results for Quad 1
-    MatchResults.Add("1-1-1", "0"); // Player 1, Round 1
-    MatchResults.Add("1-1-2", "");  // Player 1, Round 2
-    MatchResults.Add("1-1-3", "");  // Player 1, Round 3
+  private async Task LoadData()
+  {
+      var tournament = await DbContext.Tournaments
+          .Include(t => t.Quads)
+          .FirstOrDefaultAsync(t => t.Id == TournamentId);
 
-    MatchResults.Add("1-2-1", "0"); // Player 2, Round 1
-    MatchResults.Add("1-2-2", "");  // Player 2, Round 2
-    MatchResults.Add("1-2-3", "");  // Player 2, Round 3
+      if (tournament == null)
+      {
+          NavigationManager.NavigateTo("/tournaments");
+          return;
+      }
 
-    MatchResults.Add("1-3-1", "1"); // Player 3, Round 1
-    MatchResults.Add("1-3-2", "");  // Player 3, Round 2
-    MatchResults.Add("1-3-3", "");  // Player 3, Round 3
+      // Get all quads for this tournament
+      var allQuads = await DbContext.Quads
+          .Where(q => q.TournamentId == TournamentId)
+          .OrderBy(q => q.QuadGroupNumber)
+          .ToListAsync();
 
-    MatchResults.Add("1-4-1", "1"); // Player 4, Round 1
-    MatchResults.Add("1-4-2", "");  // Player 4, Round 2
-    MatchResults.Add("1-4-3", "");  // Player 4, Round 3
+      // Include players in the quads
+      foreach (var quad in allQuads)
+      {
+          quad.Players = await DbContext.TournamentPlayers
+              .Include(tp => tp.Player)
+              .Where(tp => tp.QuadId == quad.Id)
+              // .OrderByDescending(tp => tp.Player.Ranking) // Order by ranking
+              .ToListAsync();
+      }
 
-    // Example match results for Quad 2
-    // Add similar entries for Quad 2 players
+      // Get unassigned players
+      var unassignedPlayers = await DbContext.TournamentPlayers
+          .Include(tp => tp.Player)
+          .Where(tp => tp.TournamentId == TournamentId && !tp.QuadId.HasValue)
+          .OrderByDescending(tp => tp.Player.Ranking) // Order by ranking
+          .ToListAsync();
+
+      // Set displayed quads for current page
+      var pageSize = 4; // 4 quads per page
+      var skip = (CurrentPage - 1) * pageSize;
+      DisplayedQuads = allQuads
+          .OrderBy(q => q.QuadGroupNumber)
+          .Skip(skip)
+          .Take(pageSize)
+          .ToList();
+
+      // Update ViewModel
+      ViewModel = new QuadsViewModel
+      {
+          TournamentId = TournamentId,
+          TournamentName = tournament.Name,
+          Quads = allQuads,
+          AllQuads = allQuads,
+          UnassignedPlayers = unassignedPlayers.Concat(DisplayedQuads.SelectMany(q => q.Players)).ToList(),
+          CurrentPage = CurrentPage,
+          TotalPages = (int)Math.Ceiling(allQuads.Count / 4.0), // 4 quads per page
+          AllowQuadGeneration = true,
+          AllowPlayerRemoval = true,
+          AllowPlayerAssignment = true,
+          AreAllQuadsFull = allQuads.Count > 0 && allQuads.All(q => q.Players.Count == 4)
+      };
+
+
+
+      await LoadMatchResults();
+  }
+
+  private async Task LoadMatchResults()
+  {
+    // Clear existing match results
+    MatchResults.Clear();
+
+    // For each displayed quad
+    foreach (var quad in DisplayedQuads)
+    {
+      foreach (var player in quad.Players)
+      {
+        // Load scores from database
+        MatchResults[$"{quad.Id}-{player.Id}-1"] = player.Round1Score ?? "";
+        MatchResults[$"{quad.Id}-{player.Id}-2"] = player.Round2Score ?? "";
+        MatchResults[$"{quad.Id}-{player.Id}-3"] = player.Round3Score ?? "";
+      }
+    }
   }
 
   private string GetPlayerPositionInQuad(TournamentPlayer player)
@@ -492,7 +549,11 @@
     if (!player.QuadId.HasValue)
       return "";
 
-    var quad = AllQuads.FirstOrDefault(q => q.Id == player.QuadId.Value);
+    // Use the position from the database if available
+    if (player.QuadPosition.HasValue)
+      return player.QuadPosition.Value.ToString();
+
+    var quad = DisplayedQuads.FirstOrDefault(q => q.Id == player.QuadId.Value);
     if (quad == null)
       return "";
 
@@ -503,27 +564,47 @@
 
   private string[] GetQuadOpponents(TournamentPlayer player)
   {
-    // This would come from your pairing algorithm in a real application
-    // For now, we'll use the predefined pairings shown in your image
-
     if (!player.QuadId.HasValue)
       return new[] { "", "", "" };
 
+    // Use database values if available
+    var opponents = new string[3];
+
+    if (!string.IsNullOrEmpty(player.Round1Opponent))
+      opponents[0] = player.Round1Opponent;
+    else
+      opponents[0] = GetDefaultOpponent(player, 1);
+
+    if (!string.IsNullOrEmpty(player.Round2Opponent))
+      opponents[1] = player.Round2Opponent;
+    else
+      opponents[1] = GetDefaultOpponent(player, 2);
+
+    if (!string.IsNullOrEmpty(player.Round3Opponent))
+      opponents[2] = player.Round3Opponent;
+    else
+      opponents[2] = GetDefaultOpponent(player, 3);
+
+    return opponents;
+  }
+
+  private string GetDefaultOpponent(TournamentPlayer player, int round)
+  {
     var position = int.Parse(GetPlayerPositionInQuad(player));
 
     // Based on the standard pairing pattern in a quad
     switch (position)
     {
-      case 1: // Based on your image: W v 4, B v 3, W v 2
-        return new[] { "W v 4", "B v 3", "W v 2" };
-      case 2: // Based on your image: W v 3, B v 4, B v 1
-        return new[] { "W v 3", "B v 4", "B v 1" };
-      case 3: // Based on your image: B v 2, W v 1, W v 4
-        return new[] { "B v 2", "W v 1", "W v 4" };
-      case 4: // Based on your image: B v 1, W v 2, B v 3
-        return new[] { "B v 1", "W v 2", "B v 3" };
+      case 1: // W v 4, B v 3, W v 2
+        return round == 1 ? "W v 4" : round == 2 ? "B v 3" : "W v 2";
+      case 2: // W v 3, B v 4, B v 1
+        return round == 1 ? "W v 3" : round == 2 ? "B v 4" : "B v 1";
+      case 3: // B v 2, W v 1, W v 4
+        return round == 1 ? "B v 2" : round == 2 ? "W v 1" : "W v 4";
+      case 4: // B v 1, W v 2, B v 3
+        return round == 1 ? "B v 1" : round == 2 ? "W v 2" : "B v 3";
       default:
-        return new[] { "", "", "" };
+        return "";
     }
   }
 
@@ -532,9 +613,9 @@
     if (!player.QuadId.HasValue)
       return "";
 
-    string key = $"{player.QuadId}-{player.Id}-{round}";
+    var key = $"{player.QuadId}-{player.Id}-{round}";
 
-    if (MatchResults.TryGetValue(key, out string result))
+    if (MatchResults.TryGetValue(key, out var result))
       return result;
 
     return "";
@@ -545,12 +626,16 @@
     if (!player.QuadId.HasValue)
       return "";
 
+    // Use the calculated property if available
+    if (player.TotalScore > 0)
+      return player.TotalScore.ToString();
+
     double total = 0;
 
-    for (int i = 1; i <= 3; i++)
+    for (var i = 1; i <= 3; i++)
     {
-      string score = GetScore(player, i);
-      if (double.TryParse(score, out double value))
+      var score = GetScore(player, i);
+      if (double.TryParse(score, out var value))
       {
         total += value;
       }
@@ -561,41 +646,48 @@
 
   private int GetTableNumber(TournamentPlayer player, int round)
   {
-    // In a real application, this would come from your database
-    // For demo purposes, let's generate some table numbers
+    // Use values from the database if available
+    if (round == 1 && player.Round1Table.HasValue)
+      return player.Round1Table.Value;
+    else if (round == 2 && player.Round2Table.HasValue)
+      return player.Round2Table.Value;
+    else if (round == 3 && player.Round3Table.HasValue)
+      return player.Round3Table.Value;
+
+    // Fall back to calculated values
     var position = int.Parse(GetPlayerPositionInQuad(player));
 
     // Based on your image
     switch (position)
     {
       case 1:
-        return round == 1 ? 1 : (round == 2 ? 1 : 1);
+        return round == 1 ? 1 : round == 2 ? 1 : 1;
       case 2:
-        return round == 1 ? 2 : (round == 2 ? 2 : 1);
+        return round == 1 ? 2 : round == 2 ? 2 : 1;
       case 3:
-        return round == 1 ? 2 : (round == 2 ? 1 : 2);
+        return round == 1 ? 2 : round == 2 ? 1 : 2;
       case 4:
-        return round == 1 ? 1 : (round == 2 ? 2 : 2);
+        return round == 1 ? 1 : round == 2 ? 2 : 2;
       default:
         return 1;
     }
   }
 
-  private void PlayerAssigned(MudItemDropInfo<TournamentPlayer> dropInfo)
+  private async Task PlayerAssigned(MudItemDropInfo<TournamentPlayer> dropInfo)
   {
     // Get the player and update their QuadId
     var player = dropInfo.Item;
-    int? oldQuadId = player.QuadId;
+    var oldQuadId = player.QuadId;
 
     // If dropped in unassigned zone
     if (dropInfo.DropzoneIdentifier == "unassigned")
     {
       player.QuadId = null;
     }
-    else if (int.TryParse(dropInfo.DropzoneIdentifier, out int quadId))
+    else if (int.TryParse(dropInfo.DropzoneIdentifier, out var quadId))
     {
       // If dropped in a quad
-      var quad = AllQuads.FirstOrDefault(q => q.Id == quadId);
+      var quad = DisplayedQuads.FirstOrDefault(q => q.Id == quadId);
       if (quad != null && (quad.Players.Count < 4 || quad.Players.Contains(player)))
       {
         player.QuadId = quadId;
@@ -608,136 +700,256 @@
       }
     }
 
-    // Update assigned and unassigned player lists
-    UpdatePlayerLists();
+    // Update the player in the database
+    DbContext.TournamentPlayers.Update(player);
+    await DbContext.SaveChangesAsync();
 
     // Renumber players after assignment changes
     if (oldQuadId.HasValue)
     {
-      RenumberPlayersInQuad(oldQuadId);
+      await RenumberPlayersInQuad(oldQuadId.Value);
     }
 
     if (player.QuadId.HasValue)
     {
-      RenumberPlayersInQuad(player.QuadId);
+      await RenumberPlayersInQuad(player.QuadId.Value);
     }
 
-    // Check if all quads are full
-    AreAllQuadsFull = AllQuads.All(q => q.Players.Count >= 4);
-
-    StateHasChanged();
+    // Reload data
+    await LoadData();
   }
 
-  private void RemovePlayerFromQuad(TournamentPlayer player)
+  private async Task RemovePlayerFromQuad(TournamentPlayer player)
   {
     if (player.QuadId.HasValue)
     {
       var quadId = player.QuadId.Value;
-      var quad = AllQuads.FirstOrDefault(q => q.Id == quadId);
-      if (quad != null)
-      {
-        quad.Players.Remove(player);
-      }
 
+      // Remove from quad
       player.QuadId = null;
-      UpdatePlayerLists();
+      player.QuadPosition = null;
 
-      // Renumber players after removal
-      RenumberPlayersInQuad(quadId);
+      // Clear match data
+      player.Round1Score = null;
+      player.Round2Score = null;
+      player.Round3Score = null;
+      player.Round1Opponent = null;
+      player.Round2Opponent = null;
+      player.Round3Opponent = null;
+      player.Round1Table = null;
+      player.Round2Table = null;
+      player.Round3Table = null;
 
-      // Update full quads status
-      AreAllQuadsFull = AllQuads.All(q => q.Players.Count >= 4);
+      // Update in database
+      DbContext.TournamentPlayers.Update(player);
+      await DbContext.SaveChangesAsync();
 
-      StateHasChanged();
+      // Renumber remaining players
+      await RenumberPlayersInQuad(quadId);
+
+      // Reload data
+      await LoadData();
     }
   }
 
-  private void RenumberPlayersInQuad(int? quadId)
+  private async Task RenumberPlayersInQuad(int quadId)
   {
-    if (!quadId.HasValue)
-      return;
+    var quad = await DbContext.Quads
+        .Include(q => q.Players)
+        .ThenInclude(p => p.Player)
+        .FirstOrDefaultAsync(q => q.Id == quadId);
 
-    var quad = AllQuads.FirstOrDefault(q => q.Id == quadId.Value);
     if (quad == null)
       return;
 
-    // Log current order for debugging
-    Console.WriteLine($"Before sort - Quad {quadId}: {string.Join(", ", quad.Players.Select(p => $"{p.Player.LastName} ({p.Player.Ranking})"))}");
+    // Get players in this quad ordered by ranking
+    var sortedPlayers = quad.Players
+        .OrderByDescending(p => p.Player.Ranking)
+        .ToList();
 
-    // Sort players by ranking (descending)
-    var sortedPlayers = quad.Players.OrderByDescending(p => p.PlayerId).ToList();
-
-    // Log sorted order for debugging
-    Console.WriteLine($"After sort - Quad {quadId}: {string.Join(", ", sortedPlayers.Select(p => $"{p.Player.LastName} ({p.Player.Ranking})"))}");
-
-    // Clear and repopulate the players collection with the sorted list
-    quad.Players.Clear();
-    foreach (var player in sortedPlayers)
+    // Assign positions
+    for (int i = 0; i < sortedPlayers.Count; i++)
     {
-      quad.Players.Add(player);
+      var player = sortedPlayers[i];
+      player.QuadPosition = i + 1;
+
+      // Update opponent info based on standard quad pairings
+      UpdatePlayerMatchInfo(player);
+
+      DbContext.TournamentPlayers.Update(player);
     }
 
-    // Re-generate the match pairings and table assignments
-    RegenerateMatchPairings(quad);
+    await DbContext.SaveChangesAsync();
   }
 
-  private void RegenerateMatchPairings(Quad quad)
+  private void UpdatePlayerMatchInfo(TournamentPlayer player)
   {
-    // This method would update the match pairings and table assignments
-    // based on the new player positions in the quad
-
-    // In a real application, you would implement a pairing algorithm here
-    // For now, we'll reset any existing results when the positions change
-
-    foreach (var player in quad.Players)
+    // Only update if not already set
+    if (player.QuadPosition.HasValue)
     {
-      // Clear existing results that might be invalid after renumbering
-      for (int round = 1; round <= 3; round++)
+      var position = player.QuadPosition.Value;
+
+      // Set opponents based on standard quad pairings if not already set
+      if (string.IsNullOrEmpty(player.Round1Opponent))
       {
-        string key = $"{quad.Id}-{player.Id}-{round}";
-        if (MatchResults.ContainsKey(key))
+        switch (position)
         {
-          MatchResults[key] = ""; // Clear the result
+          case 1:
+            player.Round1Opponent = "W v 4";
+            player.Round2Opponent = "B v 3";
+            player.Round3Opponent = "W v 2";
+            break;
+          case 2:
+            player.Round1Opponent = "W v 3";
+            player.Round2Opponent = "B v 4";
+            player.Round3Opponent = "B v 1";
+            break;
+          case 3:
+            player.Round1Opponent = "B v 2";
+            player.Round2Opponent = "W v 1";
+            player.Round3Opponent = "W v 4";
+            break;
+          case 4:
+            player.Round1Opponent = "B v 1";
+            player.Round2Opponent = "W v 2";
+            player.Round3Opponent = "B v 3";
+            break;
+        }
+      }
+
+      // Set table numbers if not already set
+      if (!player.Round1Table.HasValue)
+      {
+        switch (position)
+        {
+          case 1:
+            player.Round1Table = 1;
+            player.Round2Table = 1;
+            player.Round3Table = 1;
+            break;
+          case 2:
+            player.Round1Table = 2;
+            player.Round2Table = 2;
+            player.Round3Table = 1;
+            break;
+          case 3:
+            player.Round1Table = 2;
+            player.Round2Table = 1;
+            player.Round3Table = 2;
+            break;
+          case 4:
+            player.Round1Table = 1;
+            player.Round2Table = 2;
+            player.Round3Table = 2;
+            break;
         }
       }
     }
-
-    // Update the MatchResults dictionary with new pairings if needed
-    // This would typically come from your database or pairing algorithm
   }
 
-  private void OnPageChanged(int page)
+  private async Task OnPageChanged(int page)
   {
     CurrentPage = page;
-    DisplayedQuads = AllQuads.Where(q => q.QuadGroupNumber == CurrentPage).ToList();
-    StateHasChanged();
+    await LoadData();
   }
 
-  private void GenerateQuads()
+  private async Task GenerateQuads()
   {
-    // This would typically call a service method to generate quads
-    // For this demo, we'll just show a message
-    // Additional implementation required for actual quad generation logic
-  }
-
-  private void UpdatePlayerLists()
-  {
-    // Update the lists after a player is moved
-    AssignedPlayers = UnassignedPlayers.Where(p => p.QuadId.HasValue).ToList();
-
-    // Ensure each quad's Players collection is correctly populated
-    foreach (var quad in AllQuads)
+    try
     {
-      // First update the players in each quad to match the current state
-      quad.Players = UnassignedPlayers.Where(p => p.QuadId == quad.Id).ToList();
+      // Get all unassigned players
+      var unassignedPlayers = await DbContext.TournamentPlayers
+          .Include(tp => tp.Player)
+          .Where(tp => tp.TournamentId == TournamentId && !tp.QuadId.HasValue)
+          .OrderByDescending(tp => tp.Player.Ranking)
+          .ToListAsync();
 
-      // Now sort those players by ranking
-      var sortedPlayers = quad.Players.OrderByDescending(p => p.Player.Ranking).ToList();
-      quad.Players.Clear();
-      foreach (var player in sortedPlayers)
+      if (unassignedPlayers.Count == 0)
       {
-        quad.Players.Add(player);
+        // No players to assign
+        return;
       }
+
+      // Find the highest quad group number for this tournament
+      int highestGroupNumber = 0;
+
+      // Use a safer approach to get the max group number
+      var maxGroupQuery = await DbContext.Quads
+          .Where(q => q.TournamentId == TournamentId)
+          .Select(q => q.QuadGroupNumber)
+          .ToListAsync();
+
+      if (maxGroupQuery.Any())
+      {
+        highestGroupNumber = maxGroupQuery.Max();
+      }
+
+      // Create quads with 4 players each
+      int quadCounter = 0;
+      int playerCounter = 0;
+      Quad currentQuad = null;
+
+      while (playerCounter < unassignedPlayers.Count)
+      {
+        // Create a new quad for every 4 players
+        if (playerCounter % 4 == 0)
+        {
+          quadCounter++;
+          currentQuad = new Quad
+            {
+              Title = $"Quad {quadCounter}",
+              TournamentId = TournamentId,
+              QuadGroupNumber = highestGroupNumber + (int)Math.Ceiling(quadCounter / 4.0) // 4 quads per group
+            };
+
+          DbContext.Quads.Add(currentQuad);
+          await DbContext.SaveChangesAsync(); // Save to get Id
+        }
+
+        // Assign player to the quad
+        var player = unassignedPlayers[playerCounter];
+        player.QuadId = currentQuad.Id;
+        player.QuadPosition = (playerCounter % 4) + 1;
+
+        // Initialize required string fields that cannot be null
+        player.Round1Score = player.Round1Score ?? "";
+        player.Round2Score = player.Round2Score ?? "";
+        player.Round3Score = player.Round3Score ?? "";
+        player.Round1Opponent = player.Round1Opponent ?? "";
+        player.Round2Opponent = player.Round2Opponent ?? "";
+        player.Round3Opponent = player.Round3Opponent ?? "";
+
+        DbContext.TournamentPlayers.Update(player);
+        playerCounter++;
+      }
+
+      await DbContext.SaveChangesAsync();
+
+      // Reload data to show the new quads
+      await LoadData();
     }
+    catch (Exception ex)
+    {
+      // Log the exception
+      Console.WriteLine($"Error generating quads: {ex.Message}");
+      // You could also add proper logging or error handling here
+    }
+  }
+
+  private string GetQuadColor(Quad quad)
+  {
+      // If quad has a custom color set, use it
+      if (!string.IsNullOrEmpty(quad.Color))
+      {
+          return quad.Color;
+      }
+    
+      // Otherwise, fallback to logic-based colors
+      if (quad.QuadGroupNumber % 2 == 0)
+      {
+          return "#e6f7ff"; // Light blue for even-numbered quads
+      }
+    
+      return "#ffffcc"; // Default yellow for odd-numbered quads
   }
 }

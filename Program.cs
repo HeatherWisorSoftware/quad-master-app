@@ -1,12 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
-using QuadMasteApp.Components;
-using WebUi.Server.Data;
+using QuadMasterApp.Components;
+using QuadMasterApp.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<TournamentContext>(options =>
     options.UseSqlite("Data Source = tournament.db"));
+
+builder.Services.AddScoped<DatabaseSeeder>();
 
 // Add MudBlazor services
 builder.Services.AddMudServices();
@@ -16,6 +18,14 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 var app = builder.Build();
+
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+// Get database reset configuration from appsettings.json
+var resetDatabase = builder.Configuration.GetValue<bool>("DatabaseOptions:ResetOnStartup");
+
+// Initialize the database with the configuration setting
+await app.Services.InitializeDatabaseAsync(logger, resetDatabase);
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

@@ -125,12 +125,15 @@
                             <MudTh>Players</MudTh>
                             <MudTh>Actions</MudTh>
                         </HeaderContent>
+
                         <RowTemplate>
-                            <MudTd>@context.Name</MudTd>
-                            <MudTd>@context.Date.ToShortDateString()</MudTd>
-                            <MudTd>@context.VenueName</MudTd>
-                            <MudTd>@(TournamentPlayerCounts.TryGetValue(context.Id, out var count) ? count : 0)</MudTd>
-                            <MudTd>
+                            <MudTd DataLabel="Name">@context.Name</MudTd>
+                            <MudTd DataLabel="Date">
+                                @(context.Date.HasValue ? String.Format("{0:MM/dd/yyyy}", context.Date.Value) : "Not set")
+                            </MudTd>
+                            <MudTd DataLabel="Venue">@context.VenueName</MudTd>
+                            <MudTd DataLabel="Players">@(TournamentPlayerCounts.TryGetValue(context.Id, out var count) ? count : 0)</MudTd>
+                            <MudTd DataLabel="Actions">
                                 <MudButtonGroup Variant="Variant.Text" Size="Size.Small">
                                     <MudButton Href="@($"/TournamentPage/Edit/{context.Id}")"
                                                Color="Color.Primary">Edit</MudButton>

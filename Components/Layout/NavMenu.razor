@@ -1,7 +1,11 @@
-﻿
+﻿@inject TournamentContext DbContext
+@using Microsoft.EntityFrameworkCore
+
+
 <MudNavMenu>
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
     <MudNavLink Href="CreateTournament" Match="NavLinkMatch.Prefix">Create Tournament</MudNavLink>
+    <MudNavLink Href="EditTournament" Match="NavLinkMatch.Prefix">Edit Tournaments</MudNavLink>
     <MudNavLink Href="QuadsPage" Match="NavLinkMatch.Prefix">Quads</MudNavLink>
 </MudNavMenu>
 

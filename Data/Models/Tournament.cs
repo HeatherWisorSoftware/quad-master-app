@@ -14,7 +14,7 @@ namespace WebUi.Server.Data.Models
 
         //[Required(ErrorMessage = "Start date is required")]
         [Display(Name = "Date")]
-        public DateTime Date { get; set; }
+        public DateTime? Date { get; set; }
 
         // Address Information
         [Display(Name = "Venue Name")]

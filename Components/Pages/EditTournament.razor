@@ -54,7 +54,7 @@
                             <MudButtonGroup Variant="Variant.Text" Size="Size.Small">
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                                Color="Color.Primary"
-                                               Href="@($"/TournamentPage/Edit/{context.Id}")"
+                                               Href="@($"/EditTournamentDetails{context.Id}")"
                                                Title="Edit Tournament" />
                                 <MudIconButton Icon="@Icons.Material.Filled.People"
                                                Color="Color.Secondary"
@@ -74,6 +74,15 @@
             }
         </MudPaper>
     }
+
+    <MudPaper Elevation="0" Class="pa-4 mt-4 d-flex justify-end">
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Primary"
+                   OnClick="ReturnToList"
+                   StartIcon="@Icons.Material.Filled.ArrowBack">
+            Back to Home
+        </MudButton>
+    </MudPaper>
 </MudContainer>
 
 <MudMessageBox @bind-IsVisible="DeleteDialogVisible"
@@ -94,6 +103,11 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadTournaments();
+    }
+
+    private void ReturnToList()
+    {
+        NavigationManager.NavigateTo("/");
     }
 
     // Add this missing method

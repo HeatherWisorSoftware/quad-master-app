@@ -1,0 +1,188 @@
+﻿@page "/GuildPlayerPages/GuildPlayerView"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@inject TournamentContext DbContext
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Member Database</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudCard>
+        <MudCardHeader>
+            <MudText Typo="Typo.h3" Class="mb-4" Style="color: var(--mud-palette-primary)">Member Database</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="SearchString" Placeholder="Search" Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
+            <MudSpacer />
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="@(() => NavigateToAddPlayer())">Add Player</MudButton>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudTable Items="@GetFilteredPlayers()" Loading="@IsLoading" LoadingProgressColor="Color.Primary"
+                      Hover="true" Breakpoint="Breakpoint.Sm" T="Player">
+                <HeaderContent>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x => x.Id)">ID</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x => x.FirstName)">First Name</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x => x.LastName)">Last Name</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x => x.Ranking)">Ranking</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x => x.Email)">Email</MudTableSortLabel></MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortBy="new Func<Player, object>(x => TournamentPlayerCounts.GetValueOrDefault(x.Id, 0))">
+                            Tournaments Played
+                        </MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="ID">@context.Id</MudTd>
+                    <MudTd DataLabel="First Name">@context.FirstName</MudTd>
+                    <MudTd DataLabel="Last Name">@context.LastName</MudTd>
+                    <MudTd DataLabel="Ranking">@context.Ranking</MudTd>
+                    <MudTd DataLabel="Email">@context.Email</MudTd>
+                    <MudTd DataLabel="Tournaments Played">@TournamentPlayerCounts.GetValueOrDefault(context.Id, 0)</MudTd>
+                    <MudTd>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                                       OnClick="@(() => NavigateToEditPlayer(context.Id))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                       OnClick="@(() => OpenDeleteDialog(context))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.History" Color="Color.Info"
+                                       OnClick="@(() => NavigateToPlayerHistory(context.Id))"
+                                       Title="View Tournament History" />
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+        </MudCardContent>
+    </MudCard>
+</MudContainer>
+
+@if (PlayerToDelete != null)
+{
+    <MudDialog @bind-IsVisible="DeleteDialogVisible" Options="dialogOptions">
+        <TitleContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Delete" Class="mr-3" /> Delete Player
+            </MudText>
+        </TitleContent>
+        <DialogContent>
+            <MudText>Are you sure you want to delete @PlayerToDelete.FirstName @PlayerToDelete.LastName?</MudText>
+            <MudText Color="Color.Warning" Class="mt-2">This action cannot be undone.</MudText>
+        </DialogContent>
+        <DialogActions>
+            <MudButton Variant="Variant.Outlined" Color="Color.Default" OnClick="CloseDeleteDialog">Cancel</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="DeletePlayer">Delete</MudButton>
+        </DialogActions>
+    </MudDialog>
+}
+
+@code {
+    private List<Player> Players { get; set; } = new();
+    private Dictionary<int, int> TournamentPlayerCounts { get; set; } = new();
+    private string SearchString { get; set; } = "";
+    private bool IsLoading { get; set; } = true;
+    private bool DeleteDialogVisible { get; set; } = false;
+    private Player PlayerToDelete { get; set; }
+
+    private DialogOptions dialogOptions = new() { FullWidth = true, CloseButton = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPlayersAsync();
+    }
+
+    private async Task LoadPlayersAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            Players = await DbContext.Players
+                .AsNoTracking()
+                .ToListAsync();
+
+            // Calculate tournament counts for each player
+            TournamentPlayerCounts = await DbContext.TournamentPlayers
+                .GroupBy(tp => tp.PlayerId)
+                .Select(g => new { PlayerId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.PlayerId, x => x.Count);
+
+            IsLoading = false;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading players: {ex.Message}", Severity.Error);
+            IsLoading = false;
+        }
+    }
+
+    private List<Player> GetFilteredPlayers()
+    {
+        if (string.IsNullOrWhiteSpace(SearchString))
+            return Players;
+
+        return Players.Where(p =>
+            p.FirstName.Contains(SearchString, StringComparison.OrdinalIgnoreCase) ||
+            p.LastName.Contains(SearchString, StringComparison.OrdinalIgnoreCase) ||
+            p.Email.Contains(SearchString, StringComparison.OrdinalIgnoreCase) ||
+            p.Ranking.ToString().Contains(SearchString)
+        ).ToList();
+    }
+
+    private void NavigateToAddPlayer()
+    {
+        NavigationManager.NavigateTo("/GuildPlayerPages/EditGuildPlayer/0");
+    }
+
+    private void NavigateToEditPlayer(int playerId)
+    {
+        NavigationManager.NavigateTo($"/GuildPlayerPages/EditGuildPlayer/{playerId}");
+    }
+
+    private void NavigateToPlayerHistory(int playerId)
+    {
+        NavigationManager.NavigateTo($"/GuildPlayerPages/GuildPlayerHistory/{playerId}");
+    }
+
+    private void OpenDeleteDialog(Player player)
+    {
+        PlayerToDelete = player;
+        DeleteDialogVisible = true;
+    }
+
+    private void CloseDeleteDialog()
+    {
+        DeleteDialogVisible = false;
+        PlayerToDelete = null;
+    }
+
+    private async Task DeletePlayer()
+    {
+        try
+        {
+            // Check if player is participating in any tournaments
+            var tournamentCount = await DbContext.TournamentPlayers
+                .CountAsync(tp => tp.PlayerId == PlayerToDelete.Id);
+
+            if (tournamentCount > 0)
+            {
+                Snackbar.Add("Cannot delete player who is registered for tournaments", Severity.Warning);
+                CloseDeleteDialog();
+                return;
+            }
+
+            DbContext.Players.Remove(PlayerToDelete);
+            await DbContext.SaveChangesAsync();
+
+            await LoadPlayersAsync();
+
+            Snackbar.Add("Player deleted successfully", Severity.Success);
+            CloseDeleteDialog();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error deleting player: {ex.Message}", Severity.Error);
+        }
+    }
+}

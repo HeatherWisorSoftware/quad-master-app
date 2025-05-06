@@ -1,0 +1,194 @@
+﻿@page "/GuildPlayerPages/GuildPlayerHistory/{PlayerId:int}"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@inject TournamentContext DbContext
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Player Tournament History</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudCard>
+        <MudCardHeader>
+            @if (Player != null)
+            {
+                <MudText Typo="Typo.h4">Tournament History for @Player.FirstName @Player.LastName</MudText>
+            }
+            else
+            {
+                <MudText Typo="Typo.h4">Player Tournament History</MudText>
+            }
+            <MudSpacer />
+            <MudButton Color="Color.Secondary" Variant="Variant.Filled"
+                       OnClick="@(() => NavigationManager.NavigateTo("/GuildPlayerPages/GuildPlayerView"))">
+                Back to Players
+            </MudButton>
+        </MudCardHeader>
+        <MudCardContent>
+            @if (IsLoading)
+            {
+                <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+            }
+            else
+            {
+                @if (PlayerTournaments.Count > 0)
+                {
+                    <MudTable Items="@PlayerTournaments" Hover="true" Breakpoint="Breakpoint.Sm">
+                        <HeaderContent>
+                            <MudTh>Tournament Name</MudTh>
+                            <MudTh>Date</MudTh>
+                            <MudTh>Location</MudTh>
+                            <MudTh>Quad Assignment</MudTh>
+                            <MudTh>Actions</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Tournament Name">@context.Tournament.Name</MudTd>
+                            <MudTd DataLabel="Date">@(context.Tournament.Date?.ToShortDateString() ?? "Not set")</MudTd>
+                            <MudTd DataLabel="Location">
+                                @(string.IsNullOrEmpty(context.Tournament.City) ? "Not specified" :
+                            $"{context.Tournament.VenueName}, {context.Tournament.City}, {context.Tournament.State}")
+                            </MudTd>
+                            <MudTd DataLabel="Quad Assignment">
+                                @if (context.QuadId.HasValue && context.Quad != null)
+                                {
+                                    <MudPaper Elevation="0" Class="pa-1 px-3 d-inline-flex rounded-pill mud-theme-primary">
+                                        <MudText Color="Color.Surface">@context.Quad.Title</MudText>
+                                    </MudPaper>
+                                }
+                                else
+                                {
+                                    <MudPaper Elevation="0" Class="pa-1 px-3 d-inline-flex rounded-pill mud-background-gray">
+                                        <MudText>Not Assigned</MudText>
+                                    </MudPaper>
+                                }
+                            </MudTd>
+                            <MudTd>
+                                <MudIconButton Icon="@Icons.Material.Filled.Info" Color="Color.Info"
+                                               OnClick="@(() => NavigateToTournamentDetails(context.TournamentId))"
+                                               Title="View Tournament Details" />
+                            </MudTd>
+                        </RowTemplate>
+                        <PagerContent>
+                            <MudTablePager />
+                        </PagerContent>
+                    </MudTable>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Info" Class="mt-3">
+                        This player has not participated in any tournaments yet.
+                    </MudAlert>
+                }
+            }
+        </MudCardContent>
+    </MudCard>
+
+    @if (Player != null)
+    {
+        <MudCard Class="mt-4">
+            <MudCardHeader>
+                <MudText Typo="Typo.h5">Player Statistics</MudText>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudGrid>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudPaper Elevation="2" Class="pa-4 d-flex flex-column align-center">
+                            <MudText Typo="Typo.h3" Color="Color.Primary">@PlayerTournaments.Count</MudText>
+                            <MudText Typo="Typo.subtitle1">Total Tournaments</MudText>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudPaper Elevation="2" Class="pa-4 d-flex flex-column align-center">
+                            <MudText Typo="Typo.h3" Color="Color.Secondary">@Player.Ranking</MudText>
+                            <MudText Typo="Typo.subtitle1">Current Ranking</MudText>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudPaper Elevation="2" Class="pa-4 d-flex flex-column align-center">
+                            <MudText Typo="Typo.h3" Color="Color.Info">@AssignedToQuads</MudText>
+                            <MudText Typo="Typo.subtitle1">Assigned to Quads</MudText>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudPaper Elevation="2" Class="pa-4 d-flex flex-column align-center">
+                            <MudText Typo="Typo.h3" Color="Color.Warning">@(PlayerTournaments.Count - AssignedToQuads)</MudText>
+                            <MudText Typo="Typo.subtitle1">Unassigned</MudText>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+        </MudCard>
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public int PlayerId { get; set; }
+
+    private Player Player { get; set; }
+    private List<TournamentPlayer> PlayerTournaments { get; set; } = new();
+    private bool IsLoading { get; set; } = true;
+    private int AssignedToQuads => PlayerTournaments.Count(tp => tp.QuadId.HasValue && tp.Quad != null);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        IsLoading = true;
+
+        try
+        {
+            // Load player details
+            Player = await DbContext.Players
+                .FirstOrDefaultAsync(p => p.Id == PlayerId);
+
+            if (Player == null)
+            {
+                Snackbar.Add("Player not found", Severity.Error);
+                NavigationManager.NavigateTo("/GuildPlayerPages/GuildPlayerView");
+                return;
+            }
+
+            // Load player's tournament history with tournament details and quad assignments
+            PlayerTournaments = await DbContext.TournamentPlayers
+                .Where(tp => tp.PlayerId == PlayerId)
+                .Include(tp => tp.Tournament)
+                .Include(tp => tp.Quad)
+                .AsNoTracking()
+                .OrderByDescending(tp => tp.Tournament.Date)
+                .ToListAsync();
+
+            IsLoading = false;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading player history: {ex.Message}", Severity.Error);
+            IsLoading = false;
+        }
+    }
+
+    // Helper methods that were previously used - can be removed as they are no longer needed
+    // private string GetQuadTitle(TournamentPlayer tp)
+    // {
+    //     // Use safe navigation to avoid null reference exceptions
+    //     return tp?.QuadId.HasValue == true && tp?.Quad != null
+    //         ? tp.Quad.Title
+    //         : "Not Assigned";
+    // }
+
+    // private string GetQuadBadgeStyle(TournamentPlayer tp)
+    // {
+    //     var backgroundColor = tp?.QuadId.HasValue == true && tp?.Quad != null
+    //         ? "var(--mud-palette-primary)"
+    //         : "var(--mud-palette-gray-light)";
+    //
+    //     var textColor = tp?.QuadId.HasValue == true && tp?.Quad != null
+    //         ? "white"
+    //         : "var(--mud-palette-text-primary)";
+    //
+    //     return $"background-color: {backgroundColor}; color: {textColor};";
+    // }
+
+    private void NavigateToTournamentDetails(int tournamentId)
+    {
+        NavigationManager.NavigateTo($"/GuildPlayerPages/EditTournamentDetails/{tournamentId}");
+    }
+}

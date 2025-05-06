@@ -1,4 +1,4 @@
-﻿@page "/TournamentPage/Edit/{Id:int}"
+﻿@page "/EditTournamentDetails{Id:int}"
 @rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
 @inject TournamentContext DbContext
@@ -9,7 +9,7 @@
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudText Typo="Typo.h3" Class="mb-4" Style="color: var(--mud-palette-primary)">Edit Tournament</MudText>
-
+    
     @if (IsLoading)
     {
         <MudProgressCircular Color="Color.Primary" Indeterminate="true" />

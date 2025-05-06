@@ -27,18 +27,33 @@ namespace QuadMasterApp.Data.Models
         public int? QuadPosition { get; set; }
 
         // Scores for each round
+        [NotMapped]
         public string Round1Score { get; set; }
+
+        [NotMapped]
         public string Round2Score { get; set; }
+
+        [NotMapped]
         public string Round3Score { get; set; }
 
         // Opponent info
+        [NotMapped]
         public string Round1Opponent { get; set; } // Format: "W v 4" or "B v 2" 
+        
+        [NotMapped]
         public string Round2Opponent { get; set; }
+
+        [NotMapped]
         public string Round3Opponent { get; set; }
 
         // Table numbers
+        [NotMapped]
         public int? Round1Table { get; set; }
+
+        [NotMapped]
         public int? Round2Table { get; set; }
+
+        [NotMapped]
         public int? Round3Table { get; set; }
 
         // Total score calculation

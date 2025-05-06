@@ -1,0 +1,183 @@
+﻿@page "/TournamentPage/Players/{Id:int}"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@inject TournamentContext DbContext
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Manage Tournament Players</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h3" Class="mb-4" Style="color: var(--mud-palette-primary)">Manage Tournament Players</MudText>
+
+    @if (IsLoading)
+    {
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (Tournament == null)
+    {
+        <MudAlert Severity="Severity.Error">Tournament not found.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="3" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h5" Class="mb-2">@Tournament.Name</MudText>
+            <MudText Typo="Typo.body1">@(Tournament.Date.HasValue ? Tournament.Date.Value.ToShortDateString() : "Date not set")</MudText>
+            <MudText Typo="Typo.body1">@Tournament.VenueName, @Tournament.City, @Tournament.State</MudText>
+        </MudPaper>
+
+        <MudPaper Elevation="3" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudToolBar DisableGutters="true" Class="mb-4">
+                        <MudText Typo="Typo.h6">Tournament Players</MudText>
+                        <MudSpacer />
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.PersonAdd"
+                                   OnClick="">
+                            Add Player
+                        </MudButton>
+                    </MudToolBar>
+                </MudItem>
+
+                <MudItem xs="12">
+                    @if (!EnrolledPlayers.Any())
+                    {
+                        <MudAlert Severity="Severity.Info">No players have been added to this tournament yet.</MudAlert>
+                    }
+                    else
+                    {
+                        <MudTable Items="@EnrolledPlayers" Hover="true" Striped="true" Bordered="false">
+                            <HeaderContent>
+                                <MudTh>Name</MudTh>
+                                <MudTh>Email</MudTh>
+                                <MudTh>Actions</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Name">@($"{context.Player.FirstName} {context.Player.LastName}")</MudTd>
+                                <MudTd DataLabel="Email">@context.Player.Email</MudTd>
+                                <MudTd DataLabel="Actions">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Color="Color.Error"
+                                                   OnClick="@(() => OpenRemovePlayerDialog(context))"
+                                                   Title="Remove Player" />
+                                </MudTd>
+                            </RowTemplate>
+                            <PagerContent>
+                                <MudTablePager />
+                            </PagerContent>
+                        </MudTable>
+                    }
+                </MudItem>
+
+                <MudItem xs="12" Class="d-flex justify-end mt-4">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Secondary"
+                               OnClick="ReturnToList"
+                               StartIcon="@Icons.Material.Filled.ArrowBack">
+                        Return to List
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    }
+</MudContainer>
+
+<MudMessageBox @bind-IsVisible="RemoveDialogVisible"
+               Title="Remove Player"
+               Message="@($"Are you sure you want to remove {playerToRemove?.Player?.FirstName} {playerToRemove?.Player?.LastName} from this tournament?")"
+               CancelText="Cancel"
+               OkText="Remove"
+               Color="Color.Error"
+               OnOk="RemovePlayer" />
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Tournament Tournament { get; set; }
+    private List<TournamentPlayer> EnrolledPlayers { get; set; } = new();
+    private List<Player> AvailablePlayers { get; set; } = new();
+    private bool IsLoading { get; set; } = true;
+    private bool RemoveDialogVisible { get; set; } = false;
+    private TournamentPlayer playerToRemove;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTournamentData();
+    }
+
+    private async Task LoadTournamentData()
+    {
+        try
+        {
+            IsLoading = true;
+
+            // Load tournament with its players
+            Tournament = await DbContext.Tournaments
+                .FirstOrDefaultAsync(t => t.Id == Id);
+
+            if (Tournament != null)
+            {
+                // Load tournament players with player details
+                EnrolledPlayers = await DbContext.TournamentPlayers
+                    .Include(tp => tp.Player)
+                    .Where(tp => tp.TournamentId == Id)
+                    .ToListAsync();
+
+                // Load all players for the add player dialog
+                var allPlayers = await DbContext.Players.ToListAsync();
+                var currentPlayerIds = EnrolledPlayers.Select(tp => tp.PlayerId).ToList();
+                AvailablePlayers = allPlayers.Where(p => !currentPlayerIds.Contains(p.Id)).ToList();
+            }
+            else
+            {
+                Snackbar.Add("Tournament not found.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading tournament data: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+
+
+    private void OpenRemovePlayerDialog(TournamentPlayer player)
+    {
+        playerToRemove = player;
+        RemoveDialogVisible = true;
+    }
+
+    private async Task RemovePlayer()
+    {
+        try
+        {
+            if (playerToRemove == null) return;
+
+            // Remove the player from the tournament
+            DbContext.TournamentPlayers.Remove(playerToRemove);
+            await DbContext.SaveChangesAsync();
+
+            // Update local list
+            EnrolledPlayers.Remove(playerToRemove);
+
+            Snackbar.Add("Player removed successfully!", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error removing player: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void ReturnToList()
+    {
+        NavigationManager.NavigateTo("/EditTournament");
+    }
+}

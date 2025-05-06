@@ -1,4 +1,4 @@
-﻿namespace WebUi.Server.Data.Models
+﻿namespace QuadMasterApp.Data.Models
 {
     public class QuadsViewModel
     {
@@ -7,8 +7,6 @@
         public List<Quad> Quads { get; set; } = [];
         public List<Quad> AllQuads { get; set; } = []; // All quads for the dropdown
         public List<TournamentPlayer> UnassignedPlayers { get; set; } = [];
-        public List<TournamentPlayer> UnassignedPlayersSorted { get; set; } = [];
-        public List<TournamentPlayer> AssignedPlayers { get; set; } = [];
 
         public int CurrentPage { get; set; } = 1;
         public int TotalPages { get; set; } = 1;

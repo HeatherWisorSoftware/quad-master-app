@@ -3,11 +3,11 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using WebUi.Server.Data;
+using QuadMasterApp.Data;
 
 #nullable disable
 
-namespace WebUi.Server.Migrations
+namespace QuadMasterApp.Migrations
 {
     [DbContext(typeof(TournamentContext))]
     partial class TournamentContextModelSnapshot : ModelSnapshot
@@ -17,7 +17,7 @@ namespace WebUi.Server.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.4");
 
-            modelBuilder.Entity("WebUi.Server.Data.Models.Player", b =>
+            modelBuilder.Entity("QuadMasterApp.Data.Models.Player", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -43,7 +43,7 @@ namespace WebUi.Server.Migrations
                     b.ToTable("Players");
                 });
 
-            modelBuilder.Entity("WebUi.Server.Data.Models.Quad", b =>
+            modelBuilder.Entity("QuadMasterApp.Data.Models.Quad", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -66,7 +66,7 @@ namespace WebUi.Server.Migrations
                     b.ToTable("Quads");
                 });
 
-            modelBuilder.Entity("WebUi.Server.Data.Models.Tournament", b =>
+            modelBuilder.Entity("QuadMasterApp.Data.Models.Tournament", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -110,7 +110,7 @@ namespace WebUi.Server.Migrations
                     b.ToTable("Tournaments");
                 });
 
-            modelBuilder.Entity("WebUi.Server.Data.Models.TournamentPlayer", b =>
+            modelBuilder.Entity("QuadMasterApp.Data.Models.TournamentPlayer", b =>
                 {
                     b.Property<int>("TournamentId")
                         .HasColumnType("INTEGER");
@@ -124,6 +124,42 @@ namespace WebUi.Server.Migrations
                     b.Property<int?>("QuadId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("QuadPosition")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Round1Opponent")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Round1Score")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("Round1Table")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Round2Opponent")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Round2Score")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("Round2Table")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Round3Opponent")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Round3Score")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("Round3Table")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("TournamentId", "PlayerId");
 
                     b.HasIndex("PlayerId");
@@ -133,9 +169,9 @@ namespace WebUi.Server.Migrations
                     b.ToTable("TournamentPlayers");
                 });
 
-            modelBuilder.Entity("WebUi.Server.Data.Models.Quad", b =>
+            modelBuilder.Entity("QuadMasterApp.Data.Models.Quad", b =>
                 {
-                    b.HasOne("WebUi.Server.Data.Models.Tournament", "Tournament")
+                    b.HasOne("QuadMasterApp.Data.Models.Tournament", "Tournament")
                         .WithMany("Quads")
                         .HasForeignKey("TournamentId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -144,19 +180,19 @@ namespace WebUi.Server.Migrations
                     b.Navigation("Tournament");
                 });
 
-            modelBuilder.Entity("WebUi.Server.Data.Models.TournamentPlayer", b =>
+            modelBuilder.Entity("QuadMasterApp.Data.Models.TournamentPlayer", b =>
                 {
-                    b.HasOne("WebUi.Server.Data.Models.Player", "Player")
+                    b.HasOne("QuadMasterApp.Data.Models.Player", "Player")
                         .WithMany("TournamentPlayers")
                         .HasForeignKey("PlayerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("WebUi.Server.Data.Models.Quad", "Quad")
+                    b.HasOne("QuadMasterApp.Data.Models.Quad", "Quad")
                         .WithMany("Players")
                         .HasForeignKey("QuadId");
 
-                    b.HasOne("WebUi.Server.Data.Models.Tournament", "Tournament")
+                    b.HasOne("QuadMasterApp.Data.Models.Tournament", "Tournament")
                         .WithMany("TournamentPlayers")
                         .HasForeignKey("TournamentId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -169,17 +205,17 @@ namespace WebUi.Server.Migrations
                     b.Navigation("Tournament");
                 });
 
-            modelBuilder.Entity("WebUi.Server.Data.Models.Player", b =>
+            modelBuilder.Entity("QuadMasterApp.Data.Models.Player", b =>
                 {
                     b.Navigation("TournamentPlayers");
                 });
 
-            modelBuilder.Entity("WebUi.Server.Data.Models.Quad", b =>
+            modelBuilder.Entity("QuadMasterApp.Data.Models.Quad", b =>
                 {
                     b.Navigation("Players");
                 });
 
-            modelBuilder.Entity("WebUi.Server.Data.Models.Tournament", b =>
+            modelBuilder.Entity("QuadMasterApp.Data.Models.Tournament", b =>
                 {
                     b.Navigation("Quads");
 

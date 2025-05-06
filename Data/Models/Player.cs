@@ -1,4 +1,4 @@
-﻿namespace WebUi.Server.Data.Models
+﻿namespace QuadMasterApp.Data.Models
 {
     public class Player
     {

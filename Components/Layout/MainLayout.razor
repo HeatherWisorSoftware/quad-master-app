@@ -1,118 +1,137 @@
 ﻿@inherits LayoutComponentBase
+@using QuadMasterApp.Services
+@inject IThemeProvider ThemeProvider
+@implements IDisposable
 
 <MudThemeProvider Theme="@_theme" IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 <MudLayout>
-    <MudAppBar Elevation="1">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-        <MudText Typo="Typo.h5" Class="ml-3">Application</MudText>
-        <MudSpacer />
-        <MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle" />
-        <MudIconButton Icon="@Icons.Material.Filled.MoreVert" Color="Color.Inherit" Edge="Edge.End" />
-    </MudAppBar>
-    <MudDrawer id="nav-drawer" @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
-        <NavMenu />
-    </MudDrawer>
-    <MudMainContent Class="pt-16 pa-4">
-        @Body
-    </MudMainContent>
-    <MudSnackbarProvider />
+  <MudAppBar Elevation="1">
+    <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+    <MudText Typo="Typo.h5" Class="ml-3">Application</MudText>
+    <MudSpacer />
+    <MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle" />
+    <MudIconButton Icon="@Icons.Material.Filled.MoreVert" Color="Color.Inherit" Edge="Edge.End" />
+  </MudAppBar>
+  <MudDrawer id="nav-drawer" @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
+    <NavMenu />
+  </MudDrawer>
+  <MudMainContent Class="pt-16 pa-4">
+    @Body
+  </MudMainContent>
+  <MudSnackbarProvider />
 </MudLayout>
 
 
 <div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+  An unhandled error has occurred.
+  <a href="." class="reload">Reload</a>
+  <span class="dismiss">🗙</span>
 </div>
 
 @code {
-    private bool _drawerOpen = true;
-    private bool _isDarkMode = false;
-    private MudTheme? _theme = null;
+  private bool _drawerOpen = true;
+  private bool _isDarkMode = false;
+  private MudTheme? _theme = null;
 
-    protected override void OnInitialized()
+  protected override void OnInitialized()
+  {
+    base.OnInitialized();
+
+    _theme = new()
+      {
+        PaletteLight = _lightPalette,
+        PaletteDark = _darkPalette,
+        LayoutProperties = new LayoutProperties()
+      };
+
+    // Subscribe to theme changes
+    ThemeProvider.ThemeChanged += OnThemeChanged;
+  }
+
+  private void OnThemeChanged()
+  {
+    // Update the local dark mode state from the provider
+    _isDarkMode = ThemeProvider.IsDarkMode;
+    StateHasChanged();
+  }
+
+  public void Dispose()
+  {
+    // Unsubscribe from theme changes
+    ThemeProvider.ThemeChanged -= OnThemeChanged;
+  }
+
+  private void DrawerToggle()
+  {
+    _drawerOpen = !_drawerOpen;
+  }
+
+  private void DarkModeToggle()
+  {
+    _isDarkMode = !_isDarkMode;
+    // Update the theme provider
+    ThemeProvider.SetDarkMode(_isDarkMode);
+  }
+
+  private readonly PaletteLight _lightPalette = new()
     {
-        base.OnInitialized();
-
-        _theme = new()
-        {
-            PaletteLight = _lightPalette,
-            PaletteDark = _darkPalette,
-            LayoutProperties = new LayoutProperties()
-        };
-    }
-
-    private void DrawerToggle()
-    {
-        _drawerOpen = !_drawerOpen;
-    }
-
-    private void DarkModeToggle()
-    {
-        _isDarkMode = !_isDarkMode;
-    }
-
-    private readonly PaletteLight _lightPalette = new()
-    {
-            Primary = "#7e6fff",           // Keep the same primary color for consistency
-            Secondary = "#50C8C6",         // Teal color that matches dashboard cards
-            AppbarText = "#424242",
-            AppbarBackground = "rgba(255,255,255,0.9)",
-            DrawerBackground = "#ffffff",
-            Surface = "#ffffff",
-            Background = "#ffffff",
-            BackgroundGray = "#f0f0f3",
-            TextPrimary = "#333344",
-            TextSecondary = "#5c5c6f",
-            ActionDefault = "#6e6e84",
-            GrayLight = "#e8e8e8",
-            GrayLighter = "#f9f9f9",
-            Info = "#4DA3DC",              // Matches the blue from quads card
-            Success = "#60BEAA",           // Matches the teal from upcoming tournaments card
-            Warning = "#D8BC6B",           // Warm color for notifications
-            Error = "#D86B6B",             // Red for errors
-            LinesDefault = "#e0e0e0",
-            TableLines = "#e0e0e0",
-            Divider = "#e0e0e0",
+      Primary = "#7e6fff",           // Keep the same primary color for consistency
+      Secondary = "#50C8C6",         // Teal color that matches dashboard cards
+      AppbarText = "#424242",
+      AppbarBackground = "rgba(255,255,255,0.9)",
+      DrawerBackground = "#ffffff",
+      Surface = "#ffffff",
+      Background = "#ffffff",
+      BackgroundGray = "#f0f0f3",
+      TextPrimary = "#333344",
+      TextSecondary = "#5c5c6f",
+      ActionDefault = "#6e6e84",
+      GrayLight = "#e8e8e8",
+      GrayLighter = "#f9f9f9",
+      Info = "#4DA3DC",              // Matches the blue from quads card
+      Success = "#60BEAA",           // Matches the teal from upcoming tournaments card
+      Warning = "#D8BC6B",           // Warm color for notifications
+      Error = "#D86B6B",             // Red for errors
+      LinesDefault = "#e0e0e0",
+      TableLines = "#e0e0e0",
+      Divider = "#e0e0e0",
     };
 
-    private readonly PaletteDark _darkPalette = new()
+  private readonly PaletteDark _darkPalette = new()
     {
-            Primary = "#7e6fff",
-            Surface = "#1e1e2d",
-            Background = "#1a1a27",
-            BackgroundGray = "#151521",
-            AppbarText = "#92929f",
-            AppbarBackground = "rgba(26,26,39,0.8)",
-            DrawerBackground = "#1a1a27",
-            ActionDefault = "#74718e",
-            ActionDisabled = "#9999994d",
-            ActionDisabledBackground = "#605f6d4d",
-            TextPrimary = "#b2b0bf",
-            TextSecondary = "#92929f",
-            TextDisabled = "#ffffff33",
-            DrawerIcon = "#92929f",
-            DrawerText = "#92929f",
-            GrayLight = "#2a2833",
-            GrayLighter = "#1e1e2d",
-            Info = "#4a86ff",
-            Success = "#3dcb6c",
-            Warning = "#ffb545",
-            Error = "#ff3f5f",
-            LinesDefault = "#33323e",
-            TableLines = "#33323e",
-            Divider = "#292838",
-            OverlayLight = "#1e1e2d80",
+      Primary = "#7e6fff",
+      Surface = "#1e1e2d",
+      Background = "#1a1a27",
+      BackgroundGray = "#151521",
+      AppbarText = "#92929f",
+      AppbarBackground = "rgba(26,26,39,0.8)",
+      DrawerBackground = "#1a1a27",
+      ActionDefault = "#74718e",
+      ActionDisabled = "#9999994d",
+      ActionDisabledBackground = "#605f6d4d",
+      TextPrimary = "#b2b0bf",
+      TextSecondary = "#92929f",
+      TextDisabled = "#ffffff33",
+      DrawerIcon = "#92929f",
+      DrawerText = "#92929f",
+      GrayLight = "#2a2833",
+      GrayLighter = "#1e1e2d",
+      Info = "#4a86ff",
+      Success = "#3dcb6c",
+      Warning = "#ffb545",
+      Error = "#ff3f5f",
+      LinesDefault = "#33323e",
+      TableLines = "#33323e",
+      Divider = "#292838",
+      OverlayLight = "#1e1e2d80",
     };
 
-    public string DarkLightModeButtonIcon => _isDarkMode switch
-    {
-        true => Icons.Material.Rounded.AutoMode,
-        false => Icons.Material.Outlined.DarkMode,
-    };
+  public string DarkLightModeButtonIcon => _isDarkMode switch
+  {
+    true => Icons.Material.Rounded.AutoMode,
+    false => Icons.Material.Outlined.DarkMode,
+  };
 }
-
-

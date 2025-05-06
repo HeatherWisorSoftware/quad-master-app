@@ -69,5 +69,8 @@ namespace QuadMasterApp.Data.Models
                 return total;
             }
         }
+
+        [NotMapped] 
+        public List<string> Scores { get; set; } = [];
     }
 }

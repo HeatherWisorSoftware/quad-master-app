@@ -14,5 +14,7 @@
         public bool AllowPlayerRemoval { get; set; } = true;
         public bool AllowPlayerAssignment { get; set; } = true;
         public bool AreAllQuadsFull { get; set; } = false;
+
+        public int NumberOfRounds { get; set; } = 3;
     }
 }

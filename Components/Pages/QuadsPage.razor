@@ -110,14 +110,23 @@
                         var opponents = GetQuadOpponents(context);
                     }
 
-                    @foreach (var round in new[] { 1, 2, 3 })
+                    @for (var round = 1; round <= ViewModel.NumberOfRounds; round++)
                     {
+                        var currentRound = round;
                         <div class="round-cell">
-                            <div class="opponent">@opponents[round - 1]</div>
+                            <div class="opponent">@GetOpponent(context, currentRound)</div>
                             <div class="score-cell">
-                                <span class="score-value">@GetScore(context, round)</span>
+                                <MudTextField @bind-Value="@context.Scores[currentRound - 1]"
+                                              Class="score-input"
+                                              Immediate="true" 
+                                              OnBlur="@(() => UpdateScore(context, currentRound))"
+                                              Variant="Variant.Outlined"
+                                              T="string"
+                                              Dense="true"
+                                              Margin="Margin.Dense"
+                                              Style="width: 40px !important; max-width: 40px !important;"/>
                             </div>
-                            <div class="table-number">TBL @GetTableNumber(context, round)</div>
+                            <div class="table-number">TBL @GetTableNumber(context, currentRound)</div>
                         </div>
                     }
 
@@ -149,389 +158,424 @@
 @* Use CSS isolation with a <style> tag in the .razor file *@
 <style>
   .quad-container {
-    width: 100%;
+  width: 100%;
   }
 
   /* Layout for side-by-side display */
   .quads-section {
-    flex: 4;
+  flex: 4;
   }
 
   .unassigned-paper {
-    flex: 1;
-    min-width: 220px;
-    max-width: 300px;
-    height: fit-content;
-    margin-top: 0 !important;
+  flex: 1;
+  min-width: 220px;
+  max-width: 300px;
+  height: fit-content;
+  margin-top: 0 !important;
   }
 
   .quad-paper {
-    width: 48%;
-    margin: 0 1% 16px 1%;
-    border: 1px solid #ddd;
-    display: flex;
-    flex-direction: column;
+  width: 48%;
+  margin: 0 1% 16px 1%;
+  border: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
   }
 
   /* Quad table layout */
   .quad-table {
-    display: flex;
-    width: 100%;
-    height: 100%;
-    border-collapse: collapse;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  border-collapse: collapse;
   }
 
   .quad-side {
-    width: 70px;
-    /* Background color inherits from parent .quad-paper which has the color class */
-    border-right: 1px solid var(--mud-palette-divider);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
+  width: 70px;
+  /* Background color inherits from parent .quad-paper which has the color class */
+  border-right: 1px solid var(--mud-palette-divider);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
   }
 
   .quad-identifier {
-    font-size: 24px;
-    font-weight: bold;
-    text-align: center;
-    height: 100%;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--mud-palette-text-primary);
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mud-palette-text-primary);
   }
 
   .quad-main {
-    flex: 1;
+  flex: 1;
   }
 
   /* Quad header */
   .quad-header {
-    display: flex;
-    border-bottom: 1px solid var(--mud-palette-divider);
-    background-color: var(--mud-palette-surface);
+  display: flex;
+  border-bottom: 1px solid var(--mud-palette-divider);
+  background-color: var(--mud-palette-surface);
   }
 
   .quad-header-cell {
-    flex: 1;
-    padding: 8px;
-    text-align: center;
-    font-weight: bold;
-    border-right: 1px solid var(--mud-palette-divider);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  flex: 1;
+  padding: 8px;
+  text-align: center;
+  font-weight: bold;
+  border-right: 1px solid var(--mud-palette-divider);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   }
 
   .player-header {
-    flex: 2.45;
+  flex: 2.45;
   }
 
   /* Quad dropzone */
   .quad-dropzone {
-    min-height: 400px;
-    background-color: var(--mud-palette-background-grey);
+  min-height: 400px;
+  background-color: var(--mud-palette-background-grey);
   }
 
   /* Player row in quad */
   .quad-player-row {
-    display: flex;
-    border-bottom: 1px solid var(--mud-palette-divider);
-    background-color: var(--mud-palette-surface);
+  display: flex;
+  border-bottom: 1px solid var(--mud-palette-divider);
+  background-color: var(--mud-palette-surface);
   }
 
   .player-cell {
-    flex: 2;
-    padding: 8px;
-    border-right: 1px solid #ddd;
-    display: flex;
-    flex-direction: column;
+  flex: 2;
+  padding: 8px;
+  border-right: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
   }
 
   .player-position {
-    font-size: 18px;
-    font-weight: bold;
-    margin-right: 8px;
-    color: #666;
+  font-size: 18px;
+  font-weight: bold;
+  margin-right: 8px;
+  color: #666;
   }
 
   .player-name {
-    font-size: 18px;
-    font-weight: bold;
-    color: #666;
+  font-size: 18px;
+  font-weight: bold;
+  color: #666;
   }
 
   .player-rating {
-    font-size: 16px;
-    color: #333;
+  font-size: 16px;
+  color: #333;
   }
 
   .round-cell {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid #ddd;
-    margin: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #ddd;
+  margin: 0;
   }
 
   .opponent {
-    padding: 4px;
-    text-align: center;
-    border-bottom: 1px solid #eee;
-    color: #666;
+  padding: 4px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+  color: #666;
   }
 
   .score-cell {
-    padding: 8px;
-    text-align: center;
-    font-size: 18px;
-    font-weight: bold;
-    background-color: inherit;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  padding: 8px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  background-color: inherit;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   }
 
   .table-number {
-    padding: 4px;
-    text-align: center;
-    border-top: 1px solid #eee;
-    color: #666;
+  padding: 4px;
+  text-align: center;
+  border-top: 1px solid #eee;
+  color: #666;
   }
 
   .total-cell {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
   }
 
   .total-score {
-    font-size: 32px;
-    font-weight: bold;
-    color: #666;
+  font-size: 32px;
+  font-weight: bold;
+  color: #666;
   }
 
   .remove-btn {
-    position: absolute;
-    top: 4px;
-    right: 4px;
+  position: absolute;
+  top: 4px;
+  right: 4px;
   }
 
   /* Unassigned players section */
   .unassigned-header {
-    background-color: #f0f0f0;
-    padding: 8px;
-    border-bottom: 1px solid #ddd;
+  background-color: #f0f0f0;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
   }
 
   .unassigned-dropzone {
-    min-height: 400px;
-    padding: 8px;
-    overflow-y: auto;
+  min-height: 400px;
+  padding: 8px;
+  overflow-y: auto;
   }
 
   .player-card {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-    padding: 6px;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    width: 100%;
-    font-size: 14px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 6px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 100%;
+  font-size: 14px;
   }
 
-  .player-number {
-    font-size: 20px;
-    font-weight: bold;
-    margin-right: 16px;
-    min-width: 24px;
-    text-align: center;
+.player-number {
+font-size: 20px;
+font-weight: bold;
+margin-right: 16px;
+min-width: 24px;
+text-align: center;
+}
+
+.player-info {
+flex-grow: 1;
+}
+
+  .score-input {
+    width: 40px !important;
+    max-width: 40px !important;
+    min-width: 0 !important;
   }
 
-  .player-info {
-    flex-grow: 1;
-  }
+    /* Target the actual input element where text is entered */
+    .score-input ::deep input.mud-input-root {
+      text-align: center !important;
+      padding: 2px 0 !important;
+      width: 100% !important;
+    }
+
+    /* Make sure all container elements are also constrained */
+    .score-input ::deep .mud-input,
+    .score-input ::deep .mud-input-control,
+    .score-input ::deep .mud-input-outlined {
+      width: 100% !important;
+      min-width: 0 !important;
+    }
+
+    /* Ensure the border is properly sized */
+    .score-input ::deep .mud-input-outlined-border {
+      border-width: 1px !important;
+    }
 
   /* Pagination styles */
   .pagination-controls {
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
   }
 
   .mud-pagination {
-    margin-right: 16px;
+  margin-right: 16px;
   }
 
   /* Theme color classes for quads */
   /* Primary color */
   .quad-paper.mud-paper.quad-color-primary {
-    background-color: var(--mud-palette-primary-lighten) !important;
+  background-color: var(--mud-palette-primary-lighten) !important;
   }
 
-    .quad-paper.mud-paper.quad-color-primary .quad-side {
-      background-color: var(--mud-palette-primary-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-primary .quad-side {
+  background-color: var(--mud-palette-primary-lighten) !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-primary .score-cell {
-      background-color: var(--mud-palette-primary-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-primary .score-cell {
+  background-color: var(--mud-palette-primary-lighten) !important;
+  }
 
   /* Secondary color */
   .quad-paper.mud-paper.quad-color-secondary {
-    background-color: var(--mud-palette-secondary-lighten) !important;
+  background-color: var(--mud-palette-secondary-lighten) !important;
   }
 
-    .quad-paper.mud-paper.quad-color-secondary .quad-side {
-      background-color: var(--mud-palette-secondary-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-secondary .quad-side {
+  background-color: var(--mud-palette-secondary-lighten) !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-secondary .score-cell {
-      background-color: var(--mud-palette-secondary-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-secondary .score-cell {
+  background-color: var(--mud-palette-secondary-lighten) !important;
+  }
 
   /* Info color */
   .quad-paper.mud-paper.quad-color-info {
-    background-color: var(--mud-palette-info-lighten) !important;
+  background-color: var(--mud-palette-info-lighten) !important;
   }
 
-    .quad-paper.mud-paper.quad-color-info .quad-side {
-      background-color: var(--mud-palette-info-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-info .quad-side {
+  background-color: var(--mud-palette-info-lighten) !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-info .score-cell {
-      background-color: var(--mud-palette-info-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-info .score-cell {
+  background-color: var(--mud-palette-info-lighten) !important;
+  }
 
   /* Success color */
   .quad-paper.mud-paper.quad-color-success {
-    background-color: var(--mud-palette-success-lighten) !important;
+  background-color: var(--mud-palette-success-lighten) !important;
   }
 
-    .quad-paper.mud-paper.quad-color-success .quad-side {
-      background-color: var(--mud-palette-success-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-success .quad-side {
+  background-color: var(--mud-palette-success-lighten) !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-success .score-cell {
-      background-color: var(--mud-palette-success-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-success .score-cell {
+  background-color: var(--mud-palette-success-lighten) !important;
+  }
 
   /* Warning color */
   .quad-paper.mud-paper.quad-color-warning {
-    background-color: var(--mud-palette-warning-lighten) !important;
+  background-color: var(--mud-palette-warning-lighten) !important;
   }
 
-    .quad-paper.mud-paper.quad-color-warning .quad-side {
-      background-color: var(--mud-palette-warning-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-warning .quad-side {
+  background-color: var(--mud-palette-warning-lighten) !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-warning .score-cell {
-      background-color: var(--mud-palette-warning-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-warning .score-cell {
+  background-color: var(--mud-palette-warning-lighten) !important;
+  }
 
   /* Surface color */
   .quad-paper.mud-paper.quad-color-surface {
-    background-color: var(--mud-palette-surface) !important;
+  background-color: var(--mud-palette-surface) !important;
   }
 
-    .quad-paper.mud-paper.quad-color-surface .quad-side {
-      background-color: var(--mud-palette-surface) !important;
-    }
+  .quad-paper.mud-paper.quad-color-surface .quad-side {
+  background-color: var(--mud-palette-surface) !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-surface .score-cell {
-      background-color: var(--mud-palette-surface) !important;
-    }
+  .quad-paper.mud-paper.quad-color-surface .score-cell {
+  background-color: var(--mud-palette-surface) !important;
+  }
 
   /* Original colors */
   .quad-paper.mud-paper.quad-color-yellow {
-    background-color: #ffffcc !important;
+  background-color: #ffffcc !important;
   }
 
-    .quad-paper.mud-paper.quad-color-yellow .quad-side {
-      background-color: #ffffcc !important;
-    }
+  .quad-paper.mud-paper.quad-color-yellow .quad-side {
+  background-color: #ffffcc !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-yellow .score-cell {
-      background-color: #ffffcc !important;
-    }
+  .quad-paper.mud-paper.quad-color-yellow .score-cell {
+  background-color: #ffffcc !important;
+  }
 
   .quad-paper.mud-paper.quad-color-blue {
-    background-color: #e6f7ff !important;
+  background-color: #e6f7ff !important;
   }
 
-    .quad-paper.mud-paper.quad-color-blue .quad-side {
-      background-color: #e6f7ff !important;
-    }
+  .quad-paper.mud-paper.quad-color-blue .quad-side {
+  background-color: #e6f7ff !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-blue .score-cell {
-      background-color: #e6f7ff !important;
-    }
+  .quad-paper.mud-paper.quad-color-blue .score-cell {
+  background-color: #e6f7ff !important;
+  }
 </style>
 
 <style>
   /* Media queries need to be in a separate style block in Blazor */
   @@media (max-width: 1400px) {
-    .quad-paper {
-      width: 31%;
-    }
+  .quad-paper {
+  width: 31%;
+  }
   }
 
   @@media (max-width: 1200px) {
-/*     .quads-section {
-      flex: 3;
-    } */
+  /*     .quads-section {
+  flex: 3;
+  } */
 
-    .quad-paper {
-      width: 48%;
-    }
+  .quad-paper {
+  width: 48%;
+  }
   }
 
   @@media (max-width:1080px) {
-    .quad-paper {
-      width: width: 48%; /* Maintain 2 quads per row */
-    }
+  .quad-paper {
+  width: width: 48%; /* Maintain 2 quads per row */
+  }
   }
 
   @@media (max-width: 768px) {
-    /* Switch to vertical layout on small screens */
-    .d-flex {
-      flex-direction: column;
-    }
+  /* Switch to vertical layout on small screens */
+  .d-flex {
+  flex-direction: column;
+  }
+  }
+
+  @@media (min-width: 768px) {
+    .score-cell
+
+  {
+    justify-content: center;
+  }
+
   }
 
   .quads-section {
-    width: 100%;
+  width: 100%;
   }
 
   .unassigned-paper {
-    width: 100%;
-    max-width: none;
-    margin-top: 16px !important;
+  width: 100%;
+  max-width: none;
+  margin-top: 16px !important;
   }
 
   /* Responsive pagination */
   .pagination-controls {
-    flex-direction: column;
-    align-items: start;
+  flex-direction: column;
+  align-items: start;
   }
 
-    .pagination-controls .mud-pagination {
-      margin-bottom: 12px;
-      margin-right: 0;
-    }
+  .pagination-controls .mud-pagination {
+  margin-bottom: 12px;
+  margin-right: 0;
+  }
 
-    .pagination-controls .mud-typography {
-      margin-left: 0;
-    }
+  .pagination-controls .mud-typography {
+  margin-left: 0;
+  }
 
   }
 </style>
@@ -607,6 +651,16 @@
             .Skip(skip)
             .Take(pageSize)
             .ToList();
+
+        foreach (var player in from quad in DisplayedQuads from player in quad.Players where player.Scores.Count <= 0 select player)
+        {
+            player.Scores =
+            [
+                player.Round1Score ?? "",
+                player.Round2Score ?? "",
+                player.Round3Score ?? ""
+            ];
+        }
 
         // Update ViewModel
         ViewModel = new QuadsViewModel
@@ -710,17 +764,29 @@
         }
     }
 
-    private string GetScore(TournamentPlayer player, int round)
+    private string GetOpponent(TournamentPlayer player, int round)
     {
         if (!player.QuadId.HasValue)
             return "";
 
-        var key = $"{player.QuadId}-{player.Id}-{round}";
-
-        if (MatchResults.TryGetValue(key, out var result))
-            return result;
-
-        return "";
+        // Use database values if available
+        switch (round)
+        {
+            case 1:
+                return !string.IsNullOrEmpty(player.Round1Opponent)
+                    ? player.Round1Opponent
+                    : GetDefaultOpponent(player, 1);
+            case 2:
+                return !string.IsNullOrEmpty(player.Round2Opponent)
+                    ? player.Round2Opponent
+                    : GetDefaultOpponent(player, 2);
+            case 3:
+                return !string.IsNullOrEmpty(player.Round3Opponent)
+                    ? player.Round3Opponent
+                    : GetDefaultOpponent(player, 3);
+            default:
+                return "";
+        }
     }
 
     private string GetTotalScore(TournamentPlayer player)
@@ -734,16 +800,38 @@
 
         double total = 0;
 
-        for (var i = 1; i <= 3; i++)
+        // Sum up scores from all rounds
+        for (var i = 0; i < player.Scores.Count; i++)
         {
-            var score = GetScore(player, i);
-            if (double.TryParse(score, out var value))
+            if (double.TryParse(player.Scores[i], out var score))
             {
-                total += value;
+                total += score;
             }
         }
 
-        return total.ToString();
+        return total.ToString("F1"); // Format with 1 decimal place
+    }
+
+    private void UpdateScore(TournamentPlayer player, int round)
+    {
+        if (!player.QuadId.HasValue) return;
+
+        // Update the appropriate round score in the database
+        switch (round)
+        {
+            case 1:
+                player.Round1Score = player.Scores[0];
+                break;
+            case 2:
+                player.Round2Score = player.Scores[1];
+                break;
+            case 3:
+                player.Round3Score = player.Scores[2];
+                break;
+        }
+
+        // No need to reload entire data - just update the UI
+        StateHasChanged();
     }
 
     private int GetTableNumber(TournamentPlayer player, int round)

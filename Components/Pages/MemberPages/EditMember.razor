@@ -1,4 +1,4 @@
-﻿@page "/GuildPlayerPages/EditGuildPlayer/{PlayerId:int}"
+﻿@page "/MemberPages/EditMember/{PlayerId:int}"
 @rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
 @inject TournamentContext DbContext
@@ -60,7 +60,7 @@
             else
             {
                 Snackbar.Add("Player not found", Severity.Error);
-                NavigationManager.NavigateTo("/GuildPlayerPages/GuildPlayerView");
+                NavigationManager.NavigateTo("/MemberPages/MemberView");
             }
         }
         else
@@ -91,7 +91,7 @@
                 Snackbar.Add("Player updated successfully", Severity.Success);
             }
 
-            NavigationManager.NavigateTo("/GuildPlayerPages/GuildPlayerView");
+            NavigationManager.NavigateTo("/MemberPages/MemberView");
         }
         catch (Exception ex)
         {
@@ -101,6 +101,6 @@
 
     private void Cancel()
     {
-        NavigationManager.NavigateTo("/GuildPlayerPages/GuildPlayerView");
+        NavigationManager.NavigateTo("/MemberPages/MemberView");
     }
 }

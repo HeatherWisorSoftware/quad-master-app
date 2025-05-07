@@ -1,4 +1,4 @@
-﻿@page "/GuildPlayerPages/GuildPlayerView"
+﻿@page "/MemberPages/MemberView"
 @rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
 @inject TournamentContext DbContext
@@ -132,17 +132,17 @@
 
     private void NavigateToAddPlayer()
     {
-        NavigationManager.NavigateTo("/GuildPlayerPages/EditGuildPlayer/0");
+        NavigationManager.NavigateTo("/MemberPages/AddMember");
     }
 
     private void NavigateToEditPlayer(int playerId)
     {
-        NavigationManager.NavigateTo($"/GuildPlayerPages/EditGuildPlayer/{playerId}");
+        NavigationManager.NavigateTo($"/MemberPages/EditMember/{playerId}");
     }
 
     private void NavigateToPlayerHistory(int playerId)
     {
-        NavigationManager.NavigateTo($"/GuildPlayerPages/GuildPlayerHistory/{playerId}");
+        NavigationManager.NavigateTo($"/MemberPages/MemberHistory/{playerId}");
     }
 
     private void OpenDeleteDialog(Player player)

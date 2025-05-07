@@ -1,4 +1,4 @@
-﻿@page "/GuildPlayerPages/GuildPlayerHistory/{PlayerId:int}"
+﻿@page "/MemberPages/MemberHistory/{PlayerId:int}"
 @rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
 @inject TournamentContext DbContext
@@ -20,7 +20,7 @@
             }
             <MudSpacer />
             <MudButton Color="Color.Secondary" Variant="Variant.Filled"
-                       OnClick="@(() => NavigationManager.NavigateTo("/GuildPlayerPages/GuildPlayerView"))">
+                       OnClick="@(() => NavigationManager.NavigateTo("/MemberPages/MemberView"))">
                 Back to Players
             </MudButton>
         </MudCardHeader>
@@ -143,7 +143,7 @@
             if (Player == null)
             {
                 Snackbar.Add("Player not found", Severity.Error);
-                NavigationManager.NavigateTo("/GuildPlayerPages/GuildPlayerView");
+                NavigationManager.NavigateTo("/MemberPages/MemberView");
                 return;
             }
 
@@ -189,6 +189,6 @@
 
     private void NavigateToTournamentDetails(int tournamentId)
     {
-        NavigationManager.NavigateTo($"/GuildPlayerPages/EditTournamentDetails/{tournamentId}");
+        NavigationManager.NavigateTo($"/EditTournamentDetails/{tournamentId}");
     }
 }

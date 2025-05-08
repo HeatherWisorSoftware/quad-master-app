@@ -1,0 +1,1036 @@
+﻿@page "/MemberPages/ImportPlayers"
+@using System.IO
+@using System.Text
+@using System.Text.RegularExpressions
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.EntityFrameworkCore
+@inject TournamentContext DbContext
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudPaper Elevation="3" Class="pa-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Import Players</MudText>
+
+        @if (!HasExistingPlayers)
+        {
+            <MudAlert Severity="Severity.Info" Class="mb-4">
+                No player database detected. You can import players from a CSV file.
+            </MudAlert>
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Warning" Class="mb-4">
+                Player database already exists with @ExistingPlayerCount players. Importing will add to existing players.
+            </MudAlert>
+        }
+
+        <MudCard Class="mb-4">
+            <MudCardContent>
+                <MudText Typo="Typo.h6">Step 1: Upload CSV File</MudText>
+                <MudText Typo="Typo.body2" Class="mb-3">Select a CSV file containing player data.</MudText>
+
+                <InputFile id="fileInput" OnChange="OnInputFileChange" accept=".csv" class="d-none" />
+                <MudButton HtmlTag="label"
+                           Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.CloudUpload"
+                           for="fileInput">
+                    Upload CSV
+                </MudButton>
+
+                @if (!string.IsNullOrEmpty(FileName))
+                {
+                    <MudText Class="mt-2">
+                        <MudChip T="string" Color="Color.Success" Size="Size.Small">@FileName</MudChip>
+                    </MudText>
+                }
+
+                @if (IsLoading)
+                {
+                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mt-2" />
+                }
+            </MudCardContent>
+        </MudCard>
+
+        @if (Headers.Count > 0)
+        {
+            <MudCard Class="mb-4">
+                <MudCardContent>
+                    <MudText Typo="Typo.h6">Step 2: Preview Data</MudText>
+                    <MudText Typo="Typo.body2" Class="mb-3">Here's a preview of the first @Math.Min(PreviewRows.Count, 5) rows of your data.</MudText>
+
+                    <div class="overflow-x-auto">
+                        <MudSimpleTable Style="overflow-x: auto">
+                            <thead>
+                                <tr>
+                                    @foreach (var header in Headers)
+                                    {
+                                        <th>@header</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Math.Min(PreviewRows.Count, 5); i++)
+                                {
+                                    <tr>
+                                        @foreach (var cell in PreviewRows[i])
+                                        {
+                                            <td>@cell</td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    </div>
+                </MudCardContent>
+            </MudCard>
+
+            <MudCard Class="mb-4">
+                <MudCardContent>
+                    <MudText Typo="Typo.h6">Step 3: Map Fields</MudText>
+                    <MudText Typo="Typo.body2" Class="mb-3">Match each CSV column to a player field.</MudText>
+
+                    <MudGrid>
+                        @foreach (var header in Headers)
+                        {
+                            <MudItem xs="12" sm="6" md="4">
+                                <MudSelect T="string" Label="@header" Value="@GetMappingValue(header)" ValueChanged="@(value => UpdateMapping(header, value))">
+                                    <MudSelectItem Value="@("ignore")">Ignore this column</MudSelectItem>
+                                    <MudSelectItem Value="@("FirstName")">First Name</MudSelectItem>
+                                    <MudSelectItem Value="@("LastName")">Last Name</MudSelectItem>
+                                    <MudSelectItem Value="@("FullName")">Full Name (will be split)</MudSelectItem>
+                                    <MudSelectItem Value="@("Ranking")">Ranking</MudSelectItem>
+                                    <MudSelectItem Value="@("Email")">Email</MudSelectItem>
+                                    <MudSelectItem Value="@("Phone")">Phone</MudSelectItem>
+                                </MudSelect>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                </MudCardContent>
+            </MudCard>
+
+            <MudCard Class="mb-4">
+                <MudCardContent>
+                    <MudText Typo="Typo.h6">Step 4: Data Transformations (Optional)</MudText>
+                    <MudText Typo="Typo.body2" Class="mb-3">Apply transformations to standardize your data.</MudText>
+
+                    <MudGrid>
+                        <MudItem xs="12" sm="6">
+                            <MudCheckBox T="bool" @bind-Checked="@TransformOptions.TrimWhitespace" Label="Trim whitespace from text fields" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudCheckBox T="bool" @bind-Checked="@TransformOptions.CapitalizeNames" Label="Capitalize first letter of names" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudCheckBox T="bool" @bind-Checked="@TransformOptions.StandardizeEmails" Label="Convert emails to lowercase" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudNumericField T="int" @bind-Value="TransformOptions.DefaultRanking" Label="Default Ranking (if not provided)" Min="0" Max="3000" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudExpansionPanel>
+                                <TitleContent>
+                                    <div class="d-flex">
+                                        <MudIcon Icon="@Icons.Material.Filled.Person" Class="mr-2" />
+                                        <MudText>Advanced Name Parsing</MudText>
+                                    </div>
+                                </TitleContent>
+                                <ChildContent>
+                                    <MudGrid Class="pa-2">
+                                        <MudItem xs="12">
+                                            <MudText Typo="Typo.body2" Class="mb-2">
+                                                If your CSV contains full names in one column (e.g., "Mr. John Smith Jr."), select that column to parse it:
+                                            </MudText>
+                                        </MudItem>
+                                        <MudItem xs="12" sm="6">
+                                            <MudSelect T="string" Label="Column containing full name" 
+                                                      Value="@NameParsingColumn" 
+                                                      ValueChanged="@(value => NameParsingColumn = value)">
+                                                <MudSelectItem Value="@("none")">None (don't parse names)</MudSelectItem>
+                                                @foreach (var header in Headers)
+                                                {
+                                                    <MudSelectItem Value="@header">@header</MudSelectItem>
+                                                }
+                                            </MudSelect>
+                                        </MudItem>
+                                        <MudItem xs="12" sm="6">
+                                            <MudCheckBox T="bool" @bind-Checked="@TransformOptions.UseAdvancedNameParsing" Label="Use advanced name parsing (for titles and suffixes)" />
+                                        </MudItem>
+                                        <MudItem xs="12" sm="6">
+                                            <MudCheckBox T="bool" @bind-Checked="@TransformOptions.PreserveNamePrefixes" Label="Preserve prefixes (Mr., Dr., etc.)" />
+                                        </MudItem>
+                                    </MudGrid>
+                                </ChildContent>
+                            </MudExpansionPanel>
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudExpansionPanel>
+                                <TitleContent>
+                                    <div class="d-flex">
+                                        <MudIcon Icon="@Icons.Material.Filled.LocationOn" Class="mr-2" />
+                                        <MudText>Address Splitting</MudText>
+                                    </div>
+                                </TitleContent>
+                                <ChildContent>
+                                    <MudGrid Class="pa-2">
+                                        <MudItem xs="12">
+                                            <MudText Typo="Typo.body2" Class="mb-2">
+                                                If your CSV contains complete addresses in a single column, select that column to split it into components:
+                                            </MudText>
+                                        </MudItem>
+                                        <MudItem xs="12" sm="6">
+                                            <MudSelect T="string" Label="Column containing full address" 
+                                                      Value="@AddressSplitColumn" 
+                                                      ValueChanged="@(value => AddressSplitColumn = value)">
+                                                <MudSelectItem Value="@("none")">None (don't split addresses)</MudSelectItem>
+                                                @foreach (var header in Headers)
+                                                {
+                                                    <MudSelectItem Value="@header">@header</MudSelectItem>
+                                                }
+                                            </MudSelect>
+                                        </MudItem>
+                                    </MudGrid>
+                                </ChildContent>
+                            </MudExpansionPanel>
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+            </MudCard>
+
+            <MudButton Variant="Variant.Filled" 
+                      Color="Color.Primary"
+                      OnClick="GeneratePreview"
+                      Disabled="@(!CanGeneratePreview())" 
+                      Class="mt-4">
+                Preview Data
+            </MudButton>
+
+            <MudButton Variant="Variant.Filled" 
+                      Color="Color.Success" 
+                      OnClick="ImportData" 
+                      Disabled="@(!CanImport())"
+                      Class="ml-2 mt-4">
+                Import @(CsvData.Count) Players
+            </MudButton>
+
+            <MudButton Variant="Variant.Outlined"
+                      Color="Color.Secondary"
+                      OnClick="Reset"
+                      Class="ml-2 mt-4">
+                Reset
+            </MudButton>
+
+            @if (!CanImport())
+            {
+                <MudAlert Severity="Severity.Warning" Class="mt-4">
+                    <MudText Typo="Typo.subtitle1">Unable to Import</MudText>
+                    <MudList T="string" Dense="true">
+                        @if (CsvData.Count == 0)
+                        {
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.Error">No data to import. Please upload a CSV file first.</MudListItem>
+                        }
+                        @if (!HasRequiredMappings())
+                        {
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.Error">Required fields are missing. Please map at least First Name and Last Name fields.</MudListItem>
+                        }
+                        @if (HasDuplicateMappings())
+                        {
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.Error">Duplicate field mappings detected. Please ensure each CSV column maps to a unique player field.</MudListItem>
+                        }
+                    </MudList>
+                </MudAlert>
+            }
+            
+            @if (ShowPreview && PreviewPlayers.Count > 0)
+            {
+                <MudCard Class="mt-4">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h5">Step 5: Review Transformed Data</MudText>
+                            <MudText Typo="Typo.body2">Preview how the data will look after import with all transformations applied.</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudTable Items="@PreviewPlayers" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@PreviewLoading" LoadingProgressColor="Color.Primary">
+                            <HeaderContent>
+                                <MudTh>First Name</MudTh>
+                                <MudTh>Last Name</MudTh>
+                                <MudTh>Ranking</MudTh>
+                                <MudTh>Email</MudTh>
+                                <MudTh>Phone</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="First Name">@context.FirstName</MudTd>
+                                <MudTd DataLabel="Last Name">@context.LastName</MudTd>
+                                <MudTd DataLabel="Ranking">@context.Ranking</MudTd>
+                                <MudTd DataLabel="Email">@context.Email</MudTd>
+                                <MudTd DataLabel="Phone">@context.Phone</MudTd>
+                            </RowTemplate>
+                            <PagerContent>
+                                <MudTablePager PageSizeOptions="new int[] { 5, 10, 25 }" />
+                            </PagerContent>
+                        </MudTable>
+                        
+                        @if (PreviewPlayers.Count > 0)
+                        {
+                            <MudText Typo="Typo.body2" Class="mt-4">
+                                Showing @(Math.Min(PreviewPlayers.Count, 10)) of @CsvData.Count players. All data transformations have been applied.
+                            </MudText>
+                        }
+                    </MudCardContent>
+                </MudCard>
+            }
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    // File upload
+    private string FileName { get; set; } = string.Empty;
+    private bool IsLoading { get; set; } = false;
+    private int ExistingPlayerCount { get; set; } = 0;
+    private bool HasExistingPlayers => ExistingPlayerCount > 0;
+
+    // CSV parsing results
+    private List<string> Headers { get; set; } = new List<string>();
+    private List<List<string>> PreviewRows { get; set; } = new List<List<string>>();
+    private List<List<string>> CsvData { get; set; } = new List<List<string>>();
+
+    // Field mapping
+    private Dictionary<string, string> FieldMapping { get; set; } = new Dictionary<string, string>();
+    
+    // Address splitting and name parsing
+    private string AddressSplitColumn { get; set; } = "none";
+    private string NameParsingColumn { get; set; } = "none";
+
+    // Preview functionality
+    private bool ShowPreview { get; set; } = false;
+    private bool PreviewLoading { get; set; } = false;
+    private List<Player> PreviewPlayers { get; set; } = new List<Player>();
+
+    // Data transformation options
+    private class TransformationOptions
+    {
+        public bool TrimWhitespace { get; set; } = true;
+        public bool CapitalizeNames { get; set; } = false;
+        public bool StandardizeEmails { get; set; } = true;
+        public bool PreserveNamePrefixes { get; set; } = true;
+        public bool UseAdvancedNameParsing { get; set; } = true;
+        public int DefaultRanking { get; set; } = 0;
+    }
+
+    private TransformationOptions TransformOptions { get; set; } = new TransformationOptions();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check if there are existing players in the database
+        ExistingPlayerCount = await DbContext.Players.CountAsync();
+    }
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            IsLoading = true;
+            var file = e.GetMultipleFiles().FirstOrDefault();
+            if (file == null)
+            {
+                Snackbar.Add("No file selected.", Severity.Warning);
+                return;
+            }
+
+            FileName = file.Name;
+
+            // Process CSV file
+            using var stream = file.OpenReadStream(maxAllowedSize: 10485760); // 10MB max
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+            
+            using var reader = new StreamReader(memoryStream);
+            var csvContent = await reader.ReadToEndAsync();
+            
+            ParseCsvData(csvContent);
+
+            // Auto-map fields based on headers
+            AutoMapFields();
+            
+            // Reset preview when new file is uploaded
+            ShowPreview = false;
+            PreviewPlayers.Clear();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error processing file: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void ParseCsvData(string csvContent)
+    {
+        // Reset existing data
+        Headers.Clear();
+        PreviewRows.Clear();
+        CsvData.Clear();
+
+        // Simple CSV parser
+        // In a production app, consider using a library like CsvHelper
+        var lines = csvContent.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        
+        if (lines.Length > 0)
+        {
+            // Parse headers
+            Headers = ParseCsvLine(lines[0]);
+
+            // Parse data rows
+            for (int i = 1; i < lines.Length; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(lines[i]))
+                {
+                    var row = ParseCsvLine(lines[i]);
+                    
+                    // Ensure row has the correct number of columns
+                    while (row.Count < Headers.Count)
+                    {
+                        row.Add(string.Empty);
+                    }
+                    
+                    CsvData.Add(row);
+
+                    // Store first 5 rows for preview
+                    if (i <= 5)
+                    {
+                        PreviewRows.Add(row);
+                    }
+                }
+            }
+        }
+    }
+
+    private List<string> ParseCsvLine(string line)
+    {
+        var result = new List<string>();
+        bool inQuotes = false;
+        var currentValue = new StringBuilder();
+
+        for (int i = 0; i < line.Length; i++)
+        {
+            char c = line[i];
+
+            if (c == '"')
+            {
+                if (inQuotes && i < line.Length - 1 && line[i + 1] == '"')
+                {
+                    // Escaped quote
+                    currentValue.Append('"');
+                    i++;
+                }
+                else
+                {
+                    // Toggle quote mode
+                    inQuotes = !inQuotes;
+                }
+            }
+            else if (c == ',' && !inQuotes)
+            {
+                // End of field
+                result.Add(currentValue.ToString());
+                currentValue.Clear();
+            }
+            else
+            {
+                currentValue.Append(c);
+            }
+        }
+
+        // Add the last field
+        result.Add(currentValue.ToString());
+
+        return result;
+    }
+
+    private void AutoMapFields()
+    {
+        FieldMapping.Clear();
+
+        foreach (var header in Headers)
+        {
+            string normalizedHeader = header.ToLower().Trim();
+            
+            if (normalizedHeader.Contains("first") && normalizedHeader.Contains("name"))
+                FieldMapping[header] = "FirstName";
+            else if (normalizedHeader.Contains("last") && normalizedHeader.Contains("name"))
+                FieldMapping[header] = "LastName";
+            else if (normalizedHeader.Contains("full") && normalizedHeader.Contains("name"))
+                FieldMapping[header] = "FullName";
+            else if (normalizedHeader.Contains("rank") || normalizedHeader.Contains("rating"))
+                FieldMapping[header] = "Ranking";
+            else if (normalizedHeader.Contains("email"))
+                FieldMapping[header] = "Email";
+            else if (normalizedHeader.Contains("phone") || normalizedHeader.Contains("contact"))
+                FieldMapping[header] = "Phone";
+            else
+                FieldMapping[header] = "ignore";
+        }
+    }
+
+    private string GetMappingValue(string header)
+    {
+        if (FieldMapping.TryGetValue(header, out string value))
+            return value;
+        
+        return "ignore";
+    }
+
+    private void UpdateMapping(string header, string value)
+    {
+        FieldMapping[header] = value;
+        
+        // Reset preview when mappings change
+        ShowPreview = false;
+        PreviewPlayers.Clear();
+    }
+
+    private bool CanImport()
+    {
+        // Check if we have data and required field mappings
+        return CsvData.Count > 0 && HasRequiredMappings() && !HasDuplicateMappings();
+    }
+
+    private bool CanGeneratePreview()
+    {
+        // Same conditions as CanImport
+        return CsvData.Count > 0 && HasRequiredMappings() && !HasDuplicateMappings();
+    }
+
+    private bool HasRequiredMappings()
+    {
+        // Check if required fields are mapped (first name and last name)
+        bool hasFirstName = FieldMapping.Values.Contains("FirstName");
+        bool hasLastName = FieldMapping.Values.Contains("LastName");
+        
+        // Full name mapping can substitute for both first and last name
+        bool hasFullName = FieldMapping.Values.Contains("FullName");
+        
+        return (hasFirstName && hasLastName) || hasFullName;
+    }
+
+    private bool HasDuplicateMappings()
+    {
+        // Check if any fields (except "ignore") are mapped to multiple columns
+        var mappedFields = FieldMapping.Values.Where(v => v != "ignore").ToList();
+        return mappedFields.Count != mappedFields.Distinct().Count();
+    }
+
+    private async Task GeneratePreview()
+    {
+        try
+        {
+            PreviewLoading = true;
+            ShowPreview = true;
+            PreviewPlayers.Clear();
+
+            // Process up to 10 rows for preview
+            int previewCount = Math.Min(CsvData.Count, 10);
+            
+            for (int i = 0; i < previewCount; i++)
+            {
+                var row = CsvData[i];
+                var player = new Player();
+                
+                // Use the same mapping logic as in ImportData
+                ProcessPlayerFromRow(player, row);
+                
+                PreviewPlayers.Add(player);
+            }
+            
+            // Short delay to show loading indicator
+            await Task.Delay(500);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error generating preview: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            PreviewLoading = false;
+        }
+    }
+
+    private async Task ImportData()
+    {
+        try
+        {
+            IsLoading = true;
+
+            int successCount = 0;
+            int errorCount = 0;
+            List<Player> newPlayers = new List<Player>();
+
+            foreach (var row in CsvData)
+            {
+                try
+                {
+                    var player = new Player();
+                    
+                    // Process the player data from this row
+                    ProcessPlayerFromRow(player, row);
+
+                    // Validate required fields
+                    if (!string.IsNullOrWhiteSpace(player.FirstName) && !string.IsNullOrWhiteSpace(player.LastName))
+                    {
+                        newPlayers.Add(player);
+                        successCount++;
+                    }
+                    else
+                    {
+                        errorCount++;
+                    }
+                }
+                catch
+                {
+                    errorCount++;
+                }
+            }
+
+            // Add all new players to the database
+            if (newPlayers.Count > 0)
+            {
+                DbContext.Players.AddRange(newPlayers);
+                await DbContext.SaveChangesAsync();
+            }
+
+            // Show success message
+            Snackbar.Add($"Import complete: {successCount} players added, {errorCount} skipped", 
+                        successCount > 0 ? Severity.Success : Severity.Warning);
+
+            // Reset the form after successful import
+            Reset();
+
+            // Redirect to member view
+            if (successCount > 0)
+            {
+                NavigationManager.NavigateTo("MemberPages/MemberView");
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error importing data: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+    
+    // Helper method to process a player from a row (used by both preview and import)
+    private void ProcessPlayerFromRow(Player player, List<string> row)
+    {
+        // Map fields from CSV to Player properties
+        for (int i = 0; i < Headers.Count; i++)
+        {
+            if (i < row.Count)
+            {
+                string header = Headers[i];
+                string value = row[i];
+
+                // Apply transformations
+                if (TransformOptions.TrimWhitespace)
+                    value = value.Trim();
+
+                if (FieldMapping.TryGetValue(header, out string fieldName))
+                {
+                    switch (fieldName)
+                    {
+                        case "FirstName":
+                            player.FirstName = TransformOptions.CapitalizeNames ? CapitalizeFirst(value) : value;
+                            break;
+                        case "LastName":
+                            player.LastName = TransformOptions.CapitalizeNames ? CapitalizeFirst(value) : value;
+                            break;
+                        case "FullName":
+                            // Split full name into first and last name
+                            string fullNameValue = value?.Trim() ?? "";
+                            if (!string.IsNullOrEmpty(fullNameValue))
+                            {
+                                // Either use advanced name parsing or simple splitting
+                                if (TransformOptions.UseAdvancedNameParsing)
+                                {
+                                    var (prefix, parsedFirstName, parsedLastName, suffix) = ParseFullName(fullNameValue);
+                                    
+                                    if (TransformOptions.PreserveNamePrefixes && !string.IsNullOrEmpty(prefix))
+                                    {
+                                        player.FirstName = prefix + " " + parsedFirstName;
+                                    }
+                                    else
+                                    {
+                                        player.FirstName = parsedFirstName;
+                                    }
+                                    
+                                    if (!string.IsNullOrEmpty(suffix))
+                                    {
+                                        player.LastName = parsedLastName + " " + suffix;
+                                    }
+                                    else
+                                    {
+                                        player.LastName = parsedLastName;
+                                    }
+                                }
+                                else
+                                {
+                                    // Simple splitting on first space
+                                    var nameParts = fullNameValue.Split(new[] { ' ' }, 2);
+                                    if (nameParts.Length > 0)
+                                        player.FirstName = nameParts[0];
+                                    if (nameParts.Length > 1)
+                                        player.LastName = nameParts[1];
+                                }
+                            }
+                            break;
+                        case "Ranking":
+                            if (int.TryParse(value, out int ranking))
+                                player.Ranking = ranking;
+                            else
+                                player.Ranking = TransformOptions.DefaultRanking; // Use configurable default ranking
+                            break;
+                        case "Email":
+                            string emailValue = TransformOptions.StandardizeEmails ? value.ToLower() : value;
+                            // Validate email format
+                            if (IsValidEmail(emailValue))
+                            {
+                                player.Email = emailValue;
+                            }
+                            else
+                            {
+                                // Use a default or placeholder if invalid
+                                player.Email = string.IsNullOrEmpty(emailValue) ? 
+                                               null : 
+                                               $"INVALID:{emailValue}";
+                            }
+                            break;
+                        case "Phone":
+                            string phoneValue = value;
+                            // Validate and standardize phone number format
+                            if (IsValidPhoneNumber(phoneValue, out string standardizedPhone))
+                            {
+                                player.Phone = standardizedPhone;
+                            }
+                            else
+                            {
+                                // Use a default or placeholder if invalid
+                                player.Phone = string.IsNullOrEmpty(phoneValue) ? 
+                                              null : 
+                                              $"INVALID:{phoneValue}";
+                            }
+                            break;
+                        // Ignore any other mappings
+                    }
+                }
+            }
+        }
+    }
+
+    // Helper method to parse names with prefixes and suffixes
+    private (string prefix, string firstName, string lastName, string suffix) ParseFullName(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+            return (null, null, null, null);
+            
+        string prefix = "";
+        string firstName = "";
+        string lastName = "";
+        string suffix = "";
+        
+        // Common prefixes
+        List<string> commonPrefixes = new List<string> { 
+            "Mr", "Mr.", "Mrs", "Mrs.", "Ms", "Ms.", "Miss", "Dr", "Dr.", 
+            "Prof", "Prof.", "Rev", "Rev.", "Hon", "Hon.", "Sir", "Dame", "FM", "IM", "GM", "WGM", "WIM", "WFM" 
+        };
+        
+        // Common suffixes
+        List<string> commonSuffixes = new List<string> { 
+            "Jr", "Jr.", "Sr", "Sr.", "I", "II", "III", "IV", "V", "MD", "PhD", "Esq", "Esq."
+        };
+        
+        // Split the name by spaces
+        string[] parts = fullName.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        
+        int startIndex = 0;
+        int endIndex = parts.Length - 1;
+        
+        // Check for prefix
+        if (parts.Length > 0 && commonPrefixes.Contains(parts[0]))
+        {
+            prefix = parts[0];
+            startIndex = 1;
+        }
+        
+        // Check for suffix
+        if (parts.Length > 1 && commonSuffixes.Contains(parts[parts.Length - 1]))
+        {
+            suffix = parts[parts.Length - 1];
+            endIndex = parts.Length - 2;
+        }
+        
+        // Determine first and last name from remaining parts
+        if (endIndex >= startIndex)
+        {
+            if (startIndex == endIndex)
+            {
+                // Only one name part remains, assume it's the last name
+                lastName = parts[startIndex];
+            }
+            else
+            {
+                // First name is the next part after prefix
+                firstName = parts[startIndex];
+
+                // Last name is everything else between first name and suffix
+                lastName = string.Join(" ", parts.Skip(startIndex + 1).Take(endIndex - startIndex));
+            }
+        }
+
+        return (prefix, firstName, lastName, suffix);
+    }
+
+    // Helper method to parse address
+    private (string street, string city, string state, string zip) ParseAddress(string fullAddress)
+    {
+        if (string.IsNullOrWhiteSpace(fullAddress))
+            return (null, null, null, null);
+
+        // Common address format: 123 Main St, City, State 12345
+        // This is a simplified approach - real address parsing is complex
+
+        string street = "";
+        string city = "";
+        string state = "";
+        string zip = "";
+
+        // First, let's split by commas which typically separate street, city, state/zip
+        var parts = fullAddress.Split(',').Select(p => p.Trim()).ToList();
+
+        if (parts.Count >= 1)
+            street = parts[0];
+
+        if (parts.Count >= 2)
+            city = parts[1];
+
+        if (parts.Count >= 3)
+        {
+            // The last part usually contains state and zip
+            var stateZip = parts[2].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (stateZip.Length >= 1)
+                state = stateZip[0];
+
+            if (stateZip.Length >= 2)
+                zip = stateZip[1];
+        }
+
+        return (street, city, state, zip);
+    }
+
+    // Email validation method
+    private bool IsValidEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return false;
+
+        // Simple regex pattern for basic email validation
+        // Requires @ sign and at least one dot after the @ sign
+        string pattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+        return Regex.IsMatch(email, pattern);
+    }
+
+    // Phone number validation method
+    private bool IsValidPhoneNumber(string phoneNumber, out string standardizedPhone)
+    {
+        standardizedPhone = null;
+
+        if (string.IsNullOrWhiteSpace(phoneNumber))
+            return false;
+
+        // Remove all non-digit characters
+        string digitsOnly = Regex.Replace(phoneNumber, @"\D", "");
+
+        // Check if we have a reasonable number of digits (7-15 is a common range for international numbers)
+        // US numbers would typically be 10 digits (or 11 with country code)
+        if (digitsOnly.Length < 7 || digitsOnly.Length > 15)
+            return false;
+
+        // For US numbers, we might want to standardize to a common format
+        if (digitsOnly.Length == 10)
+        {
+            // Format as (555) 123-4567
+            standardizedPhone = $"({digitsOnly.Substring(0, 3)}) {digitsOnly.Substring(3, 3)}-{digitsOnly.Substring(6)}";
+            return true;
+        }
+        else if (digitsOnly.Length == 11 && digitsOnly[0] == '1')
+        {
+            // Format as +1 (555) 123-4567 for US numbers with country code
+            standardizedPhone = $"+1 ({digitsOnly.Substring(1, 3)}) {digitsOnly.Substring(4, 3)}-{digitsOnly.Substring(7)}";
+            return true;
+        }
+
+        // For other lengths, just standardize with hyphens for readability
+        // This is a simplified approach - in a real app, you might want country-specific formatting
+        standardizedPhone = digitsOnly;
+        return true;
+    }
+
+    private string CapitalizeFirst(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return text;
+
+        return char.ToUpper(text[0]) + text.Substring(1);
+    }
+
+    private void Reset()
+    {
+        FileName = string.Empty;
+        Headers.Clear();
+        PreviewRows.Clear();
+        CsvData.Clear();
+        FieldMapping.Clear();
+        TransformOptions = new TransformationOptions();
+        ShowPreview = false;
+        PreviewPlayers.Clear();
+    }
+    // Editing state
+    private bool IsEditing { get; set; } = false;
+    private int EditingPlayerId { get; set; } = -1;
+    private Player BackupPlayer { get; set; } = null;
+    private List<int> EditedPlayerIds { get; set; } = new List<int>();
+    private void FinishEditing()
+    {
+        // Apply and validate the changes to the preview data
+        var currentPlayer = PreviewPlayers.FirstOrDefault(p => p.GetHashCode() == EditingPlayerId);
+        if (currentPlayer != null)
+        {
+            // Validate and format email
+            if (!string.IsNullOrEmpty(currentPlayer.Email))
+            {
+                if (IsValidEmail(currentPlayer.Email))
+                {
+                    // If previously invalid, remove the INVALID: prefix
+                    if (currentPlayer.Email.StartsWith("INVALID:"))
+                    {
+                        currentPlayer.Email = currentPlayer.Email.Substring(8);
+                    }
+
+                    // Standardize email case if option is selected
+                    if (TransformOptions.StandardizeEmails)
+                    {
+                        currentPlayer.Email = currentPlayer.Email.ToLower();
+                    }
+                }
+                else if (!currentPlayer.Email.StartsWith("INVALID:"))
+                {
+                    currentPlayer.Email = $"INVALID:{currentPlayer.Email}";
+                }
+            }
+
+            // Validate and format phone
+            if (!string.IsNullOrEmpty(currentPlayer.Phone))
+            {
+                if (IsValidPhoneNumber(currentPlayer.Phone, out string standardizedPhone))
+                {
+                    // If previously invalid, use the standardized format
+                    if (currentPlayer.Phone.StartsWith("INVALID:"))
+                    {
+                        currentPlayer.Phone = standardizedPhone;
+                    }
+                    else
+                    {
+                        // Only update if the format changed
+                        if (currentPlayer.Phone != standardizedPhone)
+                        {
+                            currentPlayer.Phone = standardizedPhone;
+                        }
+                    }
+                }
+                else if (!currentPlayer.Phone.StartsWith("INVALID:"))
+                {
+                    currentPlayer.Phone = $"INVALID:{currentPlayer.Phone}";
+                }
+            }
+
+            // Apply name capitalization if option is selected
+            if (TransformOptions.CapitalizeNames)
+            {
+                if (!string.IsNullOrEmpty(currentPlayer.FirstName))
+                {
+                    currentPlayer.FirstName = CapitalizeFirst(currentPlayer.FirstName);
+                }
+
+                if (!string.IsNullOrEmpty(currentPlayer.LastName))
+                {
+                    currentPlayer.LastName = CapitalizeFirst(currentPlayer.LastName);
+                }
+            }
+
+            // Ensure ranking is set to default value if empty or invalid
+            if (currentPlayer.Ranking <= 0)
+            {
+                currentPlayer.Ranking = TransformOptions.DefaultRanking;
+            }
+
+            // Mark this record as edited
+            if (!EditedPlayerIds.Contains(EditingPlayerId))
+            {
+                EditedPlayerIds.Add(EditingPlayerId);
+            }
+
+            // Show a success message
+            Snackbar.Add("Changes saved to preview", Severity.Success);
+        }
+
+        // Exit editing mode
+        IsEditing = false;
+        EditingPlayerId = -1;
+        BackupPlayer = null;
+    }
+    private void StartEditing(Player player)
+    {
+        // Create a backup of the current player state
+        BackupPlayer = new Player
+            {
+                FirstName = player.FirstName,
+                LastName = player.LastName,
+                Ranking = player.Ranking,
+                Email = player.Email,
+                Phone = player.Phone
+            };
+
+        IsEditing = true;
+        EditingPlayerId = player.GetHashCode();
+    }
+
+    private void CancelEditing()
+    {
+        // Restore from backup
+        if (BackupPlayer != null)
+        {
+            var currentPlayer = PreviewPlayers.FirstOrDefault(p => p.GetHashCode() == EditingPlayerId);
+            if (currentPlayer != null)
+            {
+                currentPlayer.FirstName = BackupPlayer.FirstName;
+                currentPlayer.LastName = BackupPlayer.LastName;
+                currentPlayer.Ranking = BackupPlayer.Ranking;
+                currentPlayer.Email = BackupPlayer.Email;
+                currentPlayer.Phone = BackupPlayer.Phone;
+            }
+        }
+
+        IsEditing = false;
+        EditingPlayerId = -1;
+        BackupPlayer = null;
+    }
+
+}

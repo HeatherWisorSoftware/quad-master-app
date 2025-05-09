@@ -4,6 +4,7 @@
     {
         public int TournamentId { get; set; }
         public string TournamentName { get; set; } = string.Empty;  // Add this line
+        public Tournament Tournament { get; set; } 
         public List<Quad> Quads { get; set; } = [];
         public List<Quad> AllQuads { get; set; } = []; // All quads for the dropdown
         public List<TournamentPlayer> UnassignedPlayers { get; set; } = [];

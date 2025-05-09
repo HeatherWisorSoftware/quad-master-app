@@ -17,6 +17,7 @@ namespace QuadMasterApp.Data
         // DbSet for Quads
         public DbSet<Quad>Quads { get; set; }
         //override base method from DBContext 
+        public DbSet<QuadMatch>QuadMatches{get; set;}
 
 
 
@@ -26,21 +27,23 @@ namespace QuadMasterApp.Data
             //Calls the parent class implementation first.
             base.OnModelCreating(modelBuilder);
 
-            //Defines a composite primary key for the TournamentPlayer table, consisting of both TournamentId and PlayerId columns.
+ 
+            // Add unique constraint on TournamentId and PlayerId
             modelBuilder.Entity<TournamentPlayer>()
-                .HasKey(tp => new { tp.TournamentId, tp.PlayerId });
-            
-            //Each TournamentPlayer belongs to one Tournament and each Tournament can have many TournamentPlayer entries
+                .HasIndex(tp => new { tp.TournamentId, tp.PlayerId })
+                .IsUnique();
+
+            //One Tournament can have many Tournament Players
             modelBuilder.Entity<TournamentPlayer>()
                .HasOne(tp => tp.Tournament)
                .WithMany(t => t.TournamentPlayers)
                .HasForeignKey(tp => tp.TournamentId);
 
-            //Each TournamentPlayer belongs to one Player and each Player can have many TournamentPlayer entries
+            // One Tournament can have many TournamentPlayers
             modelBuilder.Entity<TournamentPlayer>()
-                .HasOne(tp => tp.Player)
+                .HasOne(tp => tp.Tournament)
                 .WithMany(p => p.TournamentPlayers)
-                .HasForeignKey(tp => tp.PlayerId);
+                .HasForeignKey(tp => tp.TournamentId);
 
             //quad configuration
 
@@ -55,6 +58,21 @@ namespace QuadMasterApp.Data
                 .HasOne(q => q.Tournament)
                 .WithMany(t => t.Quads)
                 .HasForeignKey(q => q.TournamentId);
+
+            modelBuilder.Entity<QuadMatch>()
+                .HasOne(qm => qm.Quad)
+                .WithMany()
+                .HasForeignKey(qm => qm.QuadId);
+
+            modelBuilder.Entity<QuadMatch>()
+                .HasOne(qm => qm.PlayerOne)
+                .WithMany()
+                .HasForeignKey(qm => qm.PlayerOneId);
+
+            modelBuilder.Entity<QuadMatch>()
+                .HasOne(qm => qm.PlayerTwo)
+                .WithMany()
+                .HasForeignKey(qm => qm.PlayerTwoId);
         }
     }   
 }

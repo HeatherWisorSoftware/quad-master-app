@@ -259,25 +259,59 @@
                                 <MudTh>Ranking</MudTh>
                                 <MudTh>Email</MudTh>
                                 <MudTh>Phone</MudTh>
+                                <MudTh></MudTh>
                             </HeaderContent>
                             <RowTemplate>
-                                <MudTd DataLabel="First Name">@context.FirstName</MudTd>
-                                <MudTd DataLabel="Last Name">@context.LastName</MudTd>
-                                <MudTd DataLabel="Ranking">@context.Ranking</MudTd>
-                                <MudTd DataLabel="Email">@context.Email</MudTd>
-                                <MudTd DataLabel="Phone">@context.Phone</MudTd>
+                                @if (IsEditing && EditingPlayerId == context.GetHashCode())
+                                {
+                                    <MudTd>
+                                        <MudTextField T="string" @bind-Value="context.FirstName" Immediate="true" />
+                                    </MudTd>
+                                    <MudTd>
+                                        <MudTextField T="string" @bind-Value="context.LastName" Immediate="true" />
+                                    </MudTd>
+                                    <MudTd>
+                                        <MudNumericField T="int" @bind-Value="context.Ranking" Min="0" Max="3000" />
+                                    </MudTd>
+                                    <MudTd>
+                                        <MudTextField T="string" @bind-Value="context.Email" Immediate="true"
+                                                      Error="@(!string.IsNullOrEmpty(context.Email) && !IsValidEmail(context.Email))"
+                                                      ErrorText="Invalid email format" />
+                                    </MudTd>
+                                    <MudTd>
+                                        <MudTextField T="string" @bind-Value="context.Phone" Immediate="true" />
+                                    </MudTd>
+                                    <MudTd>
+                                        <MudIconButton Icon="@Icons.Material.Filled.Check" Color="Color.Success" OnClick="@(() => FinishEditing())" />
+                                        <MudIconButton Icon="@Icons.Material.Filled.Cancel" Color="Color.Error" OnClick="@(() => CancelEditing())" />
+                                    </MudTd>
+                                }
+                                else
+                                {
+                                    <MudTd DataLabel="First Name">
+                                        @context.FirstName
+                                        @if (EditedPlayerIds.Contains(context.GetHashCode()))
+                                        {
+                                            <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Class="ml-1" Color="Color.Info" />
+                                        }
+                                    </MudTd>
+                                    <MudTd DataLabel="Last Name">@context.LastName</MudTd>
+                                    <MudTd DataLabel="Ranking">@context.Ranking</MudTd>
+                                    <MudTd DataLabel="Email" Style="@(context.Email?.StartsWith("INVALID:") == true ? "color: red;" : "")">
+                                        @(context.Email?.StartsWith("INVALID:") == true ? context.Email.Substring(8) : context.Email)
+                                    </MudTd>
+                                    <MudTd DataLabel="Phone" Style="@(context.Phone?.StartsWith("INVALID:") == true ? "color: red;" : "")">
+                                        @(context.Phone?.StartsWith("INVALID:") == true ? context.Phone.Substring(8) : context.Phone)
+                                    </MudTd>
+                                    <MudTd>
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => StartEditing(context))" />
+                                    </MudTd>
+                                }
                             </RowTemplate>
                             <PagerContent>
                                 <MudTablePager PageSizeOptions="new int[] { 5, 10, 25 }" />
                             </PagerContent>
                         </MudTable>
-                        
-                        @if (PreviewPlayers.Count > 0)
-                        {
-                            <MudText Typo="Typo.body2" Class="mt-4">
-                                Showing @(Math.Min(PreviewPlayers.Count, 10)) of @CsvData.Count players. All data transformations have been applied.
-                            </MudText>
-                        }
                     </MudCardContent>
                 </MudCard>
             }
@@ -533,21 +567,22 @@
             PreviewLoading = true;
             ShowPreview = true;
             PreviewPlayers.Clear();
+            EditedPlayerIds.Clear(); // Reset edited flags
 
             // Process up to 10 rows for preview
             int previewCount = Math.Min(CsvData.Count, 10);
-            
+
             for (int i = 0; i < previewCount; i++)
             {
                 var row = CsvData[i];
                 var player = new Player();
-                
+
                 // Use the same mapping logic as in ImportData
                 ProcessPlayerFromRow(player, row);
-                
+
                 PreviewPlayers.Add(player);
             }
-            
+
             // Short delay to show loading indicator
             await Task.Delay(500);
         }
@@ -571,29 +606,108 @@
             int errorCount = 0;
             List<Player> newPlayers = new List<Player>();
 
-            foreach (var row in CsvData)
+            // Check if we have preview data
+            if (PreviewPlayers.Count > 0 && ShowPreview)
             {
-                try
+                // Use preview data (including edits) for import
+                foreach (var previewPlayer in PreviewPlayers)
                 {
-                    var player = new Player();
-                    
-                    // Process the player data from this row
-                    ProcessPlayerFromRow(player, row);
-
-                    // Validate required fields
-                    if (!string.IsNullOrWhiteSpace(player.FirstName) && !string.IsNullOrWhiteSpace(player.LastName))
+                    try
                     {
-                        newPlayers.Add(player);
-                        successCount++;
+                        // Create a clean copy without INVALID: prefixes
+                        var player = new Player
+                            {
+                                FirstName = previewPlayer.FirstName,
+                                LastName = previewPlayer.LastName,
+                                Ranking = previewPlayer.Ranking,
+                            // Clean up the INVALID: prefixes for database storage
+                                Email = previewPlayer.Email?.StartsWith("INVALID:") == true ?
+                                       null : previewPlayer.Email,
+                                Phone = previewPlayer.Phone?.StartsWith("INVALID:") == true ?
+                                       null : previewPlayer.Phone
+                            };
+
+                        // Validate required fields
+                        if (!string.IsNullOrWhiteSpace(player.FirstName) && !string.IsNullOrWhiteSpace(player.LastName))
+                        {
+                            newPlayers.Add(player);
+                            successCount++;
+                        }
+                        else
+                        {
+                            errorCount++;
+                        }
                     }
-                    else
+                    catch
                     {
                         errorCount++;
                     }
                 }
-                catch
+
+                // Process remaining rows not in preview
+                for (int i = PreviewPlayers.Count; i < CsvData.Count; i++)
                 {
-                    errorCount++;
+                    try
+                    {
+                        var player = new Player();
+                        ProcessPlayerFromRow(player, CsvData[i]);
+
+                        // Clean up any INVALID: prefixes
+                        if (player.Email?.StartsWith("INVALID:") == true)
+                            player.Email = null;
+
+                        if (player.Phone?.StartsWith("INVALID:") == true)
+                            player.Phone = null;
+
+                        // Validate required fields
+                        if (!string.IsNullOrWhiteSpace(player.FirstName) && !string.IsNullOrWhiteSpace(player.LastName))
+                        {
+                            newPlayers.Add(player);
+                            successCount++;
+                        }
+                        else
+                        {
+                            errorCount++;
+                        }
+                    }
+                    catch
+                    {
+                        errorCount++;
+                    }
+                }
+            }
+            else
+            {
+                // No preview data, process all rows directly
+                foreach (var row in CsvData)
+                {
+                    try
+                    {
+                        var player = new Player();
+                        ProcessPlayerFromRow(player, row);
+
+                        // Clean up any INVALID: prefixes
+                        if (player.Email?.StartsWith("INVALID:") == true)
+                            player.Email = null;
+
+                        if (player.Phone?.StartsWith("INVALID:") == true)
+                            player.Phone = null;
+
+                        // Validate required fields
+                        if (!string.IsNullOrWhiteSpace(player.FirstName) && !string.IsNullOrWhiteSpace(player.LastName))
+                        {
+                            newPlayers.Add(player);
+                            successCount++;
+                        }
+                        else
+                        {
+                            errorCount++;
+                        }
+                    }
+                    catch
+                    {
+                        errorCount++;
+                    }
                 }
             }
 
@@ -605,7 +719,7 @@
             }
 
             // Show success message
-            Snackbar.Add($"Import complete: {successCount} players added, {errorCount} skipped", 
+            Snackbar.Add($"Import complete: {successCount} players added, {errorCount} skipped",
                         successCount > 0 ? Severity.Success : Severity.Warning);
 
             // Reset the form after successful import
@@ -901,6 +1015,10 @@
         TransformOptions = new TransformationOptions();
         ShowPreview = false;
         PreviewPlayers.Clear();
+        EditedPlayerIds.Clear(); // Clear edited flags
+        IsEditing = false;
+        EditingPlayerId = -1;
+        BackupPlayer = null;
     }
     // Editing state
     private bool IsEditing { get; set; } = false;

@@ -35,6 +35,10 @@ namespace QuadMasterApp.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Ranking")
                         .HasColumnType("INTEGER");
 
@@ -48,6 +52,10 @@ namespace QuadMasterApp.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("QuadGroupNumber")
                         .HasColumnType("INTEGER");
@@ -79,7 +87,7 @@ namespace QuadMasterApp.Migrations
                     b.Property<string>("Country")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("Date")
+                    b.Property<DateTime?>("Date")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("FormattedAddress")
@@ -125,39 +133,6 @@ namespace QuadMasterApp.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int?>("QuadPosition")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Round1Opponent")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Round1Score")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("Round1Table")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Round2Opponent")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Round2Score")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("Round2Table")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Round3Opponent")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Round3Score")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("Round3Table")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("TournamentId", "PlayerId");

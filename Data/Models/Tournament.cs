@@ -27,6 +27,11 @@ namespace QuadMasterApp.Data.Models
         public string? Country { get; set; }
         public string? FormattedAddress { get; set; }
 
+        // Tournament status toggle
+        [Display(Name = "Tournament Active")]
+        public bool IsActive { get; set; } = false;  // False = open for editing, True = locked/active
+
+        public DateTime? CompletedDate { get; set; }
 
         //other tournament properties
         public List<TournamentPlayer> TournamentPlayers { get; set; }

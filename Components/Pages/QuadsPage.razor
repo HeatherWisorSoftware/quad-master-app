@@ -22,7 +22,21 @@
             Group @CurrentPage of @TotalPages | Total Quads: @(ViewModel?.AllQuads?.Count ?? 0)
         </MudText>
     </div>
-
+    <!-- Add this somewhere on your page to help debug -->
+    <MudExpansionPanel Class="mt-4" IsInitiallyExpanded="false">
+        <TitleContent>
+            <div class="d-flex align-center">
+                <MudIcon Icon="@Icons.Material.Filled.BugReport" Class="mr-2" />
+                <MudText>Debug Info</MudText>
+            </div>
+        </TitleContent>
+        <ChildContent>
+            <MudText Typo="Typo.body2">Tournament Status: @(ViewModel.Tournament?.IsActive == true ? "ACTIVE" : "OPEN")</MudText>
+            <MudText Typo="Typo.body2">Match Count: @DbContext.QuadMatches.Count(m => m.Quad.TournamentId == TournamentId)</MudText>
+            <MudText Typo="Typo.body2">Current Results Count: @CurrentMatchResults.Count</MudText>
+            <MudText Typo="Typo.body2">Player Scores Count: @PlayerScores.Count</MudText>
+        </ChildContent>
+    </MudExpansionPanel>
     <div>
         <MudButton Variant="Variant.Filled"
         Color="Color.Primary"
@@ -38,39 +52,39 @@
     </div>
 </div>
 
-@* <MudPaper Class="pa-4 my-4" Elevation="2"> *@
-@*     <div class="d-flex justify-space-between align-center"> *@
-@*         <div> *@
-@*             <MudText Typo="Typo.h6"> *@
-@*                 Tournament Status: *@
-@*                 <strong>@(ViewModel.Tournament?.IsActive == true ? "ACTIVE (Locked)" : "OPEN (Editable)")</strong> *@
-@*             </MudText> *@
-@*             <MudText Typo="Typo.body2"> *@
-@*                 @if (ViewModel.Tournament?.IsActive == true) *@
-@*                 { *@
-@*                     <span>Tournament is locked. Match results are being recorded.</span> *@
-@*                 } *@
-@*                 else *@
-@*                 { *@
-@*                     <span>Tournament is open for editing. Players and quads can be modified.</span> *@
-@*                 } *@
-@*             </MudText> *@
-@*         </div> *@
+<MudPaper Class="pa-4 my-4" Elevation="2">
+    <div class="d-flex justify-space-between align-center">
+        <div>
+            <MudText Typo="Typo.h6">
+                 Tournament Status:
+                 <strong>@(ViewModel.Tournament?.IsActive == true ? "ACTIVE (Locked)" : "OPEN (Editable)")</strong>
+             </MudText>
+             <MudText Typo="Typo.body2">
+                 @if (ViewModel.Tournament?.IsActive == true)
+                 {
+                     <span>Tournament is locked. Match results are being recorded.</span>
+                 }
+                 else 
+                 { 
+                     <span>Tournament is open for editing. Players and quads can be modified.</span>
+                 } 
+             </MudText> 
+         </div> 
 
-@*         <MudToggleIconButton Toggled="@(ViewModel.Tournament?.IsActive == true)" *@
-@*         ToggledChanged="ToggleTournamentStatus" *@
-@*         Icon="@Icons.Material.Filled.Edit" Color="@Color.Success" Title="Open For Editing" *@
-@*         ToggledIcon="@Icons.Material.Filled.Lock" ToggledColor="@Color.Error" ToggledTitle="Locked/Active" /> *@
-@*     </div> *@
-@* </MudPaper> *@
+         <MudToggleIconButton Toggled="@(ViewModel.Tournament?.IsActive == true)"
+         ToggledChanged="ToggleTournamentStatus"
+         Icon="@Icons.Material.Filled.Edit" Color="@Color.Success" Title="Open For Editing"
+         ToggledIcon="@Icons.Material.Filled.Lock" ToggledColor="@Color.Error" ToggledTitle="Locked/Active" />
+     </div>
+ </MudPaper>
 
 <div class="quad-container">
     <MudDropContainer T="TournamentPlayer"
                       Items="@ViewModel.UnassignedPlayers"
-                      ItemsSelector="@((player, quadId) => player.QuadId?.ToString() == quadId)"
                       ItemDropped="PlayerAssigned"
+                      Disabled="@(ViewModel.Tournament?.IsActive==true)"
                       Class="d-flex flex-column flex-grow-1">
-                      @* Disabled="@(ViewModel.Tournament?.IsActive==true)"> *@
+                      
         <ChildContent>
             <div class="d-flex">
                 <div class="quads-section">
@@ -99,9 +113,9 @@
                                         <!-- For quad players -->
                                         <MudDropZone T="TournamentPlayer"
                                                      Identifier="@quadId"
-                                                     Class="quad-dropzone"
+                                                     ItemsSelector="@(p => p.QuadId?.ToString() == quadId)"
                                                      AllowReorder="true"
-                                                     ItemsSelector="@(p => p.QuadId == quad.Id)"/>
+                                                     Class="quad-dropzone" />
                                     </div>
                                 </div>
                             </MudPaper>
@@ -115,9 +129,9 @@
                     </div>
                     <MudDropZone T="TournamentPlayer"
                                  Identifier="unassigned"
-                                 Class="unassigned-dropzone"
+                                 ItemsSelector="@(p => p.QuadId == null)"
                                  AllowReorder="true"
-                                 ItemsSelector="@(p => p.QuadId == null)"/>
+                                 Class="unassigned-dropzone" />
                 </MudPaper>
             </div>
         </ChildContent>
@@ -148,12 +162,15 @@
                                 }
                                 else
                                 {
-                                    <MudTextField Class="score-input"
-                                    Value="@GetScore(context, round)"
-                                    ValueChanged="@((value) => SaveScore(context, round, value))"
+                                    <MudTextField  T="string" Class="score-input"
+                                   
+                                    @bind-Value="@PlayerScores[GetScoreKey(context,round)]"
+                                    @bind-Value:after="@(()=>SaveScoreFromBinding(context,round))"
                                     Immediate="true"
                                     Variant="Variant.Outlined"
-                                    Margin="Margin.Dense" />
+                                    Margin="Margin.Dense"
+                                    Disabled="false"/>
+                                    
                                 }
                             </div>
                             <div class="table-number">TBL @GetTableNumber(context, round)</div>
@@ -612,7 +629,39 @@
         // Reload data if the tournament ID changes
         await LoadData();
     }
+    private Dictionary<string, string> PlayerScores { get; set; } = new();
 
+    private void InitPlayerScores()
+    {
+        PlayerScores.Clear();
+
+        foreach (var quad in DisplayedQuads)
+        {
+            foreach (var player in quad.Players)
+            {
+                for (int round = 1; round <= 3; round++)
+                {
+                    var key = GetScoreKey(player, round);
+                    var score = GetScore(player, round);
+                    PlayerScores[key] = score;
+                }
+            }
+        }
+    }
+
+    private string GetScoreKey(TournamentPlayer player, int round)
+    {
+        return $"{player.QuadId}-{player.Id}-{round}";
+    }
+
+    private async Task SaveScoreFromBinding(TournamentPlayer player, int round)
+    {
+        var key = GetScoreKey(player, round);
+        if (PlayerScores.TryGetValue(key, out var score))
+        {
+            await SaveScore(player, round, score);
+        }
+    }
     private async Task LoadData()
     {
         var tournament = await DbContext.Tournaments
@@ -808,22 +857,25 @@
         if (!player.QuadId.HasValue)
             return "";
 
-        // Use the calculated property if available
-        if (player.TotalScore > 0)
-            return player.TotalScore.ToString();
-
         double total = 0;
 
         for (var i = 1; i <= 3; i++)
         {
-            var score = GetScore(player, i);
-            if (double.TryParse(score, out var value))
+            // Try to get from our local cache first
+            string score;
+            var key = GetScoreKey(player, i);
+
+            if (PlayerScores.TryGetValue(key, out score) ||
+                CurrentMatchResults.TryGetValue(key, out score))
             {
-                total += value;
+                if (double.TryParse(score, out var value))
+                {
+                    total += value;
+                }
             }
         }
 
-        return total.ToString();
+        return total.ToString("0.#"); // Format to avoid trailing zeros
     }
 
     private int GetTableNumber(TournamentPlayer player, int round)
@@ -945,55 +997,82 @@
             await LoadData();
         }
     }
-    private async Task SaveScore(TournamentPlayer player, int round, string value)
+    private bool MatchQuadSelector(TournamentPlayer player, string identifier)
+    {
+        return (player.QuadId?.ToString() ?? "unassigned") == identifier;
+    }
+
+    private async Task SaveScore(TournamentPlayer player, int round, string score)
     {
         if (!player.QuadId.HasValue)
             return;
 
-        // Find the match in the database
-        var match = await DbContext.QuadMatches
-            .FirstOrDefaultAsync(m =>
-                m.RoundNumber == round &&
-                (m.PlayerOneId == player.Id || m.PlayerTwoId == player.Id));
+        // Store the score immediately in the UI dictionary
+        var key = $"{player.QuadId}-{player.Id}-{round}";
+        CurrentMatchResults[key] = score;
 
-        if (match == null)
-            return;
+        // Trigger UI update - this is important
+        StateHasChanged();
 
-        // Update the score
-        if (match.PlayerOneId == player.Id)
+        try
         {
-            // if (decimal.TryParse(score, out var scoreValue))
-            //     match.PlayerOneScore = scoreValue;
-            // else
-            //     match.PlayerOneScore = null;
-        }
-        else
-        {
-            // if (decimal.TryParse(score, out var scoreValue))
-            //     match.PlayerTwoScore = scoreValue;
-            // else
-            //     match.PlayerTwoScore = null;
-        }
+            // Find the match in the database
+            var match = await DbContext.QuadMatches
+                .FirstOrDefaultAsync(m =>
+                    m.RoundNumber == round &&
+                    (m.PlayerOneId == player.Id || m.PlayerTwoId == player.Id));
 
-        // Check if both scores are entered to mark as complete
-        if (match.PlayerOneScore.HasValue && match.PlayerTwoScore.HasValue)
-        {
-            match.IsComplete = true;
-            match.CompletedAt = DateTime.UtcNow;
-        }
-        else
-        {
-            match.IsComplete = false;
-            match.CompletedAt = null;
-        }
+            if (match == null)
+            {
+                Snackbar.Add("Match record not found.", Severity.Error);
+                return;
+            }
 
-        // Save to database
-        DbContext.QuadMatches.Update(match);
-        await DbContext.SaveChangesAsync();
+            // Update the score
+            if (match.PlayerOneId == player.Id)
+            {
+                if (decimal.TryParse(score, out var scoreValue))
+                    match.PlayerOneScore = scoreValue;
+                else
+                    match.PlayerOneScore = null;
+            }
+            else
+            {
+                if (decimal.TryParse(score, out var scoreValue))
+                    match.PlayerTwoScore = scoreValue;
+                else
+                    match.PlayerTwoScore = null;
+            }
 
-        // Update the UI
-        // CurrentMatchResults[$"{player.QuadId}-{player.Id}-{round}"] = score;
+            // Check if both scores are entered to mark as complete
+            if (match.PlayerOneScore.HasValue && match.PlayerTwoScore.HasValue)
+            {
+                match.IsComplete = true;
+                match.CompletedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                match.IsComplete = false;
+                match.CompletedAt = null;
+            }
+
+            // Save to database
+            DbContext.QuadMatches.Update(match);
+            await DbContext.SaveChangesAsync();
+
+            // Optional: Add success indicator
+            Console.WriteLine($"Score saved: Player {player.Id}, Round {round}, Score {score}");
+        }
+        catch (Exception ex)
+        {
+            // Log error and show user-friendly message
+            Console.WriteLine($"Error saving score: {ex.Message}");
+            Snackbar.Add("An error occurred while saving the score.", Severity.Error);
+        }
     }
+    
+    
+    
     private async Task RenumberPlayersInQuad(int quadId)
     {
         var quad = await DbContext.Quads

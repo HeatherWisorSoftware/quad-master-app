@@ -1,0 +1,223 @@
+﻿@page "/EditTournament"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@inject TournamentContext DbContext
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Tournament Management</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h3" Class="mb-4" Style="color: var(--mud-palette-primary)">Tournaments</MudText>
+
+    @if (IsLoading)
+    {
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    }
+    else
+    {
+        <MudPaper Elevation="3" Class="pa-4">
+            <MudToolBar DisableGutters="true" Class="mb-4">
+                <MudText Typo="Typo.h6">Tournament List</MudText>
+                <MudSpacer />
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Href="/CreateTournament">
+                    Create Tournament
+                </MudButton>
+            </MudToolBar>
+
+            @if (!Tournaments.Any())
+            {
+                <MudAlert Severity="Severity.Info">No tournaments found. Click 'Create Tournament' to add a new one.</MudAlert>
+            }
+            else
+            {
+                <MudTable Items="@Tournaments" Hover="true" Striped="true" Bordered="false" Loading="@IsLoading"
+                          LoadingProgressColor="Color.Primary">
+                    <HeaderContent>
+                        <MudTh>Name</MudTh>
+                        <MudTh>Date</MudTh>
+                        <MudTh>Venue</MudTh>
+                        <MudTh>Location</MudTh>
+                        <MudTh>Players</MudTh>
+                        <MudTh>Actions</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Name">@context.Name</MudTd>
+                        <MudTd DataLabel="Date">@(context.Date.HasValue ? context.Date.Value.ToShortDateString() : "Not set")</MudTd>
+                        <MudTd DataLabel="Venue">@context.VenueName</MudTd>
+                        <MudTd DataLabel="Location">@($"{context.City}, {context.State}")</MudTd>
+                        <MudTd DataLabel="Players">@(TournamentPlayerCounts.ContainsKey(context.Id) ? TournamentPlayerCounts[context.Id] : 0)</MudTd>
+                        <MudTd DataLabel="Actions">
+                            <MudButtonGroup Variant="Variant.Text" Size="Size.Small">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Color="Color.Primary"
+                                               Href="@($"/EditTournamentDetails{context.Id}")"
+                                               Title="Edit Tournament" />
+                                <MudIconButton Icon="@Icons.Material.Filled.People"
+                                               Color="Color.Secondary"
+                                               Href="@($"/TournamentPage/Players/{context.Id}")"
+                                               Title="Manage Players" />
+                                <MudButton Variant="Variant.Text"
+                                           Color="Color.Error"
+                                           StartIcon="@Icons.Material.Filled.Delete"
+                                           OnClick="@(() => OpenDeleteConfirmation(context))"
+                                           Size="Size.Small">
+                                    Delete
+                                </MudButton>
+                            </MudButtonGroup>
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager />
+                    </PagerContent>
+                </MudTable>
+            }
+        </MudPaper>
+    }
+
+    <MudPaper Elevation="0" Class="pa-4 mt-4 d-flex justify-end">
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Primary"
+                   OnClick="ReturnToList"
+                   StartIcon="@Icons.Material.Filled.ArrowBack">
+            Back to Home
+        </MudButton>
+    </MudPaper>
+</MudContainer>
+
+@if (DeleteDialogVisible && tournamentToDelete != null)
+{
+    <MudDialog @bind-IsVisible="DeleteDialogVisible">
+        <TitleContent>
+            <MudText Typo="Typo.h6">Delete Tournament</MudText>
+        </TitleContent>
+        <DialogContent>
+            <MudText>Are you sure you want to delete tournament '@tournamentToDelete.Name'?</MudText>
+            <MudText Color="Color.Warning" Class="mt-2">This action cannot be undone.</MudText>
+        </DialogContent>
+        <DialogActions>
+            <MudButton OnClick="CloseDeleteDialog">Cancel</MudButton>
+            <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="DeleteTournament">Delete</MudButton>
+        </DialogActions>
+    </MudDialog>
+}
+
+@code {
+    private List<Tournament> Tournaments { get; set; } = new();
+    private Dictionary<int, int> TournamentPlayerCounts { get; set; } = new();
+    private bool IsLoading { get; set; } = true;
+
+    private bool DeleteDialogVisible { get; set; } = false;
+    private Tournament tournamentToDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTournaments();
+    }
+
+    private void ReturnToList()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+    private void CloseDeleteDialog()
+    {
+        DeleteDialogVisible = false;
+        tournamentToDelete = null;
+    }
+    private void OpenDeleteConfirmation(Tournament tournament)
+    {
+        Console.WriteLine($"OpenDeleteConfirmation called for: {tournament.Name}");
+        tournamentToDelete = tournament;
+        DeleteDialogVisible = true;
+        Snackbar.Add($"Opening delete dialog for: {tournament.Name}", Severity.Info);
+    }
+
+    private async Task DeleteTournament()
+    {
+        try
+        {
+            if (tournamentToDelete == null) return;
+
+            Console.WriteLine($"Deleting tournament: {tournamentToDelete.Name}");
+
+            // Simple delete for now - just the tournament
+            DbContext.Tournaments.Remove(tournamentToDelete);
+            await DbContext.SaveChangesAsync();
+
+            // Update local list
+            Tournaments.Remove(tournamentToDelete);
+
+            // Remove from player counts
+            if (TournamentPlayerCounts.ContainsKey(tournamentToDelete.Id))
+            {
+                TournamentPlayerCounts.Remove(tournamentToDelete.Id);
+            }
+
+            DeleteDialogVisible = false;
+            tournamentToDelete = null;
+
+            Snackbar.Add("Tournament deleted successfully!", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting: {ex.Message}");
+            Snackbar.Add($"Error deleting tournament: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void TestDeleteClick(Tournament tournament)
+    {
+        Console.WriteLine($"Delete clicked for: {tournament.Name}");
+        Snackbar.Add($"Delete clicked for: {tournament.Name}", Severity.Info);
+    }
+
+    private async Task LoadTournaments()
+    {
+        try
+        {
+            IsLoading = true;
+
+            // Load all tournaments
+            Tournaments = await DbContext.Tournaments.ToListAsync();
+
+            // Get player counts for each tournament
+            var playerCounts = await DbContext.TournamentPlayers
+                .GroupBy(tp => tp.TournamentId)
+                .Select(g => new { TournamentId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(g => g.TournamentId, g => g.Count);
+
+            TournamentPlayerCounts = playerCounts;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading tournaments: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            // Check if we need to force refresh based on query parameter
+            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+            var queryParams = QueryHelpers.ParseQuery(uri.Query);
+            if (queryParams.TryGetValue("reload", out var _))
+            {
+                await LoadTournaments();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error refreshing data: {ex.Message}", Severity.Error);
+        }
+
+        await base.OnParametersSetAsync();
+    }
+}

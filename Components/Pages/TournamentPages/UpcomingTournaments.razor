@@ -1,49 +1,31 @@
-﻿@page "/EditTournament"
+﻿@page "/UpcomingTournaments"
 @rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
 @inject TournamentContext DbContext
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
 
-<PageTitle>Tournament Management</PageTitle>
+<PageTitle>Upcoming Tournaments</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <MudText Typo="Typo.h3" Class="mb-4" Style="color: var(--mud-palette-primary)">Tournaments</MudText>
-
+    <MudText Typo="Typo.h3" Class="mb-4" Style="color: var(--mud-palette-primary)">Upcoming Tournaments</MudText>
     @if (IsLoading)
     {
         <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
     }
     else
     {
-        <MudPaper Elevation="3" Class="pa-4">
-            <MudToolBar DisableGutters="true" Class="mb-4">
-                <MudText Typo="Typo.h6">Tournament List</MudText>
-                <MudSpacer />
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Add"
-                           Href="/CreateTournament">
-                    Create Tournament
-                </MudButton>
-            </MudToolBar>
-
-            @if (!Tournaments.Any())
-            {
-                <MudAlert Severity="Severity.Info">No tournaments found. Click 'Create Tournament' to add a new one.</MudAlert>
-            }
-            else
-            {
+        <MudPaper Elevation="3" Class="pa-4">        
                 <MudTable Items="@Tournaments" Hover="true" Striped="true" Bordered="false" Loading="@IsLoading"
-                          LoadingProgressColor="Color.Primary">
-                    <HeaderContent>
-                        <MudTh>Name</MudTh>
-                        <MudTh>Date</MudTh>
-                        <MudTh>Venue</MudTh>
-                        <MudTh>Location</MudTh>
-                        <MudTh>Players</MudTh>
-                        <MudTh>Actions</MudTh>
-                    </HeaderContent>
+                LoadingProgressColor="Color.Primary" T="Tournament">
+                <HeaderContent>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Tournament, object>(x => x.Name)">Name</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Tournament, object>(x => x.Date ?? DateTime.MinValue)" InitialDirection="SortDirection.Ascending">Date</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Tournament, object>(x => x.VenueName ?? string.Empty)">Venue</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Tournament, object>(x => x.City ?? string.Empty)">Location</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Tournament, object>(x => TournamentPlayerCounts.GetValueOrDefault(x.Id, 0))">Players</MudTableSortLabel></MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
                     <RowTemplate>
                         <MudTd DataLabel="Name">@context.Name</MudTd>
                         <MudTd DataLabel="Date">@(context.Date.HasValue ? context.Date.Value.ToShortDateString() : "Not set")</MudTd>
@@ -53,17 +35,17 @@
                         <MudTd DataLabel="Actions">
                             <MudButtonGroup Variant="Variant.Text" Size="Size.Small">
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                               Color="Color.Primary"
-                                               Href="@($"/EditTournamentDetails{context.Id}")"
-                                               Title="Edit Tournament" />
+                                Color="Color.Primary"
+                                Href="@($"/EditTournamentDetails{context.Id}")"
+                                Title="Edit Tournament" />
                                 <MudIconButton Icon="@Icons.Material.Filled.People"
-                                               Color="Color.Secondary"
-                                               Href="@($"/TournamentPage/Players/{context.Id}")"
-                                               Title="Manage Players" />
+                                Color="Color.Secondary"
+                                Href="@($"/TournamentPage/Players/{context.Id}")"
+                                Title="Manage Players" />
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                               Color="Color.Error"
-                                               OnClick="@(() => OpenDeleteConfirmation(context))"
-                                               Title="Delete Tournament" />
+                                Color="Color.Error"
+                                OnClick="@(() => OpenDeleteConfirmation(context))"
+                                Title="Delete Tournament" />
                             </MudButtonGroup>
                         </MudTd>
                     </RowTemplate>
@@ -77,21 +59,21 @@
 
     <MudPaper Elevation="0" Class="pa-4 mt-4 d-flex justify-end">
         <MudButton Variant="Variant.Text"
-                   Color="Color.Primary"
-                   OnClick="ReturnToList"
-                   StartIcon="@Icons.Material.Filled.ArrowBack">
+        Color="Color.Primary"
+        OnClick="ReturnToList"
+        StartIcon="@Icons.Material.Filled.ArrowBack">
             Back to Home
         </MudButton>
     </MudPaper>
 </MudContainer>
 
 <MudMessageBox @bind-IsVisible="DeleteDialogVisible"
-               Title="Delete Tournament"
-               Message="@($"Are you sure you want to delete tournament '{tournamentToDelete?.Name}'? This action cannot be undone.")"
-               CancelText="Cancel"
-               OkText="Delete"
-               Color="Color.Error"
-               OnOk="DeleteTournament" />
+Title="Delete Tournament"
+Message="@($"Are you sure you want to delete tournament '{tournamentToDelete?.Name}'? This action cannot be undone.")"
+CancelText="Cancel"
+OkText="Delete"
+Color="Color.Error"
+OnOk="DeleteTournament" />
 
 @code {
     private List<Tournament> Tournaments { get; set; } = new();
@@ -125,7 +107,11 @@
             IsLoading = true;
 
             // Load all tournaments
-            Tournaments = await DbContext.Tournaments.ToListAsync();
+            Tournaments = await DbContext.Tournaments
+
+                .Where(t => t.Date.HasValue && t.Date.Value.Date >= DateTime.Today)
+                .OrderBy(t => t.Date)
+                .ToListAsync();
 
             // Get player counts for each tournament
             var playerCounts = await DbContext.TournamentPlayers

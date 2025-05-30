@@ -1,8 +1,6 @@
 ﻿@page "/CreateTournament"
-@rendermode InteractiveServer 
-@using System.ComponentModel.DataAnnotations
 @using Microsoft.EntityFrameworkCore
-@using QuadMasterApp.Data.Models
+@rendermode InteractiveServer
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
@@ -20,22 +18,22 @@
 
     <MudPaper Elevation="3" Class="pa-4 mb-4">
         <EditForm Model="@Tournament" OnValidSubmit="HandleValidSubmit">
-            <DataAnnotationsValidator />
+            <DataAnnotationsValidator/>
             <MudGrid>
                 <MudItem xs="12">
                     <MudText Typo="Typo.h5" Class="mb-4">Tournament Details</MudText>
                 </MudItem>
 
                 <MudItem xs="12" md="6">
-                    <MudTextField Label="Tournament Name" @bind-Value="Tournament.Name" 
+                    <MudTextField Label="Tournament Name" @bind-Value="Tournament.Name"
                                   Required RequiredError="Tournament name is required"
-                                  For="@(() => Tournament.Name)" />
+                                  For="@(() => Tournament.Name)"/>
                 </MudItem>
 
                 <MudItem xs="12" md="6">
-                    <MudDatePicker Label="Tournament Date" @bind-Date="Tournament.Date" 
-                    Required = "true"  
-                    RequiredError="Date must be selected"/>                                  
+                    <MudDatePicker Label="Tournament Date" @bind-Date="Tournament.Date"
+                                   Required="true"
+                                   RequiredError="Date must be selected"/>
                 </MudItem>
 
                 <MudItem xs="12">
@@ -43,33 +41,33 @@
                 </MudItem>
 
                 <MudItem xs="12" md="6">
-                    <MudTextField Label="Venue Name" @bind-Value="Tournament.VenueName" 
+                    <MudTextField Label="Venue Name" @bind-Value="Tournament.VenueName"
                                   Required RequiredError="Venue name is required"
-                                  For="@(() => Tournament.VenueName)" />
+                                  For="@(() => Tournament.VenueName)"/>
                 </MudItem>
 
                 <MudItem xs="12" md="6">
-                    <MudTextField Label="Street" @bind-Value="Tournament.Street" 
+                    <MudTextField Label="Street" @bind-Value="Tournament.Street"
                                   Required RequiredError="Street address is required"
-                                  For="@(() => Tournament.Street)" />
+                                  For="@(() => Tournament.Street)"/>
                 </MudItem>
 
                 <MudItem xs="12" md="4">
-                    <MudTextField Label="City" @bind-Value="Tournament.City" 
+                    <MudTextField Label="City" @bind-Value="Tournament.City"
                                   Required RequiredError="City is required"
-                                  For="@(() => Tournament.City)" />
+                                  For="@(() => Tournament.City)"/>
                 </MudItem>
 
                 <MudItem xs="12" md="4">
-                    <MudTextField Label="State" @bind-Value="Tournament.State" 
+                    <MudTextField Label="State" @bind-Value="Tournament.State"
                                   Required RequiredError="State is required"
-                                  For="@(() => Tournament.State)" />
+                                  For="@(() => Tournament.State)"/>
                 </MudItem>
 
                 <MudItem xs="12" md="4">
-                    <MudTextField Label="Postal Code" @bind-Value="Tournament.PostalCode" 
+                    <MudTextField Label="Postal Code" @bind-Value="Tournament.PostalCode"
                                   Required RequiredError="Postal code is required"
-                                  For="@(() => Tournament.PostalCode)" />
+                                  For="@(() => Tournament.PostalCode)"/>
                 </MudItem>
 
                 <MudItem xs="12" Class="mt-4">
@@ -78,19 +76,21 @@
 
                 <MudItem xs="12">
                     <MudSelect T="int" Label="Select Players" MultiSelection="true"
-                              @bind-SelectedValues="SelectedPlayerIds"
-                              Class="mt-2">
+                               @bind-SelectedValues="SelectedPlayerIds"
+                               Class="mt-2"
+                               ToStringFunc="GetPlayerName">
                         @foreach (var player in Players)
                         {
                             <MudSelectItem Value="@player.Id">@player.FirstName @player.LastName</MudSelectItem>
                         }
                     </MudSelect>
+
                 </MudItem>
 
                 <MudItem xs="12" Class="d-flex justify-start mt-6">
-                    <MudButton ButtonType="ButtonType.Submit" 
-                               Variant="Variant.Filled" 
-                               Color="Color.Primary" 
+                    <MudButton ButtonType="ButtonType.Submit"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
                                Size="Size.Large"
                                Class="mr-4">
                         Create Tournament
@@ -98,10 +98,10 @@
 
                     @if (Tournament.Id > 0)
                     {
-                        <MudButton Variant="Variant.Filled" 
-                                  Color="Color.Success" 
-                                  Size="Size.Large"
-                                  OnClick="() => ManageTournament(Tournament.Id)">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Success"
+                                   Size="Size.Large"
+                                   OnClick="() => ManageTournament(Tournament.Id)">
                             Manage Tournament
                         </MudButton>
                     }
@@ -114,7 +114,7 @@
     {
         <MudPaper Elevation="3" Class="pa-4 mt-4">
             <MudText Typo="Typo.h5" Class="mb-4">Tournament Summary</MudText>
-            
+
             <MudGrid>
                 <MudItem xs="12" md="6">
                     <MudCard Elevation="2" Class="mb-4">
@@ -123,19 +123,25 @@
                                 <MudText Typo="Typo.h6" Color="Color.Primary">Tournament Details</MudText>
                             </CardHeaderContent>
                             <CardHeaderActions>
-                                <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Primary" />
+                                <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Primary"/>
                             </CardHeaderActions>
                         </MudCardHeader>
                         <MudCardContent>
                             <MudList T="string">
                                 <MudListItem >
-                                    <MudText><b>Name:</b> @Tournament.Name</MudText>
+                                    <MudText>
+                                        <b>Name:</b> @Tournament.Name
+                                    </MudText>
                                 </MudListItem>
                                 <MudListItem >
-                                    <MudText><b>Date:</b> @Tournament.Date</MudText>
+                                    <MudText>
+                                        <b>Date:</b> @Tournament.Date
+                                    </MudText>
                                 </MudListItem>
                                 <MudListItem>
-                                    <MudText><b>Venue:</b> @Tournament.VenueName</MudText>
+                                    <MudText>
+                                        <b>Venue:</b> @Tournament.VenueName
+                                    </MudText>
                                 </MudListItem>
                                 <MudListItem>
                                     <MudText><b>Address:</b> @Tournament.Street, @Tournament.City, @Tournament.State @Tournament.PostalCode</MudText>
@@ -144,7 +150,7 @@
                         </MudCardContent>
                     </MudCard>
                 </MudItem>
-                
+
                 <MudItem xs="12" md="6">
                     <MudCard Elevation="2" Class="mb-4">
                         <MudCardHeader>
@@ -152,7 +158,7 @@
                                 <MudText Typo="Typo.h6" Color="Color.Secondary">Registered Players</MudText>
                             </CardHeaderContent>
                             <CardHeaderActions>
-                                <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Secondary" />
+                                <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Secondary"/>
                             </CardHeaderActions>
                         </MudCardHeader>
                         <MudCardContent>
@@ -179,22 +185,22 @@
     }
 
     <MudPaper Elevation="0" Class="pa-4 mt-4 d-flex justify-end">
-        <MudButton Variant="Variant.Text" 
-                  Color="Color.Primary"
-                  OnClick="ReturnToList"
-                  StartIcon="@Icons.Material.Filled.ArrowBack">
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Primary"
+                   OnClick="ReturnToList"
+                   StartIcon="@Icons.Material.Filled.ArrowBack">
             Back to Tournaments
         </MudButton>
     </MudPaper>
 </MudContainer>
 
 @code {
-    private Tournament Tournament { get; set; } = new Tournament { Date = DateTime.Today };
+    private Tournament Tournament { get; } = new() { Date = DateTime.Today };
     private IEnumerable<int> SelectedPlayerIds { get; set; } = new List<int>();
-    private List<Player> Players { get; set; } = new List<Player>();
-    private List<TournamentPlayer> TournamentPlayers { get; set; } = new List<TournamentPlayer>();
+    private List<Player> Players { get; set; } = new();
+    private List<TournamentPlayer> TournamentPlayers { get; set; } = new();
     private string ValidationErrors { get; set; } = string.Empty;
-    private bool IsSaved { get; set; } = false;
+    private bool IsSaved { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -283,4 +289,11 @@
                 .ToListAsync();
         }
     }
+
+    private string GetPlayerName(int id)
+    {
+        var player = Players.FirstOrDefault(p => p.Id == id);
+        return player != null ? $"{player.FirstName} {player.LastName}" : id.ToString();
+    }
+
 }

@@ -11,19 +11,19 @@
     <!-- MudBlazor Pagination Controls -->
     <div class="pagination-controls d-flex align-items-center">
         <MudPagination Variant="Variant.Outlined"
-        Count="@TotalPages"
-        SelectedChanged="OnPageChanged"
-        Selected="@CurrentPage"
-        Color="Color.Primary"
-        Size="Size.Medium"
-        Class="my-2"/>
+                       Count="@TotalPages"
+                       SelectedChanged="OnPageChanged"
+                       Selected="@CurrentPage"
+                       Color="Color.Primary"
+                       Size="Size.Medium"
+                       Class="my-2"/>
 
         <MudText Typo="Typo.body2" Class="ml-4">
             Group @CurrentPage of @TotalPages | Total Quads: @(ViewModel?.AllQuads?.Count ?? 0)
         </MudText>
     </div>
     <!-- Add this somewhere on your page to help debug -->
-    <MudExpansionPanel Class="mt-4" IsInitiallyExpanded="false">
+    @*   <MudExpansionPanel Class="mt-4" IsInitiallyExpanded="false">
         <TitleContent>
             <div class="d-flex align-center">
                 <MudIcon Icon="@Icons.Material.Filled.BugReport" Class="mr-2" />
@@ -31,36 +31,36 @@
             </div>
         </TitleContent>
         <ChildContent>
-            <MudText Typo="Typo.body2">Tournament Status: @(ViewModel.Tournament?.IsActive == true ? "ACTIVE" : "OPEN")</MudText>
+            <MudText Typo="Typo.body2">Tournament Status: @(ViewModel.Tournament?.IsLocked == true ? "ACTIVE" : "OPEN")</MudText>
             <MudText Typo="Typo.body2">Match Count: @DbContext.QuadMatches.Count(m => m.Quad.TournamentId == TournamentId)</MudText>
             <MudText Typo="Typo.body2">Current Results Count: @CurrentMatchResults.Count</MudText>
             <MudText Typo="Typo.body2">Player Scores Count: @PlayerScores.Count</MudText>
         </ChildContent>
-    </MudExpansionPanel>
+    </MudExpansionPanel> *@
     <div>
         <MudButton Variant="Variant.Filled"
-        Color="Color.Primary"
-        OnClick="GenerateQuads"
-        Disabled="@(!ViewModel.AllowQuadGeneration)">
+                   Color="Color.Primary"
+                   OnClick="GenerateQuads"
+                   Disabled="@(!ViewModel.AllowQuadGeneration)">
             Generate Quads
         </MudButton>
         <MudButton Variant="Variant.Outlined"
-        Color="Color.Secondary"
-        Href="@($"/tournament/{TournamentId}")">
+                   Color="Color.Secondary"
+                   Href="@($"/tournament/{TournamentId}")">
             Back to Tournament
         </MudButton>
     </div>
 </div>
-
+@* 
 <MudPaper Class="pa-4 my-4" Elevation="2">
     <div class="d-flex justify-space-between align-center">
         <div>
             <MudText Typo="Typo.h6">
                  Tournament Status:
-                 <strong>@(ViewModel.Tournament?.IsActive == true ? "ACTIVE (Locked)" : "OPEN (Editable)")</strong>
+                 <strong>@(ViewModel.Tournament?.IsLocked == true ? "ACTIVE (Locked)" : "OPEN (Editable)")</strong>
              </MudText>
              <MudText Typo="Typo.body2">
-                 @if (ViewModel.Tournament?.IsActive == true)
+                 @if (ViewModel.Tournament?.IsLocked == true)
                  {
                      <span>Tournament is locked. Match results are being recorded.</span>
                  }
@@ -71,20 +71,20 @@
              </MudText> 
          </div> 
 
-         <MudToggleIconButton Toggled="@(ViewModel.Tournament?.IsActive == true)"
+         <MudToggleIconButton Toggled="@(ViewModel.Tournament?.IsLocked == true)"
          ToggledChanged="ToggleTournamentStatus"
          Icon="@Icons.Material.Filled.Edit" Color="@Color.Success" Title="Open For Editing"
          ToggledIcon="@Icons.Material.Filled.Lock" ToggledColor="@Color.Error" ToggledTitle="Locked/Active" />
      </div>
- </MudPaper>
+ </MudPaper> *@
 
 <div class="quad-container">
     <MudDropContainer T="TournamentPlayer"
                       Items="@ViewModel.UnassignedPlayers"
                       ItemDropped="PlayerAssigned"
-                      Disabled="@(ViewModel.Tournament?.IsActive==true)"
+                      Disabled="@(ViewModel.Tournament?.IsLocked == true)"
                       Class="d-flex flex-column flex-grow-1">
-                      
+
         <ChildContent>
             <div class="d-flex">
                 <div class="quads-section">
@@ -115,7 +115,7 @@
                                                      Identifier="@quadId"
                                                      ItemsSelector="@(p => p.QuadId?.ToString() == quadId)"
                                                      AllowReorder="true"
-                                                     Class="quad-dropzone" />
+                                                     Class="quad-dropzone"/>
                                     </div>
                                 </div>
                             </MudPaper>
@@ -131,7 +131,7 @@
                                  Identifier="unassigned"
                                  ItemsSelector="@(p => p.QuadId == null)"
                                  AllowReorder="true"
-                                 Class="unassigned-dropzone" />
+                                 Class="unassigned-dropzone"/>
                 </MudPaper>
             </div>
         </ChildContent>
@@ -156,21 +156,20 @@
                         <div class="round-cell">
                             <div class="opponent">@opponents[round - 1]</div>
                             <div class="score-cell">
-                                @if (!ViewModel.Tournament.IsActive)
+                                @if (ViewModel.Tournament.IsLocked)
                                 {
                                     <span class="score-value">@GetScore(context, round)</span>
                                 }
                                 else
                                 {
-                                    <MudTextField  T="string" Class="score-input"
-                                   
-                                    @bind-Value="@PlayerScores[GetScoreKey(context,round)]"
-                                    @bind-Value:after="@(()=>SaveScoreFromBinding(context,round))"
-                                    Immediate="true"
-                                    Variant="Variant.Outlined"
-                                    Margin="Margin.Dense"
-                                    Disabled="false"/>
-                                    
+                                    <MudTextField T="string" Class="score-input"
+
+                                                  @bind-Value="@PlayerScores[GetScoreKey(context, round)]"
+                                                  @bind-Value:after="@(() => SaveScoreFromBinding(context, round))"
+                                                  Immediate="true"
+                                                  Variant="Variant.Outlined"
+                                                  Margin="Margin.Dense"
+                                                  Disabled="false"/>
                                 }
                             </div>
                             <div class="table-number">TBL @GetTableNumber(context, round)</div>
@@ -182,9 +181,9 @@
                         @if (ViewModel.AllowPlayerRemoval)
                         {
                             <MudIconButton Icon="@Icons.Material.Filled.Close"
-                            Size="Size.Small"
-                            Class="remove-btn"
-                            OnClick="@(() => RemovePlayerFromQuad(context))"/>
+                                           Size="Size.Small"
+                                           Class="remove-btn"
+                                           OnClick="@(() => RemovePlayerFromQuad(context))"/>
                         }
                     </div>
                 </div>
@@ -202,7 +201,6 @@
     </MudDropContainer>
 </div>
 
-@* Use CSS isolation with a <style> tag in the .razor file *@
 <style>
     .quad-container {
     width: 100%;
@@ -614,22 +612,13 @@
         await LoadData();
     }
 
-    private bool IsUnassigned(TournamentPlayer player)
-    {
-        return player?.QuadId == null;
-    }
-
-    private bool BelongsToQuad(TournamentPlayer player, int quadId)
-    {
-        return player?.QuadId.HasValue == true && player.QuadId.Value == quadId;
-    }
-
     protected override async Task OnParametersSetAsync()
     {
         // Reload data if the tournament ID changes
         await LoadData();
     }
-    private Dictionary<string, string> PlayerScores { get; set; } = new();
+
+    private Dictionary<string, string> PlayerScores { get; } = new();
 
     private void InitPlayerScores()
     {
@@ -639,7 +628,7 @@
         {
             foreach (var player in quad.Players)
             {
-                for (int round = 1; round <= 3; round++)
+                for (var round = 1; round <= 3; round++)
                 {
                     var key = GetScoreKey(player, round);
                     var score = GetScore(player, round);
@@ -662,6 +651,7 @@
             await SaveScore(player, round, score);
         }
     }
+
     private async Task LoadData()
     {
         var tournament = await DbContext.Tournaments
@@ -709,7 +699,7 @@
         // Update ViewModel
         ViewModel = new QuadsViewModel
         {
-			Tournament = tournament,
+            Tournament = tournament,
             TournamentId = TournamentId,
             TournamentName = tournament.Name,
             Quads = allQuads,
@@ -717,13 +707,13 @@
             UnassignedPlayers = unassignedPlayers.Concat(DisplayedQuads.SelectMany(q => q.Players)).ToList(),
             CurrentPage = CurrentPage,
             TotalPages = (int)Math.Ceiling(allQuads.Count / 4.0), // 4 quads per page
-				AllowQuadGeneration = !tournament.IsActive,
-                AllowPlayerRemoval = !tournament.IsActive,
-                AllowPlayerAssignment = !tournament.IsActive,
+            AllowQuadGeneration = !tournament.IsLocked,
+            AllowPlayerRemoval = !tournament.IsLocked,
+            AllowPlayerAssignment = !tournament.IsLocked,
             AreAllQuadsFull = allQuads.Count > 0 && allQuads.All(q => q.Players.Count == 4)
         };
 
-
+        InitPlayerScores();
         await LoadMatchResults();
     }
 
@@ -743,7 +733,7 @@
             foreach (var player in quad.Players)
             {
                 // Find matches where this player is involved
-                for (int round = 1; round <= 3; round++)
+                for (var round = 1; round <= 3; round++)
                 {
                     var match = matches.FirstOrDefault(m =>
                         m.RoundNumber == round &&
@@ -752,7 +742,7 @@
                     if (match != null)
                     {
                         // Store the score
-                        string score = "";
+                        var score = "";
 
                         if (match.PlayerOneId == player.Id)
                         {
@@ -842,14 +832,14 @@
     private string GetScore(TournamentPlayer player, int round)
     {
         if (!player.QuadId.HasValue)
-            return "";
+            return "0";
 
         var key = $"{player.QuadId}-{player.Id}-{round}";
 
         if (CurrentMatchResults.TryGetValue(key, out var result))
             return result;
 
-        return "";
+        return "0";
     }
 
     private string GetTotalScore(TournamentPlayer player)
@@ -909,12 +899,12 @@
 
     private async Task PlayerAssigned(MudItemDropInfo<TournamentPlayer> dropInfo)
     {
-        if (ViewModel.Tournament.IsActive)
+        if (ViewModel.Tournament.IsLocked)
         {
             Snackbar.Add("Cannot modify player assignments while tournament is active.", Severity.Warning);
             return;
         }
-       
+
         // Get the player and update their QuadId
         var player = dropInfo.Item;
         var oldQuadId = player.QuadId;
@@ -961,7 +951,7 @@
 
     private async Task RemovePlayerFromQuad(TournamentPlayer player)
     {
-        if (ViewModel.Tournament.IsActive)
+        if (ViewModel.Tournament.IsLocked)
         {
             Snackbar.Add("Cannot remove players while tournament is active.", Severity.Warning);
             return;
@@ -997,6 +987,7 @@
             await LoadData();
         }
     }
+
     private bool MatchQuadSelector(TournamentPlayer player, string identifier)
     {
         return (player.QuadId?.ToString() ?? "unassigned") == identifier;
@@ -1024,7 +1015,7 @@
 
             if (match == null)
             {
-                Snackbar.Add("Match record not found.", Severity.Error);
+                // Snackbar.Add("Match record not found.", Severity.Error);
                 return;
             }
 
@@ -1070,9 +1061,8 @@
             Snackbar.Add("An error occurred while saving the score.", Severity.Error);
         }
     }
-    
-    
-    
+
+
     private async Task RenumberPlayersInQuad(int quadId)
     {
         var quad = await DbContext.Quads
@@ -1176,11 +1166,12 @@
 
     private async Task GenerateQuads()
     {
-        if (ViewModel.Tournament.IsActive)
+        if (ViewModel.Tournament.IsLocked)
         {
             Snackbar.Add("Cannot generate quads while tournament is active.", Severity.Warning);
             return;
         }
+
         try
         {
             // Get all unassigned players
@@ -1274,10 +1265,11 @@
             default: return "quad-color-surface";
         }
     }
+
     private async Task ToggleTournamentStatus(bool isActive)
     {
         // Get confirmation
-        string message = isActive
+        var message = isActive
             ? "Lock tournament and start recording match results?"
             : "Open tournament for editing? Any existing match data will be preserved.";
 
@@ -1294,7 +1286,7 @@
             if (tournament != null)
             {
                 // Update tournament status
-                tournament.IsActive = isActive;
+                tournament.IsLocked = isActive;
 
                 if (isActive)
                 {
@@ -1324,42 +1316,39 @@
         var matchesExist = await DbContext.QuadMatches
             .AnyAsync(m => m.Quad.TournamentId == TournamentId);
 
-		var quadsFull = ViewModel.AreAllQuadsFull;
+        var quadsFull = ViewModel.AreAllQuadsFull;
 
 
         // If no matches exist or the quads are not full
         if (!matchesExist || !quadsFull)
         {
-			Snackbar.Add("Please assign all players to quads prior to proceeding.", Severity.Info);
+            Snackbar.Add("Please assign all players to quads prior to proceeding.", Severity.Info);
         }
-
     }
 
     private void CreateMatch(int quadId, TournamentPlayer player1, TournamentPlayer player2,
-                            int round, int table, string player1Color)
+        int round, int table, string player1Color)
     {
         var match = new QuadMatch
-            {
-                QuadId = quadId,
-                PlayerOneId = player1.Id,
-                PlayerTwoId = player2.Id,
-                RoundNumber = round,
-                TableNumber = table,
+        {
+            QuadId = quadId,
+            PlayerOneId = player1.Id,
+            PlayerTwoId = player2.Id,
+            RoundNumber = round,
+            TableNumber = table,
 
             // Store player details for history
-                PlayerOneName = $"{player1.Player.LastName} {player1.Player.FirstName}",
-                PlayerTwoName = $"{player2.Player.LastName} {player2.Player.FirstName}",
-                PlayerOneRanking = player1.Player.Ranking,
-                PlayerTwoRanking = player2.Player.Ranking,
+            PlayerOneName = $"{player1.Player.LastName} {player1.Player.FirstName}",
+            PlayerTwoName = $"{player2.Player.LastName} {player2.Player.FirstName}",
+            PlayerOneRanking = player1.Player.Ranking,
+            PlayerTwoRanking = player2.Player.Ranking,
 
-                PlayerOneColor = player1Color,
-                IsComplete = false
-            };
+            PlayerOneColor = player1Color,
+            IsComplete = false
+        };
 
         DbContext.QuadMatches.Add(match);
     }
-
-
 
 
 }

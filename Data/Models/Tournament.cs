@@ -3,6 +3,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace QuadMasterApp.Data.Models
 {
+    public enum TournamentStatus
+    {
+        Registration,
+        Active,
+        Completed,
+        Cancelled
+    }
+
     public class Tournament
     {
         public int Id{ get; set; }
@@ -27,27 +35,16 @@ namespace QuadMasterApp.Data.Models
         public string? Country { get; set; }
         public string? FormattedAddress { get; set; }
 
-        // Tournament status toggle
         [Display(Name = "Tournament Active")]
-        public bool IsActive { get; set; } = false;  // False = open for editing, True = locked/active
+        public bool IsLocked { get; set; } = false;
 
         public DateTime? CompletedDate { get; set; }
 
-        //other tournament properties
         public List<TournamentPlayer> TournamentPlayers { get; set; }
 
-        //add this new navigation property for quads
         public List<Quad> Quads { get; set; } = new List<Quad>();
     }
 
-
-    public enum TournamentStatus
-    {
-        Registration,
-        Active,
-        Completed,
-        Cancelled
-    }
 
 
 }

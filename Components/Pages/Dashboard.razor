@@ -246,7 +246,8 @@
 
             // Get top players by ranking (top 5)
             TopPlayers = await DbContext.Players
-                .OrderBy(p => p.Ranking)
+                .Where(p => p.Ranking > 0)
+                .OrderByDescending(p => p.Ranking)
                 .Take(5)
                 .ToListAsync();
 

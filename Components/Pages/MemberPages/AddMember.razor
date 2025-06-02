@@ -36,9 +36,15 @@
                 </MudItem>
 
                 <MudItem xs="12" md="6">
-                    <MudTextField T="int" Label="Ranking" @bind-Value="player.Ranking"
-                                  Required RequiredError="Ranking is required"
+                    <MudTextField T="int" Label="Rating" @bind-Value="player.Ranking"
+                                  Required RequiredError="Rating is required"
                                   For="@(() => player.Ranking)" />
+                </MudItem>
+                
+                <MudItem xs="12" md="6">
+                    <MudTextField T="int" Label="USCF ID" @bind-Value="player.UscfId"
+                                  Required RequiredError="USCF ID is required"
+                                  For="@(() => player.UscfId)" />
                 </MudItem>
 
                 <MudItem xs="12" md="6">
@@ -108,7 +114,7 @@
                                     <MudText><b>Name:</b> @player.FirstName @player.LastName</MudText>
                                 </MudListItem>
                                 <MudListItem>
-                                    <MudText><b>Ranking:</b> @player.Ranking</MudText>
+                                    <MudText><b>Rating:</b> @player.Ranking</MudText>
                                 </MudListItem>
                                 <MudListItem>
                                     <MudText><b>Email:</b> @player.Email</MudText>

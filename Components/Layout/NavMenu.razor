@@ -1,14 +1,25 @@
 ﻿@inject TournamentContext DbContext
-@using Microsoft.EntityFrameworkCore
-
+@inject AppStateService AppState
+@implements IDisposable
 
 <MudNavMenu>
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
     <MudNavLink Href="CreateTournament" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.EmojiEvents">Create Tournament</MudNavLink>
     <MudNavLink Href="EditTournament" Match="NavLinkMatch.Prefix" Icon = "@Icons.Material.Filled.EditNote">Edit Tournaments</MudNavLink>
-    <MudNavLink Href="QuadsPage/1" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.GridView">Quads</MudNavLink>
+    <MudNavLink Href="@($"QuadsPage/{AppState.TournamentId}")" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.GridView">Quads</MudNavLink>
     <MudNavLink Href="MemberPages/MemberView" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.People">Member Database</MudNavLink>
     <MudNavLink Href="MemberPages/ImportPlayers" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Upload">Import Players</MudNavLink>
 </MudNavMenu>
 
 
+@code {
+  protected override void OnInitialized()
+  {
+    AppState.OnChange += StateHasChanged;
+  }
+
+  public void Dispose()
+  {
+    AppState.OnChange -= StateHasChanged;
+  }
+}

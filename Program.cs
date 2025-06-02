@@ -26,6 +26,9 @@ builder.Services.AddSingleton<IThemeProvider>(serviceProvider =>
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Add global app state
+builder.Services.AddSingleton<AppStateService>();
+
 var app = builder.Build();
 
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
@@ -52,5 +55,10 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+#if RELEASE
+app.Urls.Add("http://localhost:5000");
+app.Urls.Add("https://localhost:5001");
+#endif
 
 app.Run();

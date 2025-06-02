@@ -11,6 +11,7 @@ namespace QuadMasterApp.Data.Models
         public string Title { get; set; }
 
         public int TournamentId { get; set; }
+
         public Tournament Tournament { get; set; }
 
         //for pagination (1-4 on page 1, 5-8 on page 2 etc)

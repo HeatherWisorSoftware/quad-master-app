@@ -25,7 +25,8 @@
                     <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x => x.Id)">ID</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x => x.FirstName)">First Name</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x => x.LastName)">Last Name</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x => x.Ranking)">Ranking</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x => x.Ranking)">Rating</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x => x.UscfId)">USCF ID</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x => x.Email)">Email</MudTableSortLabel></MudTh>
                     <MudTh>
                         <MudTableSortLabel SortBy="new Func<Player, object>(x => TournamentPlayerCounts.GetValueOrDefault(x.Id, 0))">
@@ -38,7 +39,8 @@
                     <MudTd DataLabel="ID">@context.Id</MudTd>
                     <MudTd DataLabel="First Name">@context.FirstName</MudTd>
                     <MudTd DataLabel="Last Name">@context.LastName</MudTd>
-                    <MudTd DataLabel="Ranking">@context.Ranking</MudTd>
+                    <MudTd DataLabel="Rating">@context.Ranking</MudTd>
+                    <MudTd DataLabel="USCF Id">@context.UscfId</MudTd>
                     <MudTd DataLabel="Email">@context.Email</MudTd>
                     <MudTd DataLabel="Tournaments Played">@TournamentPlayerCounts.GetValueOrDefault(context.Id, 0)</MudTd>
                     <MudTd>

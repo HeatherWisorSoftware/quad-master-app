@@ -37,44 +37,6 @@
             <MudCard Elevation="2" Class="rounded-lg h-100">
                 <MudCardHeader Class="pb-0" Style="background-color: var(--mud-palette-background-gray);">
                     <CardHeaderContent>
-                        <MudText Typo="Typo.h6" Color="Color.Primary">Total Tournaments</MudText>
-                    </CardHeaderContent>
-                    <CardHeaderActions>
-                        <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Primary" />
-                    </CardHeaderActions>
-                </MudCardHeader>
-                <MudCardContent Class="pt-0">
-                    <MudText Typo="Typo.h3" Class="mt-3 mb-0" Color="Color.Default">@Tournaments.Count</MudText>
-                </MudCardContent>
-                <MudCardActions>
-                    <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/EditTournament">View Details</MudButton>
-                </MudCardActions>
-            </MudCard>
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2" Class="rounded-lg h-100">
-                <MudCardHeader Class="pb-0" Style="background-color: var(--mud-palette-background-gray);">
-                    <CardHeaderContent>
-                        <MudText Typo="Typo.h6" Color="Color.Secondary">Total Members</MudText>
-                    </CardHeaderContent>
-                    <CardHeaderActions>
-                        <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Secondary" />
-                    </CardHeaderActions>
-                </MudCardHeader>
-                <MudCardContent Class="pt-0">
-                    <MudText Typo="Typo.h3" Class="mt-3 mb-0" Color="Color.Default">@Players.Count</MudText>
-                </MudCardContent>
-                <MudCardActions>
-                    <MudButton Variant="Variant.Text" Color="Color.Secondary" Href="/MemberPages/MemberView">View Details</MudButton>
-                </MudCardActions>
-            </MudCard>
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <MudCard Elevation="2" Class="rounded-lg h-100">
-                <MudCardHeader Class="pb-0" Style="background-color: var(--mud-palette-background-gray);">
-                    <CardHeaderContent>
                         <MudText Typo="Typo.h6" Color="Color.Success">Upcoming Tournaments</MudText>
                     </CardHeaderContent>
                     <CardHeaderActions>
@@ -89,6 +51,43 @@
                 </MudCardActions>
             </MudCard>
         </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2" Class="rounded-lg h-100">
+                <MudCardHeader Class="pb-0" Style="background-color: var(--mud-palette-background-gray);">
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6" Color="Color.Primary">Total Tournaments</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Primary"/>
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent Class="pt-0">
+                    <MudText Typo="Typo.h3" Class="mt-3 mb-0" Color="Color.Default">@Tournaments.Count</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/EditTournament">View Details</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2" Class="rounded-lg h-100">
+                <MudCardHeader Class="pb-0" Style="background-color: var(--mud-palette-background-gray);">
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6" Color="Color.Secondary">Total Members</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Secondary"/>
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent Class="pt-0">
+                    <MudText Typo="Typo.h3" Class="mt-3 mb-0" Color="Color.Default">@Players.Count</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Secondary" Href="/MemberPages/MemberView">View Details</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
     </MudGrid>
 
     <MudGrid Class="mt-4">
@@ -146,7 +145,7 @@
                         <MudTable Items="@TopPlayers" Hover="true" Striped="true" Elevation="0">
                             <HeaderContent>
                                 <MudTh>Name</MudTh>
-                                <MudTh>Ranking</MudTh>
+                                <MudTh>Rating</MudTh>
                                 <MudTh>Tournaments</MudTh>
                             </HeaderContent>
                             <RowTemplate>
@@ -219,7 +218,6 @@
 
     private void ManageTournament()
     {
-        var TournamentId = 1;
         NavigationManager.NavigateTo("/EditTournament");
     }
 

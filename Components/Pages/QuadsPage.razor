@@ -4,6 +4,7 @@
 @inject NavigationManager NavigationManager
 @inject TournamentContext DbContext
 @inject IThemeProvider ThemeProvider
+@inject AppStateService AppState
 
 <h1>Tournament Quads: @ViewModel?.TournamentName</h1>
 
@@ -44,11 +45,11 @@
                    Disabled="@(!ViewModel.AllowQuadGeneration)">
             Generate Quads
         </MudButton>
-        <MudButton Variant="Variant.Outlined"
+        @*         <MudButton Variant="Variant.Outlined"
                    Color="Color.Secondary"
                    Href="@($"/tournament/{TournamentId}")">
             Back to Tournament
-        </MudButton>
+        </MudButton> *@
     </div>
 </div>
 @* 
@@ -98,7 +99,7 @@
                                 <div class="quad-table">
                                     <div class="quad-side">
                                         <div class="quad-identifier">
-                                            <span>QUAD @quad.Id</span>
+                                            <span>@quad.Title</span>
                                         </div>
                                     </div>
                                     <div class="quad-main">
@@ -202,392 +203,392 @@
 </div>
 
 <style>
-    .quad-container {
-    width: 100%;
-    }
+  .quad-container {
+  width: 100%;
+  }
 
-    /* Layout for side-by-side display */
-    .quads-section {
-    flex: 4;
-    }
+  /* Layout for side-by-side display */
+  .quads-section {
+  flex: 4;
+  }
 
-    .unassigned-paper {
-    flex: 1;
-    min-width: 220px;
-    max-width: 300px;
-    height: fit-content;
-    margin-top: 0 !important;
-    }
+  .unassigned-paper {
+  flex: 1;
+  min-width: 220px;
+  max-width: 300px;
+  height: fit-content;
+  margin-top: 0 !important;
+  }
 
-    .quad-paper {
-    width: 48%;
-    margin: 0 1% 16px 1%;
-    border: 1px solid #ddd;
-    display: flex;
-    flex-direction: column;
-    }
+  .quad-paper {
+  width: 48%;
+  margin: 0 1% 16px 1%;
+  border: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  }
 
-    /* Quad table layout */
-    .quad-table {
-    display: flex;
-    width: 100%;
-    height: 100%;
-    border-collapse: collapse;
-    }
+  /* Quad table layout */
+  .quad-table {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  border-collapse: collapse;
+  }
 
-    .quad-side {
-    width: 70px;
-    /* Background color inherits from parent .quad-paper which has the color class */
-    border-right: 1px solid var(--mud-palette-divider);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    }
+  .quad-side {
+  width: 70px;
+  /* Background color inherits from parent .quad-paper which has the color class */
+  border-right: 1px solid var(--mud-palette-divider);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  }
 
-    .quad-identifier {
-    font-size: 24px;
-    font-weight: bold;
-    text-align: center;
-    height: 100%;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--mud-palette-text-primary);
-    }
+  .quad-identifier {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mud-palette-text-primary);
+  }
 
-    .quad-main {
-    flex: 1;
-    }
+  .quad-main {
+  flex: 1;
+  }
 
-    /* Quad header */
-    .quad-header {
-    display: flex;
-    border-bottom: 1px solid var(--mud-palette-divider);
-    background-color: var(--mud-palette-surface);
-    }
+  /* Quad header */
+  .quad-header {
+  display: flex;
+  border-bottom: 1px solid var(--mud-palette-divider);
+  background-color: var(--mud-palette-surface);
+  }
 
-    .quad-header-cell {
-    flex: 1;
-    padding: 8px;
-    text-align: center;
-    font-weight: bold;
-    border-right: 1px solid var(--mud-palette-divider);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    }
+  .quad-header-cell {
+  flex: 1;
+  padding: 8px;
+  text-align: center;
+  font-weight: bold;
+  border-right: 1px solid var(--mud-palette-divider);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  }
 
-    .player-header {
-    flex: 2.45;
-    }
+  .player-header {
+  flex: 2.45;
+  }
 
-    /* Quad dropzone */
-    .quad-dropzone {
-    min-height: 400px;
-    background-color: var(--mud-palette-background-grey);
-    }
+  /* Quad dropzone */
+  .quad-dropzone {
+  min-height: 400px;
+  background-color: var(--mud-palette-background-grey);
+  }
 
-    /* Player row in quad */
-    .quad-player-row {
-    display: flex;
-    border-bottom: 1px solid var(--mud-palette-divider);
-    background-color: var(--mud-palette-surface);
-    }
+  /* Player row in quad */
+  .quad-player-row {
+  display: flex;
+  border-bottom: 1px solid var(--mud-palette-divider);
+  background-color: var(--mud-palette-surface);
+  }
 
-    .player-cell {
-    flex: 2;
-    padding: 8px;
-    border-right: 1px solid #ddd;
-    display: flex;
-    flex-direction: column;
-    }
+  .player-cell {
+  flex: 2;
+  padding: 8px;
+  border-right: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  }
 
-    .player-position {
-    font-size: 18px;
-    font-weight: bold;
-    margin-right: 8px;
-    color: #666;
-    }
+  .player-position {
+  font-size: 18px;
+  font-weight: bold;
+  margin-right: 8px;
+  color: #666;
+  }
 
-    .player-name {
-    font-size: 18px;
-    font-weight: bold;
-    color: #666;
-    }
+  .player-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #666;
+  }
 
-    .player-rating {
-    font-size: 16px;
-    color: #333;
-    }
+  .player-rating {
+  font-size: 16px;
+  color: #333;
+  }
 
-    .round-cell {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid #ddd;
-    margin: 0;
-    }
+  .round-cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #ddd;
+  margin: 0;
+  }
 
-    .opponent {
-    padding: 4px;
-    text-align: center;
-    border-bottom: 1px solid #eee;
-    color: #666;
-    }
+  .opponent {
+  padding: 4px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+  color: #666;
+  }
 
-    .score-cell {
-    padding: 8px;
-    text-align: center;
-    font-size: 18px;
-    font-weight: bold;
-    background-color: inherit;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    }
+  .score-cell {
+  padding: 8px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  background-color: inherit;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  }
 
-    .table-number {
-    padding: 4px;
-    text-align: center;
-    border-top: 1px solid #eee;
-    color: #666;
-    }
+  .table-number {
+  padding: 4px;
+  text-align: center;
+  border-top: 1px solid #eee;
+  color: #666;
+  }
 
-    .total-cell {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    }
+  .total-cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  }
 
-    .total-score {
-    font-size: 32px;
-    font-weight: bold;
-    color: #666;
-    }
+  .total-score {
+  font-size: 32px;
+  font-weight: bold;
+  color: #666;
+  }
 
-    .remove-btn {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    }
+  .remove-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  }
 
-    /* Unassigned players section */
-    .unassigned-header {
-    background-color: #f0f0f0;
-    padding: 8px;
-    border-bottom: 1px solid #ddd;
-    }
+  /* Unassigned players section */
+  .unassigned-header {
+  background-color: #f0f0f0;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  }
 
-    .unassigned-dropzone {
-    min-height: 400px;
-    padding: 8px;
-    overflow-y: auto;
-    }
+  .unassigned-dropzone {
+  min-height: 400px;
+  padding: 8px;
+  overflow-y: auto;
+  }
 
-    .player-card {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-    padding: 6px;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    width: 100%;
-    font-size: 14px;
-    }
+  .player-card {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 6px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 100%;
+  font-size: 14px;
+  }
 
-    .player-number {
-    font-size: 20px;
-    font-weight: bold;
-    margin-right: 16px;
-    min-width: 24px;
-    text-align: center;
-    }
+  .player-number {
+  font-size: 20px;
+  font-weight: bold;
+  margin-right: 16px;
+  min-width: 24px;
+  text-align: center;
+  }
 
-    .player-info {
-    flex-grow: 1;
-    }
+  .player-info {
+  flex-grow: 1;
+  }
 
-    /* Pagination styles */
-    .pagination-controls {
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    }
+  /* Pagination styles */
+  .pagination-controls {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  }
 
-    .mud-pagination {
-    margin-right: 16px;
-    }
+  .mud-pagination {
+  margin-right: 16px;
+  }
 
-    /* Theme color classes for quads */
-    /* Primary color */
-    .quad-paper.mud-paper.quad-color-primary {
-    background-color: var(--mud-palette-primary-lighten) !important;
-    }
+  /* Theme color classes for quads */
+  /* Primary color */
+  .quad-paper.mud-paper.quad-color-primary {
+  background-color: var(--mud-palette-primary-lighten) !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-primary .quad-side {
-    background-color: var(--mud-palette-primary-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-primary .quad-side {
+  background-color: var(--mud-palette-primary-lighten) !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-primary .score-cell {
-    background-color: var(--mud-palette-primary-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-primary .score-cell {
+  background-color: var(--mud-palette-primary-lighten) !important;
+  }
 
-    /* Secondary color */
-    .quad-paper.mud-paper.quad-color-secondary {
-    background-color: var(--mud-palette-secondary-lighten) !important;
-    }
+  /* Secondary color */
+  .quad-paper.mud-paper.quad-color-secondary {
+  background-color: var(--mud-palette-secondary-lighten) !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-secondary .quad-side {
-    background-color: var(--mud-palette-secondary-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-secondary .quad-side {
+  background-color: var(--mud-palette-secondary-lighten) !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-secondary .score-cell {
-    background-color: var(--mud-palette-secondary-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-secondary .score-cell {
+  background-color: var(--mud-palette-secondary-lighten) !important;
+  }
 
-    /* Info color */
-    .quad-paper.mud-paper.quad-color-info {
-    background-color: var(--mud-palette-info-lighten) !important;
-    }
+  /* Info color */
+  .quad-paper.mud-paper.quad-color-info {
+  background-color: var(--mud-palette-info-lighten) !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-info .quad-side {
-    background-color: var(--mud-palette-info-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-info .quad-side {
+  background-color: var(--mud-palette-info-lighten) !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-info .score-cell {
-    background-color: var(--mud-palette-info-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-info .score-cell {
+  background-color: var(--mud-palette-info-lighten) !important;
+  }
 
-    /* Success color */
-    .quad-paper.mud-paper.quad-color-success {
-    background-color: var(--mud-palette-success-lighten) !important;
-    }
+  /* Success color */
+  .quad-paper.mud-paper.quad-color-success {
+  background-color: var(--mud-palette-success-lighten) !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-success .quad-side {
-    background-color: var(--mud-palette-success-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-success .quad-side {
+  background-color: var(--mud-palette-success-lighten) !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-success .score-cell {
-    background-color: var(--mud-palette-success-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-success .score-cell {
+  background-color: var(--mud-palette-success-lighten) !important;
+  }
 
-    /* Warning color */
-    .quad-paper.mud-paper.quad-color-warning {
-    background-color: var(--mud-palette-warning-lighten) !important;
-    }
+  /* Warning color */
+  .quad-paper.mud-paper.quad-color-warning {
+  background-color: var(--mud-palette-warning-lighten) !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-warning .quad-side {
-    background-color: var(--mud-palette-warning-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-warning .quad-side {
+  background-color: var(--mud-palette-warning-lighten) !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-warning .score-cell {
-    background-color: var(--mud-palette-warning-lighten) !important;
-    }
+  .quad-paper.mud-paper.quad-color-warning .score-cell {
+  background-color: var(--mud-palette-warning-lighten) !important;
+  }
 
-    /* Surface color */
-    .quad-paper.mud-paper.quad-color-surface {
-    background-color: var(--mud-palette-surface) !important;
-    }
+  /* Surface color */
+  .quad-paper.mud-paper.quad-color-surface {
+  background-color: var(--mud-palette-surface) !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-surface .quad-side {
-    background-color: var(--mud-palette-surface) !important;
-    }
+  .quad-paper.mud-paper.quad-color-surface .quad-side {
+  background-color: var(--mud-palette-surface) !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-surface .score-cell {
-    background-color: var(--mud-palette-surface) !important;
-    }
+  .quad-paper.mud-paper.quad-color-surface .score-cell {
+  background-color: var(--mud-palette-surface) !important;
+  }
 
-    /* Original colors */
-    .quad-paper.mud-paper.quad-color-yellow {
-    background-color: #ffffcc !important;
-    }
+  /* Original colors */
+  .quad-paper.mud-paper.quad-color-yellow {
+  background-color: #ffffcc !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-yellow .quad-side {
-    background-color: #ffffcc !important;
-    }
+  .quad-paper.mud-paper.quad-color-yellow .quad-side {
+  background-color: #ffffcc !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-yellow .score-cell {
-    background-color: #ffffcc !important;
-    }
+  .quad-paper.mud-paper.quad-color-yellow .score-cell {
+  background-color: #ffffcc !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-blue {
-    background-color: #e6f7ff !important;
-    }
+  .quad-paper.mud-paper.quad-color-blue {
+  background-color: #e6f7ff !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-blue .quad-side {
-    background-color: #e6f7ff !important;
-    }
+  .quad-paper.mud-paper.quad-color-blue .quad-side {
+  background-color: #e6f7ff !important;
+  }
 
-    .quad-paper.mud-paper.quad-color-blue .score-cell {
-    background-color: #e6f7ff !important;
-    }
+  .quad-paper.mud-paper.quad-color-blue .score-cell {
+  background-color: #e6f7ff !important;
+  }
 </style>
 
 <style>
-    /* Media queries need to be in a separate style block in Blazor */
-    @@media (max-width: 1400px) {
-    .quad-paper {
-    width: 31%;
-    }
-    }
+  /* Media queries need to be in a separate style block in Blazor */
+  @@media (max-width: 1400px) {
+  .quad-paper {
+  width: 31%;
+  }
+  }
 
-    @@media (max-width: 1200px) {
-    /*     .quads-section {
-    flex: 3;
-    } */
+  @@media (max-width: 1200px) {
+  /*     .quads-section {
+  flex: 3;
+  } */
 
-    .quad-paper {
-    width: 48%;
-    }
-    }
+  .quad-paper {
+  width: 48%;
+  }
+  }
 
-    @@media (max-width:1080px) {
-    .quad-paper {
-    width: width: 48%; /* Maintain 2 quads per row */
-    }
-    }
+  @@media (max-width:1080px) {
+  .quad-paper {
+  width: width: 48%; /* Maintain 2 quads per row */
+  }
+  }
 
-    @@media (max-width: 768px) {
-    /* Switch to vertical layout on small screens */
-    .d-flex {
-    flex-direction: column;
-    }
-    }
+  @@media (max-width: 768px) {
+  /* Switch to vertical layout on small screens */
+  .d-flex {
+  flex-direction: column;
+  }
+  }
 
-    .quads-section {
-    width: 100%;
-    }
+  .quads-section {
+  width: 100%;
+  }
 
-    .unassigned-paper {
-    width: 100%;
-    max-width: none;
-    margin-top: 16px !important;
-    }
+  .unassigned-paper {
+  width: 100%;
+  max-width: none;
+  margin-top: 16px !important;
+  }
 
-    /* Responsive pagination */
-    .pagination-controls {
-    flex-direction: column;
-    align-items: start;
-    }
+  /* Responsive pagination */
+  .pagination-controls {
+  flex-direction: column;
+  align-items: start;
+  }
 
-    .pagination-controls .mud-pagination {
-    margin-bottom: 12px;
-    margin-right: 0;
-    }
+  .pagination-controls .mud-pagination {
+  margin-bottom: 12px;
+  margin-right: 0;
+  }
 
-    .pagination-controls .mud-typography {
-    margin-left: 0;
-    }
+  .pagination-controls .mud-typography {
+  margin-left: 0;
+  }
 
-    }
+  }
 </style>
 
 @code {
@@ -654,6 +655,9 @@
 
     private async Task LoadData()
     {
+        // update app state
+        AppState.TournamentId = TournamentId;
+
         var tournament = await DbContext.Tournaments
             .Include(t => t.Quads)
             .FirstOrDefaultAsync(t => t.Id == TournamentId);

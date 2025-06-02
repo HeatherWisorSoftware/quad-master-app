@@ -96,11 +96,10 @@
                         {
                             <MudItem xs="12" sm="6" md="4">
                                 <MudSelect T="string" Label="@header" Value="@GetMappingValue(header)" ValueChanged="@(value => UpdateMapping(header, value))">
-                                    <MudSelectItem Value="@("ignore")">Ignore this column</MudSelectItem>
                                     <MudSelectItem Value="@("FirstName")">First Name</MudSelectItem>
                                     <MudSelectItem Value="@("LastName")">Last Name</MudSelectItem>
                                     <MudSelectItem Value="@("FullName")">Full Name (will be split)</MudSelectItem>
-                                    <MudSelectItem Value="@("Ranking")">Ranking</MudSelectItem>
+                                    <MudSelectItem Value="@("Ranking")">Rating</MudSelectItem>
                                     <MudSelectItem Value="@("Email")">Email</MudSelectItem>
                                     <MudSelectItem Value="@("Phone")">Phone</MudSelectItem>
                                 </MudSelect>
@@ -126,9 +125,9 @@
                             <MudCheckBox T="bool" @bind-Checked="@TransformOptions.StandardizeEmails" Label="Convert emails to lowercase" />
                         </MudItem>
                         <MudItem xs="12" sm="6">
-                            <MudNumericField T="int" @bind-Value="TransformOptions.DefaultRanking" Label="Default Ranking (if not provided)" Min="0" Max="3000" />
+                            <MudNumericField T="int" @bind-Value="TransformOptions.DefaultRanking" Label="Default Rating (if not provided)" Min="0" Max="3000" />
                         </MudItem>
-                        <MudItem xs="12">
+                        @*<MudItem xs="12">
                             <MudExpansionPanel>
                                 <TitleContent>
                                     <div class="d-flex">
@@ -163,8 +162,8 @@
                                     </MudGrid>
                                 </ChildContent>
                             </MudExpansionPanel>
-                        </MudItem>
-                        <MudItem xs="12">
+                        </MudItem>*@
+                    @*     <MudItem xs="12">
                             <MudExpansionPanel>
                                 <TitleContent>
                                     <div class="d-flex">
@@ -193,7 +192,7 @@
                                     </MudGrid>
                                 </ChildContent>
                             </MudExpansionPanel>
-                        </MudItem>
+                        </MudItem> *@
                     </MudGrid>
                 </MudCardContent>
             </MudCard>
@@ -296,7 +295,7 @@
                                         }
                                     </MudTd>
                                     <MudTd DataLabel="Last Name">@context.LastName</MudTd>
-                                    <MudTd DataLabel="Ranking">@context.Ranking</MudTd>
+                                    <MudTd DataLabel="Rating">@context.Ranking</MudTd>
                                     <MudTd DataLabel="Email" Style="@(context.Email?.StartsWith("INVALID:") == true ? "color: red;" : "")">
                                         @(context.Email?.StartsWith("INVALID:") == true ? context.Email.Substring(8) : context.Email)
                                     </MudTd>
@@ -502,7 +501,9 @@
             else if (normalizedHeader.Contains("full") && normalizedHeader.Contains("name"))
                 FieldMapping[header] = "FullName";
             else if (normalizedHeader.Contains("rank") || normalizedHeader.Contains("rating"))
-                FieldMapping[header] = "Ranking";
+                FieldMapping[header] = "Rating";
+            else if (normalizedHeader.Contains("uscf id"))
+                FieldMapping[header] = "USCF ID";
             else if (normalizedHeader.Contains("email"))
                 FieldMapping[header] = "Email";
             else if (normalizedHeader.Contains("phone") || normalizedHeader.Contains("contact"))
@@ -620,6 +621,7 @@
                                 FirstName = previewPlayer.FirstName,
                                 LastName = previewPlayer.LastName,
                                 Ranking = previewPlayer.Ranking,
+                                UscfId = previewPlayer.UscfId,
                             // Clean up the INVALID: prefixes for database storage
                                 Email = previewPlayer.Email?.StartsWith("INVALID:") == true ?
                                        null : previewPlayer.Email,
@@ -686,13 +688,6 @@
                         var player = new Player();
                         ProcessPlayerFromRow(player, row);
 
-                        // Clean up any INVALID: prefixes
-                        if (player.Email?.StartsWith("INVALID:") == true)
-                            player.Email = null;
-
-                        if (player.Phone?.StartsWith("INVALID:") == true)
-                            player.Phone = null;
-
                         // Validate required fields
                         if (!string.IsNullOrWhiteSpace(player.FirstName) && !string.IsNullOrWhiteSpace(player.LastName))
                         {
@@ -733,7 +728,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error importing data: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Error importing data: {ex.InnerException.Message}", Severity.Error);
         }
         finally
         {
@@ -767,6 +762,7 @@
                             player.LastName = TransformOptions.CapitalizeNames ? CapitalizeFirst(value) : value;
                             break;
                         case "FullName":
+                        case "Name":
                             // Split full name into first and last name
                             string fullNameValue = value?.Trim() ?? "";
                             if (!string.IsNullOrEmpty(fullNameValue))
@@ -804,13 +800,13 @@
                                         player.LastName = nameParts[1];
                                 }
                             }
+                            break; 
+                        case var _ when fieldName.Contains("Rating", StringComparison.OrdinalIgnoreCase):  
+                               player.Ranking = int.TryParse(value, out int ranking) ? ranking : TransformOptions.DefaultRanking; // Use configurable default ranking  
                             break;
-                        case "Ranking":
-                            if (int.TryParse(value, out int ranking))
-                                player.Ranking = ranking;
-                            else
-                                player.Ranking = TransformOptions.DefaultRanking; // Use configurable default ranking
-                            break;
+                        case var _ when fieldName.Contains("USCF ID", StringComparison.OrdinalIgnoreCase):
+                             player.UscfId = int.TryParse(value, out int uscfId) ? uscfId : 0;
+                          break;
                         case "Email":
                             string emailValue = TransformOptions.StandardizeEmails ? value.ToLower() : value;
                             // Validate email format

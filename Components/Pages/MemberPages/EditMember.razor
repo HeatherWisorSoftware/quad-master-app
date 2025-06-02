@@ -18,8 +18,10 @@
                               @bind-Value="player.FirstName" />
                 <MudTextField T="string" Label="Last Name" Required RequiredError="Last name is required"
                               @bind-Value="player.LastName" Class="mt-3" />
-                <MudTextField T="int" Label="Ranking" Required RequiredError="Ranking is required"
+                <MudTextField T="int" Label="Rating" Required RequiredError="Rating is required"
                               @bind-Value="player.Ranking" Class="mt-3" />
+                <MudTextField T="int" Label="USCF ID" Required RequiredError="USCF ID is required"
+                              @bind-Value="player.UscfId" Class="mt-3" />
                 <MudTextField T="string" Label="Email" Required RequiredError="Email is required"
                               @bind-Value="player.Email" Class="mt-3" InputType="InputType.Email" />
             </MudForm>

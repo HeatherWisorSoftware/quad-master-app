@@ -26,6 +26,7 @@ namespace QuadMasterApp.Data
                     {
                         // If database doesn't exist, create it from model without migrations
                         logger.LogInformation("Database does not exist. Creating from model...");
+                        await context.Database.EnsureDeletedAsync();
                         await context.Database.EnsureCreatedAsync();
                     }
                     else if (context.Database.GetPendingMigrations().Any())
@@ -50,7 +51,7 @@ namespace QuadMasterApp.Data
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "An error occurred while initializing the database.");
+                logger.LogWarning(ex, "An error occurred while initializing the database.");
             }
         }
     }

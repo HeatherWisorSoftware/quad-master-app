@@ -6,6 +6,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
+		<SelfContained>false</SelfContained>
+		<PublishSingleFile>true</PublishSingleFile>
+	</PropertyGroup>
+
   <ItemGroup>
     <Compile Remove="Images\**" />
     <Content Remove="Images\**" />
@@ -33,4 +38,22 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.4" />
     <PackageReference Include="MudBlazor" Version="8.*" />
   </ItemGroup>
+
+
+  <ItemGroup>
+    <None Update="Scripts\StartQuadMasterDemo.bat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+	<Target Name="CopyDemoFiles" AfterTargets="Publish">
+		<ItemGroup>
+			<DemoFiles Include="$(MSBuildProjectDirectory)\RunQuadMasterDemo.bat" />
+			<DemoFiles Include="$(MSBuildProjectDirectory)\ReadME.md" />
+		</ItemGroup>
+
+		<Copy SourceFiles="@(DemoFiles)"
+		      DestinationFolder="$(PublishDir)"
+		      Condition="Exists('%(FullPath)')" />
+	</Target>
 </Project>

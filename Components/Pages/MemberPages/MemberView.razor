@@ -60,6 +60,14 @@
         </MudCardContent>
     </MudCard>
 </MudContainer>
+<MudPaper Elevation="0" Class="pa-4 mt-4 d-flex justify-end">
+    <MudButton Variant="Variant.Text"
+               Color="Color.Primary"
+               OnClick="ReturnToList"
+               StartIcon="@Icons.Material.Filled.ArrowBack">
+        Back to Home
+    </MudButton>
+</MudPaper>
 
 @if (PlayerToDelete != null)
 {
@@ -89,7 +97,10 @@
     private Player PlayerToDelete { get; set; }
 
     private DialogOptions dialogOptions = new() { FullWidth = true, CloseButton = true };
-
+    private void ReturnToList()
+    {
+        NavigationManager.NavigateTo("/");
+    }
     protected override async Task OnInitializedAsync()
     {
         await LoadPlayersAsync();

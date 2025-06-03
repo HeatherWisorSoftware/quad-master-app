@@ -116,10 +116,18 @@
                                 <MudTd DataLabel="Players">@(TournamentPlayerCounts.TryGetValue(context.Id, out var count) ? count : 0)</MudTd>
                                 <MudTd DataLabel="Actions">
                                     <MudButtonGroup Variant="Variant.Text" Size="Size.Small">
-                                        <MudButton Href="@($"/TournamentPage/Edit/{context.Id}")"
-                                                   Color="Color.Primary">Edit</MudButton>
-                                        <MudButton Href="@($"/QuadsPage/{context.Id}")"
-                                                   Color="Color.Info">Quads</MudButton>
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                       Color="Color.Secondary"
+                                                       Href="@($"/EditTournamentDetails{context.Id}")"
+                                                       Title="Edit Tournament" />
+                                        <MudIconButton Icon="@Icons.Material.Filled.People"          
+                                                       Color="Color.Primary"
+                                                       Href="@($"/EditPlayerDetails{context.Id}")"
+                                                       Title="Manage Players" />
+                                        <MudIconButton Icon="@Icons.Material.Filled.GridView"
+                                                       Color="Color.Success"
+                                                       Href="@($"/QuadsPage/{context.Id}")"
+                                                       Title= "View Quad" />
                                     </MudButtonGroup>
                                 </MudTd>
                             </RowTemplate>

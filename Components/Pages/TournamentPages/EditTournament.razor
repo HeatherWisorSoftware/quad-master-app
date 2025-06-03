@@ -58,15 +58,12 @@
                                                Title="Edit Tournament" />
                                 <MudIconButton Icon="@Icons.Material.Filled.People"
                                                Color="Color.Secondary"
-                                               Href="@($"/TournamentPage/Players/{context.Id}")"
+                                               Href="@($"/EditPlayerDetails{context.Id}")"
                                                Title="Manage Players" />
-                                <MudButton Variant="Variant.Text"
-                                           Color="Color.Error"
-                                           StartIcon="@Icons.Material.Filled.Delete"
-                                           OnClick="@(() => OpenDeleteConfirmation(context))"
-                                           Size="Size.Small">
-                                    Delete
-                                </MudButton>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Color="Color.Error"
+                                               OnClick="@(async () => await DeleteTournament(context))"
+                                               Title="Delete Tournament" />
                             </MudButtonGroup>
                         </MudTd>
                     </RowTemplate>
@@ -88,30 +85,10 @@
     </MudPaper>
 </MudContainer>
 
-@if (DeleteDialogVisible && tournamentToDelete != null)
-{
-    <MudDialog @bind-IsVisible="DeleteDialogVisible">
-        <TitleContent>
-            <MudText Typo="Typo.h6">Delete Tournament</MudText>
-        </TitleContent>
-        <DialogContent>
-            <MudText>Are you sure you want to delete tournament '@tournamentToDelete.Name'?</MudText>
-            <MudText Color="Color.Warning" Class="mt-2">This action cannot be undone.</MudText>
-        </DialogContent>
-        <DialogActions>
-            <MudButton OnClick="CloseDeleteDialog">Cancel</MudButton>
-            <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="DeleteTournament">Delete</MudButton>
-        </DialogActions>
-    </MudDialog>
-}
-
 @code {
     private List<Tournament> Tournaments { get; set; } = new();
     private Dictionary<int, int> TournamentPlayerCounts { get; set; } = new();
     private bool IsLoading { get; set; } = true;
-
-    private bool DeleteDialogVisible { get; set; } = false;
-    private Tournament tournamentToDelete;
 
     protected override async Task OnInitializedAsync()
     {
@@ -122,56 +99,58 @@
     {
         NavigationManager.NavigateTo("/");
     }
-    private void CloseDeleteDialog()
-    {
-        DeleteDialogVisible = false;
-        tournamentToDelete = null;
-    }
-    private void OpenDeleteConfirmation(Tournament tournament)
-    {
-        Console.WriteLine($"OpenDeleteConfirmation called for: {tournament.Name}");
-        tournamentToDelete = tournament;
-        DeleteDialogVisible = true;
-        Snackbar.Add($"Opening delete dialog for: {tournament.Name}", Severity.Info);
-    }
 
-    private async Task DeleteTournament()
+    private async Task DeleteTournament(Tournament tournament)
     {
         try
         {
-            if (tournamentToDelete == null) return;
+            // Check if any players are assigned to quads (business rule validation)
+            var playersInQuads = await DbContext.TournamentPlayers
+                .Where(tp => tp.TournamentId == tournament.Id && tp.QuadId != null)
+                .ToListAsync();
 
-            Console.WriteLine($"Deleting tournament: {tournamentToDelete.Name}");
-
-            // Simple delete for now - just the tournament
-            DbContext.Tournaments.Remove(tournamentToDelete);
-            await DbContext.SaveChangesAsync();
-
-            // Update local list
-            Tournaments.Remove(tournamentToDelete);
-
-            // Remove from player counts
-            if (TournamentPlayerCounts.ContainsKey(tournamentToDelete.Id))
+            if (playersInQuads.Any())
             {
-                TournamentPlayerCounts.Remove(tournamentToDelete.Id);
+                Snackbar.Add("Cannot delete tournament with assigned quad players", Severity.Error);
+                return;
             }
 
-            DeleteDialogVisible = false;
-            tournamentToDelete = null;
+            // Get all related data that needs to be deleted
+            var tournamentPlayers = await DbContext.TournamentPlayers
+                .Where(tp => tp.TournamentId == tournament.Id)
+                .ToListAsync();
 
-            Snackbar.Add("Tournament deleted successfully!", Severity.Success);
+            var quads = await DbContext.Quads
+                .Where(q => q.TournamentId == tournament.Id)
+                .ToListAsync();
+
+            var quadIds = quads.Select(q => q.Id).ToList();
+            var quadMatches = await DbContext.QuadMatches
+                .Where(qm => quadIds.Contains(qm.QuadId))
+                .ToListAsync();
+
+            // Delete everything in the right order
+            if (quadMatches.Any())
+                DbContext.QuadMatches.RemoveRange(quadMatches);
+
+            if (quads.Any())
+                DbContext.Quads.RemoveRange(quads);
+
+            if (tournamentPlayers.Any())
+                DbContext.TournamentPlayers.RemoveRange(tournamentPlayers);
+
+            DbContext.Tournaments.Remove(tournament);
+            await DbContext.SaveChangesAsync();
+
+            Snackbar.Add($"Tournament '{tournament.Name}' deleted successfully!", Severity.Success);
+
+            // Refresh the list
+            await LoadTournaments();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error deleting: {ex.Message}");
             Snackbar.Add($"Error deleting tournament: {ex.Message}", Severity.Error);
         }
-    }
-
-    private void TestDeleteClick(Tournament tournament)
-    {
-        Console.WriteLine($"Delete clicked for: {tournament.Name}");
-        Snackbar.Add($"Delete clicked for: {tournament.Name}", Severity.Info);
     }
 
     private async Task LoadTournaments()

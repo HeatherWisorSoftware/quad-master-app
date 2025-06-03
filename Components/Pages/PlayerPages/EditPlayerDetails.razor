@@ -1,0 +1,400 @@
+﻿@page "/EditPlayerDetails{Id:int}"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@inject TournamentContext DbContext
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Edit Player Details</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h3" Class="mb-4" Style="color: var(--mud-palette-primary)">Edit Player Details</MudText>
+
+    @if (IsLoading)
+    {
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (Tournament == null)
+    {
+        <MudAlert Severity="Severity.Error">Tournament not found.</MudAlert>
+    }
+    else
+    {
+        <!-- Tournament Info Header -->
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <MudGrid>
+                <MudItem xs="12" md="8">
+                    <MudText Typo="Typo.h5">@Tournament.Name</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        @(Tournament.Date?.ToString("MMMM dd, yyyy") ?? "Date not set") • @Tournament.VenueName
+                    </MudText>
+                </MudItem>
+                <MudItem xs="12" md="4" Class="d-flex align-center justify-end">
+                    <MudChip T="string" Color="Color.Info" Size="Size.Medium">
+                        @TournamentPlayers.Count Players Registered
+                    </MudChip>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudGrid>
+            <!-- Add Players Section -->
+            <MudItem xs="12" md="5">
+                <MudPaper Elevation="3" Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Add Players to Tournament</MudText>
+
+                    <!-- Search/Filter -->
+                    <MudTextField @bind-Value="SearchText"
+                                  Label="Search players"
+                                  Placeholder="Search by name, email, or USCF ID"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  Clearable="true"
+                                  Class="mb-4" />
+
+                    <!-- Available Players List -->
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">Available Players (@GetFilteredAvailablePlayers().Count)</MudText>
+
+                    @if (GetFilteredAvailablePlayers().Any())
+                    {
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            @foreach (var player in GetFilteredAvailablePlayers().Take(50))
+                            {
+                                <MudCard Class="mb-2" Elevation="1">
+                                    <MudCardContent Class="py-2">
+                                        <MudGrid AlignItems="Center">
+                                            <MudItem xs="8">
+                                                <MudText Typo="Typo.body2">
+                                                    <strong>@player.FirstName @player.LastName</strong>
+                                                </MudText>
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                    Rating: @player.Ranking • USCF: @player.UscfId
+                                                </MudText>
+                                            </MudItem>
+                                            <MudItem xs="4" Class="text-right">
+                                                <MudButton Size="Size.Small"
+                                                           Variant="Variant.Filled"
+                                                           Color="Color.Primary"
+                                                           OnClick="() => AddPlayerToTournament(player.Id)"
+                                                           StartIcon="@Icons.Material.Filled.Add">
+                                                    Add
+                                                </MudButton>
+                                            </MudItem>
+                                        </MudGrid>
+                                    </MudCardContent>
+                                </MudCard>
+                            }
+                        </div>
+
+                        @if (GetFilteredAvailablePlayers().Count > 50)
+                        {
+                            <MudAlert Severity="Severity.Info" Class="mt-2">
+                                Showing first 50 results. Use search to narrow down.
+                            </MudAlert>
+                        }
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Info">
+                            @if (string.IsNullOrWhiteSpace(SearchText))
+                            {
+                                <text>All players are already registered for this tournament.</text>
+                            }
+                            else
+                            {
+                                <text>No players found matching "@SearchText".</text>
+                            }
+                        </MudAlert>
+                    }
+                </MudPaper>
+            </MudItem>
+
+            <!-- Registered Players Section -->
+            <MudItem xs="12" md="7">
+                <MudPaper Elevation="3" Class="pa-4">
+                    <MudGrid AlignItems="Center" Class="mb-4">
+                        <MudItem xs="8">
+                            <MudText Typo="Typo.h6">Registered Players (@TournamentPlayers.Count)</MudText>
+                        </MudItem>
+                        <MudItem xs="4" Class="text-right">
+                            @if (TournamentPlayers.Any())
+                            {
+                                <MudButton Color="Color.Error"
+                                           Variant="Variant.Text"
+                                           StartIcon="@Icons.Material.Filled.DeleteForever"
+                                           OnClick="RemoveAllPlayers">
+                                    Remove All
+                                </MudButton>
+                            }
+                        </MudItem>
+                    </MudGrid>
+
+                    @if (TournamentPlayers.Any())
+                    {
+                        <MudTable Items="@TournamentPlayers.OrderBy(tp => tp.Player.Ranking)"
+                                  Hover="true"
+                                  Striped="true"
+                                  Dense="true"
+                                  Elevation="0">
+                            <HeaderContent>
+                                <MudTh>Name</MudTh>
+                                <MudTh>Rating</MudTh>
+                                <MudTh>USCF ID</MudTh>
+                                <MudTh>Quad</MudTh>
+                                <MudTh>Actions</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Name">
+                                    <MudText Typo="Typo.body2">
+                                        @context.Player.FirstName @context.Player.LastName
+                                    </MudText>
+                                </MudTd>
+                                <MudTd DataLabel="Rating">@context.Player.Ranking</MudTd>
+                                <MudTd DataLabel="USCF ID">@context.Player.UscfId</MudTd>
+                                <MudTd DataLabel="Quad">
+                                    @if (context.QuadId.HasValue)
+                                    {
+                                        <MudChip T="string" Color="Color.Success" Size="Size.Small">
+                                            Quad @context.QuadId
+                                        </MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Text">
+                                            Unassigned
+                                        </MudChip>
+                                    }
+                                </MudTd>
+                                <MudTd DataLabel="Actions">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Color="Color.Error"
+                                                   Size="Size.Small"
+                                                   OnClick="() => RemovePlayerFromTournament(context.Id)"
+                                                   Title="Remove from tournament" />
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Info">
+                            No players registered yet. Add players from the left panel.
+                        </MudAlert>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Action Buttons -->
+        <MudPaper Elevation="2" Class="pa-4 mt-4">
+            <MudGrid AlignItems="Center">
+                <MudItem xs="12" md="8">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Ready to create quads? You need at least 4 players (multiples of 4 work best).
+                    </MudText>
+                </MudItem>
+                <MudItem xs="12" md="4" Class="text-right">
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Secondary"
+                               OnClick="NavigateToTournamentList"
+                               StartIcon="@Icons.Material.Filled.ArrowBack"
+                               Class="mr-2">
+                        Back to Tournaments
+                    </MudButton>
+
+                    @if (TournamentPlayers.Count >= 4)
+                    {
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   OnClick="NavigateToQuads"
+                                   StartIcon="@Icons.Material.Filled.GridView">
+                            Manage Quads
+                        </MudButton>
+                    }
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Tournament Tournament { get; set; }
+    private List<TournamentPlayer> TournamentPlayers { get; set; } = new();
+    private List<Player> AvailablePlayers { get; set; } = new();
+    private bool IsLoading { get; set; } = true;
+    private string SearchText { get; set; } = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            IsLoading = true;
+
+            // Load tournament
+            Tournament = await DbContext.Tournaments
+                .FirstOrDefaultAsync(t => t.Id == Id);
+
+            if (Tournament == null)
+            {
+                Snackbar.Add("Tournament not found.", Severity.Error);
+                return;
+            }
+
+            // Load tournament players with their player data
+            TournamentPlayers = await DbContext.TournamentPlayers
+                .Include(tp => tp.Player)
+                .Where(tp => tp.TournamentId == Id)
+                .ToListAsync();
+
+            // Load all players
+            var allPlayers = await DbContext.Players.ToListAsync();
+
+            // Get players not in this tournament
+            var registeredPlayerIds = TournamentPlayers.Select(tp => tp.PlayerId).ToHashSet();
+            AvailablePlayers = allPlayers.Where(p => !registeredPlayerIds.Contains(p.Id)).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading data: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private List<Player> GetFilteredAvailablePlayers()
+    {
+        if (string.IsNullOrWhiteSpace(SearchText))
+            return AvailablePlayers.OrderBy(p => p.Ranking).ToList();
+
+        return AvailablePlayers.Where(p =>
+            p.FirstName.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+            p.LastName.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+            (p.FirstName + " " + p.LastName).Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+            (!string.IsNullOrEmpty(p.Email) && p.Email.Contains(SearchText, StringComparison.OrdinalIgnoreCase)) ||
+            p.UscfId.ToString().Contains(SearchText)
+        ).OrderBy(p => p.Ranking).ToList();
+    }
+
+    private async Task AddPlayerToTournament(int playerId)
+    {
+        try
+        {
+            // Check if player is already registered
+            var existingRegistration = await DbContext.TournamentPlayers
+                .FirstOrDefaultAsync(tp => tp.TournamentId == Id && tp.PlayerId == playerId);
+
+            if (existingRegistration != null)
+            {
+                Snackbar.Add("Player is already registered for this tournament.", Severity.Warning);
+                return;
+            }
+
+            // Add new tournament player
+            var tournamentPlayer = new TournamentPlayer
+                {
+                    TournamentId = Id,
+                    PlayerId = playerId
+                };
+
+            DbContext.TournamentPlayers.Add(tournamentPlayer);
+            await DbContext.SaveChangesAsync();
+
+            Snackbar.Add("Player added to tournament successfully!", Severity.Success);
+
+            // Refresh data
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error adding player: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task RemovePlayerFromTournament(int tournamentPlayerId)
+    {
+        try
+        {
+            var tournamentPlayer = await DbContext.TournamentPlayers
+                .Include(tp => tp.Player)
+                .FirstOrDefaultAsync(tp => tp.Id == tournamentPlayerId);
+
+            if (tournamentPlayer == null)
+            {
+                Snackbar.Add("Player registration not found.", Severity.Error);
+                return;
+            }
+
+            // Check if player is assigned to a quad
+            if (tournamentPlayer.QuadId.HasValue)
+            {
+                Snackbar.Add($"Cannot remove {tournamentPlayer.Player.FirstName} {tournamentPlayer.Player.LastName} - they are assigned to a quad. Remove from quad first.", Severity.Warning);
+                return;
+            }
+
+            DbContext.TournamentPlayers.Remove(tournamentPlayer);
+            await DbContext.SaveChangesAsync();
+
+            Snackbar.Add($"{tournamentPlayer.Player.FirstName} {tournamentPlayer.Player.LastName} removed from tournament.", Severity.Success);
+
+            // Refresh data
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error removing player: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task RemoveAllPlayers()
+    {
+        try
+        {
+            // Check if any players are assigned to quads
+            var playersInQuads = TournamentPlayers.Where(tp => tp.QuadId.HasValue).ToList();
+            if (playersInQuads.Any())
+            {
+                Snackbar.Add($"Cannot remove all players - {playersInQuads.Count} players are assigned to quads. Remove them from quads first.", Severity.Warning);
+                return;
+            }
+
+            var playerCount = TournamentPlayers.Count;
+
+            // Remove all tournament players for this tournament
+            var tournamentPlayers = await DbContext.TournamentPlayers
+                .Where(tp => tp.TournamentId == Id)
+                .ToListAsync();
+
+            DbContext.TournamentPlayers.RemoveRange(tournamentPlayers);
+            await DbContext.SaveChangesAsync();
+
+            Snackbar.Add($"Removed {playerCount} players from tournament.", Severity.Success);
+
+            // Refresh data
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error removing all players: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void NavigateToTournamentList()
+    {
+        NavigationManager.NavigateTo("/EditTournament?reload=" + DateTime.Now.Ticks);
+    }
+
+    private void NavigateToQuads()
+    {
+        NavigationManager.NavigateTo($"/QuadsPage/{Id}");
+    }
+}

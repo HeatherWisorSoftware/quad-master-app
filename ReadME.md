@@ -7,3 +7,8 @@ BLAZOR DEMO
 
 Requirements:
 - Any modern web browser
+
+Notes:
+- Edit "RunQuadMasterDemo.bat" flag --DatabaseOptions:ResetOnStartup=true to --DatabaseOptions:ResetOnStartup=false once the .db file has been generated on the first run
+if you want to retain database data on restart
+--Shuting down the application does not kill the server, must use task manager to shutdown server

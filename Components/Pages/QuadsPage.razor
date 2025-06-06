@@ -17,12 +17,12 @@
     <!-- MudBlazor Pagination Controls -->
     <div class="pagination-controls d-flex align-items-center">
         <MudPagination Variant="Variant.Outlined"
-        Count="@TotalPages"
-        SelectedChanged="OnPageChanged"
-        Selected="@CurrentPage"
-        Color="Color.Primary"
-        Size="Size.Medium"
-        Class="my-2"/>
+                       Count="@TotalPages"
+                       SelectedChanged="OnPageChanged"
+                       Selected="@CurrentPage"
+                       Color="Color.Primary"
+                       Size="Size.Medium"
+                       Class="my-2" />
 
         <MudText Typo="Typo.body2" Class="ml-4">
             Group @CurrentPage of @TotalPages | Total Quads: @(ViewModel?.AllQuads?.Count ?? 0)
@@ -31,17 +31,17 @@
 
     <div>
         <MudButton Variant="Variant.Filled"
-        Color="Color.Primary"
-        OnClick="GenerateQuads"
-        Disabled="@(!ViewModel.AllowQuadGeneration)">
+                   Color="Color.Primary"
+                   OnClick="GenerateQuads"
+                   Disabled="@(!ViewModel.AllowQuadGeneration)">
             Generate Quads
         </MudButton>
 
         <MudButton Variant="Variant.Outlined"
-        Color="Color.Secondary"
-        OnClick="PrintPage"
-        StartIcon="@Icons.Material.Filled.Print"
-        Class="ml-2">
+                   Color="Color.Secondary"
+                   OnClick="PrintPage"
+                   StartIcon="@Icons.Material.Filled.Print"
+                   Class="ml-2">
             Print Tournament
         </MudButton>
 
@@ -50,9 +50,9 @@
 
 <div class="quad-container">
     <MudDropContainer T="TournamentPlayer"
-    Items="@ViewModel.UnassignedPlayers"
-    ItemDropped="PlayerAssigned"
-    Class="d-flex flex-column flex-grow-1">
+                      Items="@ViewModel.UnassignedPlayers"
+                      ItemDropped="PlayerAssigned"
+                      Class="d-flex flex-column flex-grow-1">
 
         <ChildContent>
             <div class="d-flex">
@@ -81,10 +81,10 @@
 
                                         <!-- For quad players -->
                                         <MudDropZone T="TournamentPlayer"
-                                        Identifier="@quadId"
-                                        ItemsSelector="@(p => p.QuadId?.ToString() == quadId)"
-                                        AllowReorder="true"
-                                        Class="quad-dropzone"/>
+                                                     Identifier="@quadId"
+                                                     ItemsSelector="@(p => p.QuadId?.ToString() == quadId)"
+                                                     AllowReorder="true"
+                                                     Class="quad-dropzone" />
                                     </div>
                                 </div>
                             </MudPaper>
@@ -97,10 +97,10 @@
                         <h3 class="text-center">Unassigned Players</h3>
                     </div>
                     <MudDropZone T="TournamentPlayer"
-                    Identifier="unassigned"
-                    ItemsSelector="@(p => p.QuadId == null)"
-                    AllowReorder="true"
-                    Class="unassigned-dropzone"/>
+                                 Identifier="unassigned"
+                                 ItemsSelector="@(p => p.QuadId == null)"
+                                 AllowReorder="true"
+                                 Class="unassigned-dropzone" />
                 </MudPaper>
             </div>
         </ChildContent>
@@ -116,11 +116,9 @@
                     </div>
 
                     @{
-                        var position = GetPlayerPositionInQuad(context);
                         var opponents = GetQuadOpponents(context);
                     }
 
-                    <!-- Replace the score input section in your HTML with this updated version -->
                     @foreach (var round in new[] { 1, 2, 3 })
                     {
                         <div class="round-cell">
@@ -138,16 +136,15 @@
                             <div class="table-number">TBL @GetTableNumber(context, round)</div>
                         </div>
                     }
-                   
 
                     <div class="total-cell">
                         <span class="total-score">@GetTotalScore(context)</span>
                         @if (ViewModel.AllowPlayerRemoval)
                         {
                             <MudIconButton Icon="@Icons.Material.Filled.Close"
-                            Size="Size.Small"
-                            Class="remove-btn"
-                            OnClick="@(() => RemovePlayerFromQuad(context))"/>
+                                           Size="Size.Small"
+                                           Class="remove-btn"
+                                           OnClick="@(() => RemovePlayerFromQuad(context))" />
                         }
                     </div>
                 </div>
@@ -167,406 +164,395 @@
 
 <style>
     .quad-container {
-    width: 100%;
+        width: 100%;
     }
 
     /* Layout for side-by-side display */
     .quads-section {
-    flex: 4;
+        flex: 4;
     }
 
     .unassigned-paper {
-    flex: 1;
-    min-width: 220px;
-    max-width: 300px;
-    height: fit-content;
-    margin-top: 0 !important;
+        flex: 1;
+        min-width: 220px;
+        max-width: 300px;
+        height: fit-content;
+        margin-top: 0 !important;
     }
 
     .quad-paper {
-    width: 48%;
-    margin: 0 1% 16px 1%;
-    border: 1px solid #ddd;
-    display: flex;
-    flex-direction: column;
+        width: 48%;
+        margin: 0 1% 16px 1%;
+        border: 1px solid #ddd;
+        display: flex;
+        flex-direction: column;
     }
 
     /* Quad table layout */
     .quad-table {
-    display: flex;
-    width: 100%;
-    height: 100%;
-    border-collapse: collapse;
+        display: flex;
+        width: 100%;
+        height: 100%;
+        border-collapse: collapse;
     }
 
     .quad-side {
-    width: 70px;
-    /* Background color inherits from parent .quad-paper which has the color class */
-    border-right: 1px solid var(--mud-palette-divider);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
+        width: 70px;
+        /* Background color inherits from parent .quad-paper which has the color class */
+        border-right: 1px solid var(--mud-palette-divider);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
     }
 
     .quad-identifier {
-    font-size: 24px;
-    font-weight: bold;
-    text-align: center;
-    height: 100%;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--mud-palette-text-primary);
+        font-size: 24px;
+        font-weight: bold;
+        text-align: center;
+        height: 100%;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--mud-palette-text-primary);
     }
 
     .quad-main {
-    flex: 1;
+        flex: 1;
     }
 
     /* Quad header */
     .quad-header {
-    display: flex;
-    border-bottom: 1px solid var(--mud-palette-divider);
-    background-color: var(--mud-palette-surface);
+        display: flex;
+        border-bottom: 1px solid var(--mud-palette-divider);
+        background-color: var(--mud-palette-surface);
     }
 
     .quad-header-cell {
-    flex: 1;
-    padding: 8px;
-    text-align: center;
-    font-weight: bold;
-    border-right: 1px solid var(--mud-palette-divider);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+        flex: 1;
+        padding: 8px;
+        text-align: center;
+        font-weight: bold;
+        border-right: 1px solid var(--mud-palette-divider);
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .player-header {
-    flex: 2.45;
+        flex: 2.45;
     }
 
     /* Quad dropzone */
     .quad-dropzone {
-    min-height: 400px;
-    background-color: var(--mud-palette-background-grey);
+        min-height: 400px;
+        background-color: var(--mud-palette-background-grey);
     }
 
     /* Player row in quad */
     .quad-player-row {
-    display: flex;
-    border-bottom: 1px solid var(--mud-palette-divider);
-    background-color: var(--mud-palette-surface);
+        display: flex;
+        border-bottom: 1px solid var(--mud-palette-divider);
+        background-color: var(--mud-palette-surface);
     }
 
     .player-cell {
-    flex: 2;
-    padding: 8px;
-    border-right: 1px solid #ddd;
-    display: flex;
-    flex-direction: column;
+        flex: 2;
+        padding: 8px;
+        border-right: 1px solid #ddd;
+        display: flex;
+        flex-direction: column;
     }
 
     .player-position {
-    font-size: 18px;
-    font-weight: bold;
-    margin-right: 8px;
-    color: #666;
+        font-size: 18px;
+        font-weight: bold;
+        margin-right: 8px;
+        color: #666;
     }
 
     .player-name {
-    font-size: 18px;
-    font-weight: bold;
-    color: #666;
+        font-size: 18px;
+        font-weight: bold;
+        color: #666;
     }
 
     .player-rating {
-    font-size: 16px;
-    color: #333;
+        font-size: 16px;
+        color: #333;
     }
 
     .round-cell {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid #ddd;
-    margin: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid #ddd;
+        margin: 0;
     }
 
     .opponent {
-    padding: 4px;
-    text-align: center;
-    border-bottom: 1px solid #eee;
-    color: #666;
+        padding: 4px;
+        text-align: center;
+        border-bottom: 1px solid #eee;
+        color: #666;
     }
 
     .score-cell {
-    padding: 8px;
-    text-align: center;
-    font-size: 18px;
-    font-weight: bold;
-    background-color: inherit;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+        padding: 8px;
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+        background-color: inherit;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .table-number {
-    padding: 4px;
-    text-align: center;
-    border-top: 1px solid #eee;
-    color: #666;
+        padding: 4px;
+        text-align: center;
+        border-top: 1px solid #eee;
+        color: #666;
     }
 
     .total-cell {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
     }
 
     .total-score {
-    font-size: 32px;
-    font-weight: bold;
-    color: #666;
+        font-size: 32px;
+        font-weight: bold;
+        color: #666;
     }
 
     .remove-btn {
-    position: absolute;
-    top: 4px;
-    right: 4px;
+        position: absolute;
+        top: 4px;
+        right: 4px;
     }
 
     /* Unassigned players section */
     .unassigned-header {
-    background-color: #f0f0f0;
-    padding: 8px;
-    border-bottom: 1px solid #ddd;
+        background-color: #f0f0f0;
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
     }
 
     .unassigned-dropzone {
-    min-height: 400px;
-    padding: 8px;
-    overflow-y: auto;
+        min-height: 400px;
+        padding: 8px;
+        overflow-y: auto;
     }
 
     .player-card {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-    padding: 6px;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    width: 100%;
-    font-size: 14px;
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        padding: 6px;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        width: 100%;
+        font-size: 14px;
     }
 
     .player-number {
-    font-size: 20px;
-    font-weight: bold;
-    margin-right: 16px;
-    min-width: 24px;
-    text-align: center;
+        font-size: 20px;
+        font-weight: bold;
+        margin-right: 16px;
+        min-width: 24px;
+        text-align: center;
     }
 
     .player-info {
-    flex-grow: 1;
+        flex-grow: 1;
     }
 
     /* Pagination styles */
     .pagination-controls {
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
     }
 
     .mud-pagination {
-    margin-right: 16px;
+        margin-right: 16px;
     }
 
     /* Theme color classes for quads */
     /* Primary color */
     .quad-paper.mud-paper.quad-color-primary {
-    background-color: var(--mud-palette-primary-lighten) !important;
+        background-color: var(--mud-palette-primary-lighten) !important;
     }
 
-    .quad-paper.mud-paper.quad-color-primary .quad-side {
-    background-color: var(--mud-palette-primary-lighten) !important;
-    }
+        .quad-paper.mud-paper.quad-color-primary .quad-side {
+            background-color: var(--mud-palette-primary-lighten) !important;
+        }
 
-    .quad-paper.mud-paper.quad-color-primary .score-cell {
-    background-color: var(--mud-palette-primary-lighten) !important;
-    }
+        .quad-paper.mud-paper.quad-color-primary .score-cell {
+            background-color: var(--mud-palette-primary-lighten) !important;
+        }
 
     /* Secondary color */
     .quad-paper.mud-paper.quad-color-secondary {
-    background-color: var(--mud-palette-secondary-lighten) !important;
+        background-color: var(--mud-palette-secondary-lighten) !important;
     }
 
-    .quad-paper.mud-paper.quad-color-secondary .quad-side {
-    background-color: var(--mud-palette-secondary-lighten) !important;
-    }
+        .quad-paper.mud-paper.quad-color-secondary .quad-side {
+            background-color: var(--mud-palette-secondary-lighten) !important;
+        }
 
-    .quad-paper.mud-paper.quad-color-secondary .score-cell {
-    background-color: var(--mud-palette-secondary-lighten) !important;
-    }
+        .quad-paper.mud-paper.quad-color-secondary .score-cell {
+            background-color: var(--mud-palette-secondary-lighten) !important;
+        }
 
     /* Info color */
     .quad-paper.mud-paper.quad-color-info {
-    background-color: var(--mud-palette-info-lighten) !important;
+        background-color: var(--mud-palette-info-lighten) !important;
     }
 
-    .quad-paper.mud-paper.quad-color-info .quad-side {
-    background-color: var(--mud-palette-info-lighten) !important;
-    }
+        .quad-paper.mud-paper.quad-color-info .quad-side {
+            background-color: var(--mud-palette-info-lighten) !important;
+        }
 
-    .quad-paper.mud-paper.quad-color-info .score-cell {
-    background-color: var(--mud-palette-info-lighten) !important;
-    }
+        .quad-paper.mud-paper.quad-color-info .score-cell {
+            background-color: var(--mud-palette-info-lighten) !important;
+        }
 
     /* Success color */
     .quad-paper.mud-paper.quad-color-success {
-    background-color: var(--mud-palette-success-lighten) !important;
+        background-color: var(--mud-palette-success-lighten) !important;
     }
 
-    .quad-paper.mud-paper.quad-color-success .quad-side {
-    background-color: var(--mud-palette-success-lighten) !important;
-    }
+        .quad-paper.mud-paper.quad-color-success .quad-side {
+            background-color: var(--mud-palette-success-lighten) !important;
+        }
 
-    .quad-paper.mud-paper.quad-color-success .score-cell {
-    background-color: var(--mud-palette-success-lighten) !important;
-    }
+        .quad-paper.mud-paper.quad-color-success .score-cell {
+            background-color: var(--mud-palette-success-lighten) !important;
+        }
 
     /* Warning color */
     .quad-paper.mud-paper.quad-color-warning {
-    background-color: var(--mud-palette-warning-lighten) !important;
+        background-color: var(--mud-palette-warning-lighten) !important;
     }
 
-    .quad-paper.mud-paper.quad-color-warning .quad-side {
-    background-color: var(--mud-palette-warning-lighten) !important;
-    }
+        .quad-paper.mud-paper.quad-color-warning .quad-side {
+            background-color: var(--mud-palette-warning-lighten) !important;
+        }
 
-    .quad-paper.mud-paper.quad-color-warning .score-cell {
-    background-color: var(--mud-palette-warning-lighten) !important;
-    }
+        .quad-paper.mud-paper.quad-color-warning .score-cell {
+            background-color: var(--mud-palette-warning-lighten) !important;
+        }
 
     /* Surface color */
     .quad-paper.mud-paper.quad-color-surface {
-    background-color: var(--mud-palette-surface) !important;
+        background-color: var(--mud-palette-surface) !important;
     }
 
-    .quad-paper.mud-paper.quad-color-surface .quad-side {
-    background-color: var(--mud-palette-surface) !important;
-    }
+        .quad-paper.mud-paper.quad-color-surface .quad-side {
+            background-color: var(--mud-palette-surface) !important;
+        }
 
-    .quad-paper.mud-paper.quad-color-surface .score-cell {
-    background-color: var(--mud-palette-surface) !important;
-    }
+        .quad-paper.mud-paper.quad-color-surface .score-cell {
+            background-color: var(--mud-palette-surface) !important;
+        }
 
     /* Original colors */
     .quad-paper.mud-paper.quad-color-yellow {
-    background-color: #ffffcc !important;
+        background-color: #ffffcc !important;
     }
 
-    .quad-paper.mud-paper.quad-color-yellow .quad-side {
-    background-color: #ffffcc !important;
-    }
+        .quad-paper.mud-paper.quad-color-yellow .quad-side {
+            background-color: #ffffcc !important;
+        }
 
-    .quad-paper.mud-paper.quad-color-yellow .score-cell {
-    background-color: #ffffcc !important;
-    }
+        .quad-paper.mud-paper.quad-color-yellow .score-cell {
+            background-color: #ffffcc !important;
+        }
 
     .quad-paper.mud-paper.quad-color-blue {
-    background-color: #e6f7ff !important;
+        background-color: #e6f7ff !important;
     }
 
-    .quad-paper.mud-paper.quad-color-blue .quad-side {
-    background-color: #e6f7ff !important;
-    }
+        .quad-paper.mud-paper.quad-color-blue .quad-side {
+            background-color: #e6f7ff !important;
+        }
 
-    .quad-paper.mud-paper.quad-color-blue .score-cell {
-    background-color: #e6f7ff !important;
-    }
+        .quad-paper.mud-paper.quad-color-blue .score-cell {
+            background-color: #e6f7ff !important;
+        }
 </style>
 
 <style>
     /* Media queries need to be in a separate style block in Blazor */
     @@media (max-width: 1400px) {
-    .quad-paper {
-    width: 31%;
-    }
+        .quad-paper {
+            width: 31%;
+        }
     }
 
     @@media (max-width: 1200px) {
-    /*     .quads-section {
-    flex: 3;
-    } */
-
-    .quad-paper {
-    width: 48%;
-    }
+        .quad-paper {
+            width: 48%;
+        }
     }
 
     @@media (max-width:1080px) {
-    .quad-paper {
-    width: width: 48%; /* Maintain 2 quads per row */
-    }
+        .quad-paper {
+            width: 48%;
+        }
     }
 
     @@media (max-width: 768px) {
-    /* Switch to vertical layout on small screens */
-    .d-flex {
-    flex-direction: column;
-    }
-    }
+        .d-flex {
+            flex-direction: column;
+        }
 
-    .quads-section {
-    width: 100%;
-    }
+        .quads-section {
+            width: 100%;
+        }
 
-    .unassigned-paper {
-    width: 100%;
-    max-width: none;
-    margin-top: 16px !important;
-    }
+        .unassigned-paper {
+            width: 100%;
+            max-width: none;
+            margin-top: 16px !important;
+        }
 
-    /* Responsive pagination */
-    .pagination-controls {
-    flex-direction: column;
-    align-items: start;
-    }
+        .pagination-controls {
+            flex-direction: column;
+            align-items: start;
+        }
 
-    .pagination-controls .mud-pagination {
-    margin-bottom: 12px;
-    margin-right: 0;
-    }
+            .pagination-controls .mud-pagination {
+                margin-bottom: 12px;
+                margin-right: 0;
+            }
 
-    .pagination-controls .mud-typography {
-    margin-left: 0;
-    }
-
+            .pagination-controls .mud-typography {
+                margin-left: 0;
+            }
     }
 </style>
 
 @code {
     [Parameter] public int TournamentId { get; set; }
 
-    // Get the dark mode state from the layout
     private bool IsDarkMode => ThemeProvider.IsDarkMode;
-
     private QuadsViewModel ViewModel { get; set; } = new();
-
-    // Properties from the ViewModel
     private string TournamentName => ViewModel?.TournamentName ?? "Tournament Name";
     public List<Quad> DisplayedQuads { get; set; } = new();
     private int CurrentPage { get; set; } = 1;
     private int TotalPages => ViewModel?.TotalPages ?? 1;
+    private Dictionary<string, string> ScoreCache { get; } = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -575,13 +561,14 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        // Reload data if the tournament ID changes
         await LoadData();
     }
 
     private async Task LoadData()
     {
-        // update app state
+        // Clear change tracking to avoid entity conflicts
+        DbContext.ChangeTracker.Clear();
+
         AppState.TournamentId = TournamentId;
 
         var tournament = await DbContext.Tournaments
@@ -600,13 +587,13 @@
             .OrderBy(q => q.QuadGroupNumber)
             .ToListAsync();
 
-        // Include players in the quads
+        // Include players in the quads - preserve manual positioning order
         foreach (var quad in allQuads)
         {
             quad.Players = await DbContext.TournamentPlayers
                 .Include(tp => tp.Player)
                 .Where(tp => tp.QuadId == quad.Id)
-                .OrderBy(tp => tp.QuadPosition)
+                .OrderBy(tp => tp.QuadPosition ?? 999) // Order by stored position to preserve manual arrangement
                 .ToListAsync();
         }
 
@@ -618,7 +605,7 @@
             .ToListAsync();
 
         // Set displayed quads for current page
-        var pageSize = 4; // 4 quads per page
+        var pageSize = 4;
         var skip = (CurrentPage - 1) * pageSize;
         DisplayedQuads = allQuads
             .OrderBy(q => q.QuadGroupNumber)
@@ -646,10 +633,14 @@
 
     private string GetPlayerPositionInQuad(TournamentPlayer player)
     {
-        if (!player.QuadId.HasValue || !player.QuadPosition.HasValue)
+        if (!player.QuadId.HasValue)
             return "";
 
-        return player.QuadPosition.Value.ToString();
+        var quad = DisplayedQuads.FirstOrDefault(q => q.Id == player.QuadId.Value);
+        if (quad == null || quad.Players.Count != 4)
+            return "";
+
+        return player.QuadPosition?.ToString() ?? "";
     }
 
     private string[] GetQuadOpponents(TournamentPlayer player)
@@ -657,9 +648,12 @@
         if (!player.QuadId.HasValue || !player.QuadPosition.HasValue)
             return new[] { "", "", "" };
 
+        var quad = DisplayedQuads.FirstOrDefault(q => q.Id == player.QuadId.Value);
+        if (quad == null || quad.Players.Count != 4)
+            return new[] { "", "", "" };
+
         var position = player.QuadPosition.Value;
 
-        // Standard quad pairing pattern
         switch (position)
         {
             case 1: return new[] { "W v 4", "B v 3", "W v 2" };
@@ -670,12 +664,37 @@
         }
     }
 
+    private int GetTableNumber(TournamentPlayer player, int round)
+    {
+        if (!player.QuadPosition.HasValue)
+            return 1;
+
+        var position = player.QuadPosition.Value;
+
+        switch (position)
+        {
+            case 1: return round == 1 ? 1 : round == 2 ? 1 : 1;
+            case 2: return round == 1 ? 2 : round == 2 ? 2 : 1;
+            case 3: return round == 1 ? 2 : round == 2 ? 1 : 2;
+            case 4: return round == 1 ? 1 : round == 2 ? 2 : 2;
+            default: return 1;
+        }
+    }
+
+    private string GetScoreKey(TournamentPlayer player, int round)
+    {
+        return $"{player.QuadId}-{player.Id}-{round}";
+    }
+
     private string GetScore(TournamentPlayer player, int round)
     {
         if (!player.QuadId.HasValue)
             return "";
 
-        // Get score directly from database
+        var key = GetScoreKey(player, round);
+        if (ScoreCache.TryGetValue(key, out var cachedScore))
+            return cachedScore;
+
         var match = DbContext.QuadMatches
             .FirstOrDefault(m =>
                 m.QuadId == player.QuadId &&
@@ -685,10 +704,12 @@
         if (match == null)
             return "";
 
-        if (match.PlayerOneId == player.Id)
-            return match.PlayerOneScore?.ToString() ?? "";
-        else
-            return match.PlayerTwoScore?.ToString() ?? "";
+        var score = match.PlayerOneId == player.Id
+            ? match.PlayerOneScore?.ToString() ?? ""
+            : match.PlayerTwoScore?.ToString() ?? "";
+
+        ScoreCache[key] = score;
+        return score;
     }
 
     private string GetTotalScore(TournamentPlayer player)
@@ -707,29 +728,14 @@
         return total.ToString("0.#");
     }
 
-    private int GetTableNumber(TournamentPlayer player, int round)
-    {
-        if (!player.QuadPosition.HasValue)
-            return 1;
-
-        var position = player.QuadPosition.Value;
-
-        // Standard table assignments
-        switch (position)
-        {
-            case 1: return round == 1 ? 1 : round == 2 ? 1 : 1;
-            case 2: return round == 1 ? 2 : round == 2 ? 2 : 1;
-            case 3: return round == 1 ? 2 : round == 2 ? 1 : 2;
-            case 4: return round == 1 ? 1 : round == 2 ? 2 : 2;
-            default: return 1;
-        }
-    }
-
-    // Simplified score saving - direct to database
     private async Task SaveScore(TournamentPlayer player, int round, string scoreValue)
     {
         if (!player.QuadId.HasValue)
             return;
+
+        var key = GetScoreKey(player, round);
+        ScoreCache[key] = scoreValue;
+        StateHasChanged();
 
         try
         {
@@ -745,7 +751,6 @@
                 return;
             }
 
-            // Update the appropriate player's score
             if (match.PlayerOneId == player.Id)
             {
                 match.PlayerOneScore = decimal.TryParse(scoreValue, out var score) ? score : null;
@@ -755,105 +760,302 @@
                 match.PlayerTwoScore = decimal.TryParse(scoreValue, out var score) ? score : null;
             }
 
-            // Mark as complete if both scores entered
             match.IsComplete = match.PlayerOneScore.HasValue && match.PlayerTwoScore.HasValue;
             if (match.IsComplete)
                 match.CompletedAt = DateTime.UtcNow;
 
             await DbContext.SaveChangesAsync();
-            StateHasChanged();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error saving score: {ex.Message}");
             Snackbar.Add("Error saving score", Severity.Error);
+            ScoreCache.Remove(key);
+            StateHasChanged();
         }
     }
 
+    
     private async Task PlayerAssigned(MudItemDropInfo<TournamentPlayer> dropInfo)
     {
-        var player = dropInfo.Item;
-        var oldQuadId = player.QuadId;
+        try
+        {
+            var playerId = dropInfo.Item.Id;
+            var oldQuadId = dropInfo.Item.QuadId;
 
-        // Update player assignment
-        if (dropInfo.DropzoneIdentifier == "unassigned")
-        {
-            player.QuadId = null;
-            player.QuadPosition = null;
-        }
-        else if (int.TryParse(dropInfo.DropzoneIdentifier, out var quadId))
-        {
-            var quad = DisplayedQuads.FirstOrDefault(q => q.Id == quadId);
-            if (quad != null && (quad.Players.Count < 4 || quad.Players.Contains(player)))
+            // Get fresh entity from database to avoid tracking issues
+            var dbPlayer = await DbContext.TournamentPlayers.FindAsync(playerId);
+            if (dbPlayer == null) return;
+
+            // Check if this is a reorder within the same quad
+            if (dropInfo.DropzoneIdentifier != "unassigned" &&
+                int.TryParse(dropInfo.DropzoneIdentifier, out var newQuadId) &&
+                dbPlayer.QuadId == newQuadId)
             {
-                player.QuadId = quadId;
-                if (!quad.Players.Contains(player))
-                    quad.Players.Add(player);
+                // This is a reorder within the same quad - handle position update
+                Console.WriteLine($"Detected reorder within same quad: {newQuadId}");
+                await HandleQuadReordering(newQuadId, dropInfo);
+                return;
             }
+
+            // This is a move between different quads/zones
+            if (dropInfo.DropzoneIdentifier == "unassigned")
+            {
+                dbPlayer.QuadId = null;
+                dbPlayer.QuadPosition = null;
+            }
+            else if (int.TryParse(dropInfo.DropzoneIdentifier, out var quadId))
+            {
+                // Check if quad can accept another player
+                var currentPlayerCount = await DbContext.TournamentPlayers
+                    .CountAsync(tp => tp.QuadId == quadId);
+
+                if (currentPlayerCount < 4 || dbPlayer.QuadId == quadId)
+                {
+                    dbPlayer.QuadId = quadId;
+                    dbPlayer.QuadPosition = null; // Will be set in UpdateQuadAfterPlayerChange
+                }
+                else
+                {
+                    Snackbar.Add("Quad is full", Severity.Warning);
+                    return;
+                }
+            }
+
+            await DbContext.SaveChangesAsync();
+
+            // Update affected quads
+            if (oldQuadId.HasValue && oldQuadId != dbPlayer.QuadId)
+                await UpdateQuadAfterPlayerChange(oldQuadId.Value);
+
+            if (dbPlayer.QuadId.HasValue)
+                await UpdateQuadAfterPlayerChange(dbPlayer.QuadId.Value);
+
+            // Complete reload to ensure UI is in sync
+            await LoadData();
         }
-
-        DbContext.TournamentPlayers.Update(player);
-        await DbContext.SaveChangesAsync();
-
-        // Handle quad updates
-        if (oldQuadId.HasValue)
-            await UpdateQuadAfterPlayerChange(oldQuadId.Value);
-
-        if (player.QuadId.HasValue)
-            await UpdateQuadAfterPlayerChange(player.QuadId.Value);
-
-        await LoadData();
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in PlayerAssigned: {ex.Message}");
+            Snackbar.Add("Error moving player", Severity.Error);
+        }
     }
 
+
+    private async Task HandleQuadReordering(int quadId, MudItemDropInfo<TournamentPlayer> dropInfo)
+    {
+        try
+        {
+            Console.WriteLine($"=== Handling reorder within Quad {quadId} ===");
+            Console.WriteLine($"Dropped player {dropInfo.Item.Player.LastName} at index {dropInfo.IndexInZone}");
+
+            // Clear score cache for this quad immediately
+            var keysToRemove = ScoreCache.Keys.Where(k => k.StartsWith($"{quadId}-")).ToList();
+            foreach (var key in keysToRemove)
+            {
+                ScoreCache.Remove(key);
+            }
+
+            // Get all players currently in this quad from database (in their current order)
+            var currentQuadPlayers = await DbContext.TournamentPlayers
+                .Include(tp => tp.Player)
+                .Where(tp => tp.QuadId == quadId)
+                .OrderBy(tp => tp.QuadPosition ?? 999)
+                .ToListAsync();
+
+            Console.WriteLine($"Found {currentQuadPlayers.Count} players in quad");
+
+            // Remove the dragged player from their current position
+            var draggedPlayer = currentQuadPlayers.FirstOrDefault(p => p.Id == dropInfo.Item.Id);
+            if (draggedPlayer == null)
+            {
+                Console.WriteLine("Error: Dragged player not found in quad");
+                return;
+            }
+
+            currentQuadPlayers.Remove(draggedPlayer);
+
+            // Insert the player at the new position (IndexInZone)
+            var newIndex = Math.Min(dropInfo.IndexInZone, currentQuadPlayers.Count);
+            currentQuadPlayers.Insert(newIndex, draggedPlayer);
+
+            Console.WriteLine($"Reordered players:");
+            // Update all positions based on the new order
+            for (int i = 0; i < currentQuadPlayers.Count; i++)
+            {
+                var dbPlayer = await DbContext.TournamentPlayers.FindAsync(currentQuadPlayers[i].Id);
+                if (dbPlayer != null)
+                {
+                    var oldPosition = dbPlayer.QuadPosition;
+                    dbPlayer.QuadPosition = i + 1;
+                    Console.WriteLine($"  {i + 1}. {dbPlayer.Player?.LastName} (was position {oldPosition})");
+                }
+            }
+
+            await DbContext.SaveChangesAsync();
+
+            // If quad is complete (4 players), recreate matches with new positions
+            if (currentQuadPlayers.Count == 4)
+            {
+                await UpdateQuadMatches(quadId);
+            }
+
+            // Force UI update before reload
+            StateHasChanged();
+
+            // Reload to show updated positions
+            await LoadData();
+
+            Console.WriteLine("=== Reorder complete ===");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in HandleQuadReordering: {ex.Message}");
+            Snackbar.Add("Error reordering players", Severity.Error);
+        }
+    }
+  
+
+    
+
+    private async Task UpdateQuadMatches(int quadId)
+    {
+        try
+        {
+            Console.WriteLine($"Updating matches for Quad {quadId}");
+
+            // Clear score cache for this quad BEFORE deleting matches
+            var keysToRemove = ScoreCache.Keys.Where(k => k.StartsWith($"{quadId}-")).ToList();
+            foreach (var key in keysToRemove)
+            {
+                ScoreCache.Remove(key);
+            }
+
+            // Delete existing matches
+            var existingMatches = await DbContext.QuadMatches
+                .Where(m => m.QuadId == quadId)
+                .ToListAsync();
+            DbContext.QuadMatches.RemoveRange(existingMatches);
+
+            // Get players in their new positions
+            var quadPlayers = await DbContext.TournamentPlayers
+                .Include(tp => tp.Player)
+                .Where(tp => tp.QuadId == quadId)
+                .OrderBy(tp => tp.QuadPosition)
+                .ToListAsync();
+
+            if (quadPlayers.Count == 4)
+            {
+                CreateMatchesForQuad(quadId, quadPlayers.ToArray());
+            }
+
+            await DbContext.SaveChangesAsync();
+
+            // Force UI update to show cleared scores
+            StateHasChanged();
+
+            Console.WriteLine($"Matches updated and score cache cleared for Quad {quadId}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating quad matches: {ex.Message}");
+            throw;
+        }
+    }
+    
+    
+    
+ 
     private async Task RemovePlayerFromQuad(TournamentPlayer player)
     {
-        if (!player.QuadId.HasValue)
-            return;
+        try
+        {
+            var quadId = player.QuadId;
+            if (!quadId.HasValue) return;
 
-        var quadId = player.QuadId.Value;
+            // Get fresh entity from database
+            var dbPlayer = await DbContext.TournamentPlayers.FindAsync(player.Id);
+            if (dbPlayer == null) return;
 
-        // Remove player from quad
-        player.QuadId = null;
-        player.QuadPosition = null;
+            dbPlayer.QuadId = null;
+            dbPlayer.QuadPosition = null;
 
-        DbContext.TournamentPlayers.Update(player);
-        await DbContext.SaveChangesAsync();
-
-        // Update the quad
-        await UpdateQuadAfterPlayerChange(quadId);
-        await LoadData();
+            await DbContext.SaveChangesAsync();
+            await UpdateQuadAfterPlayerChange(quadId.Value);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error removing player: {ex.Message}");
+            Snackbar.Add("Error removing player", Severity.Error);
+        }
     }
 
+    // FIXED: Preserve manual player positioning within quads
     private async Task UpdateQuadAfterPlayerChange(int quadId)
     {
-        // Delete all existing matches for this quad
-        var existingMatches = await DbContext.QuadMatches
-            .Where(m => m.QuadId == quadId)
-            .ToListAsync();
+        using var transaction = await DbContext.Database.BeginTransactionAsync();
 
-        DbContext.QuadMatches.RemoveRange(existingMatches);
-
-        // Get current players in quad
-        var quadPlayers = await DbContext.TournamentPlayers
-            .Include(tp => tp.Player)
-            .Where(tp => tp.QuadId == quadId)
-            .OrderByDescending(tp => tp.Player.Ranking)
-            .ToListAsync();
-
-        // Renumber positions
-        for (int i = 0; i < quadPlayers.Count; i++)
+        try
         {
-            quadPlayers[i].QuadPosition = i + 1;
-            DbContext.TournamentPlayers.Update(quadPlayers[i]);
-        }
+            Console.WriteLine($"=== UpdateQuadAfterPlayerChange for Quad {quadId} ===");
 
-        // If quad is full (4 players), create new matches
-        if (quadPlayers.Count == 4)
+            // Clear score cache for this quad
+            var keysToRemove = ScoreCache.Keys.Where(k => k.StartsWith($"{quadId}-")).ToList();
+            foreach (var key in keysToRemove)
+                ScoreCache.Remove(key);
+
+            // Delete existing matches
+            var existingMatches = await DbContext.QuadMatches
+                .Where(m => m.QuadId == quadId)
+                .ToListAsync();
+            DbContext.QuadMatches.RemoveRange(existingMatches);
+
+            // Get current players in quad - preserve their current order
+            var quadPlayers = await DbContext.TournamentPlayers
+                .Include(tp => tp.Player)
+                .Where(tp => tp.QuadId == quadId)
+                .OrderBy(tp => tp.QuadPosition ?? 999) // Keep existing position order
+                .ToListAsync();
+
+            Console.WriteLine($"Quad {quadId} now has {quadPlayers.Count} players");
+
+            if (quadPlayers.Count == 4)
+            {
+                Console.WriteLine($"Assigning positions 1-4 to preserve manual arrangement:");
+                // Assign positions 1-4 based on CURRENT order (not ranking)
+                for (int i = 0; i < quadPlayers.Count; i++)
+                {
+                    var oldPosition = quadPlayers[i].QuadPosition;
+                    quadPlayers[i].QuadPosition = i + 1;
+                    Console.WriteLine($"  Player {quadPlayers[i].Player.LastName} (Ranking: {quadPlayers[i].Player.Ranking}) -> Position {oldPosition} to {i + 1}");
+                }
+
+                // Create matches
+                CreateMatchesForQuad(quadId, quadPlayers.ToArray());
+            }
+            else
+            {
+                Console.WriteLine($"Clearing positions for incomplete Quad {quadId}");
+                // For incomplete quads, clear positions but maintain order for when 4th player is added
+                for (int i = 0; i < quadPlayers.Count; i++)
+                {
+                    var oldPosition = quadPlayers[i].QuadPosition;
+                    quadPlayers[i].QuadPosition = i + 1; // Maintain relative positions even when incomplete
+                    Console.WriteLine($"  Player {quadPlayers[i].Player.LastName} -> Position {oldPosition} to {i + 1}");
+                }
+            }
+
+            await DbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+            Console.WriteLine($"Database changes saved successfully for Quad {quadId}");
+        }
+        catch (Exception ex)
         {
-            CreateMatchesForQuad(quadId, quadPlayers.ToArray());
+            await transaction.RollbackAsync();
+            Console.WriteLine($"ERROR updating quad: {ex.Message}");
+            throw;
         }
-
-        await DbContext.SaveChangesAsync();
     }
 
     private void CreateMatchesForQuad(int quadId, TournamentPlayer[] players)
@@ -903,11 +1105,13 @@
         await JSRuntime.InvokeVoidAsync("window.print");
     }
 
+    // FIXED: Improved GenerateQuads with proper transaction handling
     private async Task GenerateQuads()
     {
+        using var transaction = await DbContext.Database.BeginTransactionAsync();
+
         try
         {
-            // Get all unassigned players
             var unassignedPlayers = await DbContext.TournamentPlayers
                 .Include(tp => tp.Player)
                 .Where(tp => tp.TournamentId == TournamentId && !tp.QuadId.HasValue)
@@ -915,7 +1119,10 @@
                 .ToListAsync();
 
             if (unassignedPlayers.Count == 0)
+            {
+                await transaction.RollbackAsync();
                 return;
+            }
 
             // Find highest quad group number
             var maxGroupQuery = await DbContext.Quads
@@ -944,34 +1151,44 @@
                         };
 
                     DbContext.Quads.Add(currentQuad);
-                    await DbContext.SaveChangesAsync();
+                    await DbContext.SaveChangesAsync(); // Save to get ID
                 }
 
                 // Assign player to quad
                 var player = unassignedPlayers[playerCounter];
                 player.QuadId = currentQuad.Id;
-                player.QuadPosition = playerCounter % 4 + 1;
+                player.QuadPosition = null; // Will be set when quad is complete
 
-                DbContext.TournamentPlayers.Update(player);
                 playerCounter++;
 
-                // Create matches when quad is full
+                // When quad is full, set positions and create matches
                 if (playerCounter % 4 == 0)
                 {
                     var quadPlayers = unassignedPlayers
                         .Skip(playerCounter - 4)
                         .Take(4)
+                        .OrderByDescending(p => p.Player.Ranking)
                         .ToArray();
+
+                    // Set positions 1-4 based on ranking
+                    for (int i = 0; i < quadPlayers.Length; i++)
+                    {
+                        quadPlayers[i].QuadPosition = i + 1;
+                    }
 
                     CreateMatchesForQuad(currentQuad.Id, quadPlayers);
                 }
             }
 
             await DbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            // Reload everything
             await LoadData();
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync();
             Console.WriteLine($"Error generating quads: {ex.Message}");
             Snackbar.Add("Error generating quads", Severity.Error);
         }
@@ -993,8 +1210,4 @@
     {
         return (player.QuadId?.ToString() ?? "unassigned") == identifier;
     }
-
-    // Remove the PlayerScores dictionary and related methods
-    // All score operations now go directly to database
-}
 }

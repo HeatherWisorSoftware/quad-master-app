@@ -101,6 +101,25 @@
                                  ItemsSelector="@(p => p.QuadId == null)"
                                  AllowReorder="true"
                                  Class="unassigned-dropzone" />
+
+                    <!-- Reset button at bottom of unassigned area -->
+                    <div class="p-3 border-top">
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Warning"
+                                   OnClick="ResetAllQuads"
+                                   StartIcon="@Icons.Material.Filled.RestartAlt"
+                                   FullWidth="true"
+                                   Disabled="@HasAnyScores()">
+                            Reset All Players
+                        </MudButton>
+
+                        @if (HasAnyScores())
+                        {
+                            <MudAlert Severity="Severity.Warning" Class="mt-2" Dense="true">
+                                Clear all scores before resetting player assignments
+                            </MudAlert>
+                        }
+                    </div>
                 </MudPaper>
             </div>
         </ChildContent>
@@ -564,6 +583,66 @@
         await LoadData();
     }
 
+    private bool HasAnyScores()
+    {
+        try
+        {
+            // Check if any matches have scores entered
+            return DbContext.QuadMatches
+                .Any(m => DbContext.Quads.Any(q => q.Id == m.QuadId && q.TournamentId == TournamentId) &&
+                         (m.PlayerOneScore.HasValue || m.PlayerTwoScore.HasValue));
+        }
+        catch
+        {
+            return false; // If there's an error checking, allow reset
+        }
+    }
+
+    private async Task ResetAllQuads()
+    {
+        try
+        {
+            // Double-check for scores before proceeding
+            if (HasAnyScores())
+            {
+                Snackbar.Add("Cannot reset - please clear all scores first", Severity.Warning);
+                return;
+            }
+
+            // Clear score cache
+            ScoreCache.Clear();
+
+            // Remove all matches (this clears any potential scores)
+            var allMatches = await DbContext.QuadMatches
+                .Where(m => DbContext.Quads.Any(q => q.Id == m.QuadId && q.TournamentId == TournamentId))
+                .ToListAsync();
+            DbContext.QuadMatches.RemoveRange(allMatches);
+
+            // Unassign all players (but keep the Quad entities intact)
+            var allTournamentPlayers = await DbContext.TournamentPlayers
+                .Where(tp => tp.TournamentId == TournamentId)
+                .ToListAsync();
+
+            foreach (var player in allTournamentPlayers)
+            {
+                player.QuadId = null;
+                player.QuadPosition = null;
+            }
+
+            await DbContext.SaveChangesAsync();
+
+            Snackbar.Add("All players have been reset to unassigned status", Severity.Success);
+
+            // Reload the page data
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error resetting quads: {ex.Message}");
+            Snackbar.Add("Error resetting players", Severity.Error);
+        }
+    }
+
     private async Task LoadData()
     {
         // Clear change tracking to avoid entity conflicts
@@ -775,7 +854,7 @@
         }
     }
 
-    
+
     private async Task PlayerAssigned(MudItemDropInfo<TournamentPlayer> dropInfo)
     {
         try
@@ -914,9 +993,9 @@
             Snackbar.Add("Error reordering players", Severity.Error);
         }
     }
-  
 
-    
+
+
 
     private async Task UpdateQuadMatches(int quadId)
     {
@@ -962,10 +1041,10 @@
             throw;
         }
     }
-    
-    
-    
- 
+
+
+
+
     private async Task RemovePlayerFromQuad(TournamentPlayer player)
     {
         try
@@ -1104,14 +1183,74 @@
     {
         await JSRuntime.InvokeVoidAsync("window.print");
     }
+    private async Task UpdateQuadAfterPlayerChangeNoTransaction(int quadId)
+    {
+        try
+        {
+            Console.WriteLine($"=== UpdateQuadAfterPlayerChangeNoTransaction for Quad {quadId} ===");
 
-    // FIXED: Improved GenerateQuads with proper transaction handling
+            // Clear score cache for this quad
+            var keysToRemove = ScoreCache.Keys.Where(k => k.StartsWith($"{quadId}-")).ToList();
+            foreach (var key in keysToRemove)
+                ScoreCache.Remove(key);
+
+            // Delete existing matches
+            var existingMatches = await DbContext.QuadMatches
+                .Where(m => m.QuadId == quadId)
+                .ToListAsync();
+            DbContext.QuadMatches.RemoveRange(existingMatches);
+
+            // Get current players in quad - preserve their current order
+            var quadPlayers = await DbContext.TournamentPlayers
+                .Include(tp => tp.Player)
+                .Where(tp => tp.QuadId == quadId)
+                .OrderBy(tp => tp.QuadPosition ?? 999) // Keep existing position order
+                .ToListAsync();
+
+            Console.WriteLine($"Quad {quadId} now has {quadPlayers.Count} players");
+
+            if (quadPlayers.Count == 4)
+            {
+                Console.WriteLine($"Assigning positions 1-4 to preserve manual arrangement:");
+                // Assign positions 1-4 based on CURRENT order (not ranking)
+                for (int i = 0; i < quadPlayers.Count; i++)
+                {
+                    var oldPosition = quadPlayers[i].QuadPosition;
+                    quadPlayers[i].QuadPosition = i + 1;
+                    Console.WriteLine($"  Player {quadPlayers[i].Player.LastName} (Ranking: {quadPlayers[i].Player.Ranking}) -> Position {oldPosition} to {i + 1}");
+                }
+
+                // Create matches
+                CreateMatchesForQuad(quadId, quadPlayers.ToArray());
+            }
+            else
+            {
+                Console.WriteLine($"Clearing positions for incomplete Quad {quadId}");
+                // For incomplete quads, clear positions but maintain order for when 4th player is added
+                for (int i = 0; i < quadPlayers.Count; i++)
+                {
+                    var oldPosition = quadPlayers[i].QuadPosition;
+                    quadPlayers[i].QuadPosition = i + 1; // Maintain relative positions even when incomplete
+                    Console.WriteLine($"  Player {quadPlayers[i].Player.LastName} -> Position {oldPosition} to {i + 1}");
+                }
+            }
+
+            // Note: SaveChanges will be called by the parent transaction in GenerateQuads
+            Console.WriteLine($"Database changes prepared for Quad {quadId}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ERROR updating quad: {ex.Message}");
+            throw;
+        }
+    }
     private async Task GenerateQuads()
     {
         using var transaction = await DbContext.Database.BeginTransactionAsync();
 
         try
         {
+            // Get all unassigned players
             var unassignedPlayers = await DbContext.TournamentPlayers
                 .Include(tp => tp.Player)
                 .Where(tp => tp.TournamentId == TournamentId && !tp.QuadId.HasValue)
@@ -1121,67 +1260,150 @@
             if (unassignedPlayers.Count == 0)
             {
                 await transaction.RollbackAsync();
+                Snackbar.Add("No unassigned players to organize into quads.", Severity.Info);
                 return;
             }
 
-            // Find highest quad group number
-            var maxGroupQuery = await DbContext.Quads
+            // Get existing incomplete quads (quads with less than 4 players)
+            var incompleteQuadsData = await DbContext.Quads
                 .Where(q => q.TournamentId == TournamentId)
-                .Select(q => q.QuadGroupNumber)
+                .Select(q => new
+                {
+                    Quad = q,
+                    PlayerCount = DbContext.TournamentPlayers.Count(tp => tp.QuadId == q.Id)
+                })
+                .Where(x => x.PlayerCount < 4)
+                .OrderBy(x => x.Quad.QuadGroupNumber)
                 .ToListAsync();
 
-            var highestGroupNumber = maxGroupQuery.Any() ? maxGroupQuery.Max() : 0;
-
-            // Create quads with 4 players each
-            var quadCounter = 0;
-            var playerCounter = 0;
-            Quad currentQuad = null;
-
-            while (playerCounter < unassignedPlayers.Count)
+            Console.WriteLine($"Found {incompleteQuadsData.Count} incomplete quads:");
+            foreach (var quadData in incompleteQuadsData)
             {
-                // Create new quad every 4 players
-                if (playerCounter % 4 == 0)
+                Console.WriteLine($"  - {quadData.Quad.Title}: {quadData.PlayerCount}/4 players");
+            }
+
+            var playerIndex = 0;
+
+            // Fill incomplete quads ONE AT A TIME until each is full
+            foreach (var quadData in incompleteQuadsData)
+            {
+                // Keep filling this quad until it's full or we run out of players
+                while (playerIndex < unassignedPlayers.Count)
                 {
-                    quadCounter++;
-                    currentQuad = new Quad
-                        {
-                            Title = $"Quad {quadCounter}",
-                            TournamentId = TournamentId,
-                            QuadGroupNumber = highestGroupNumber + (int)Math.Ceiling(quadCounter / 4.0)
-                        };
+                    // Get current player count (refresh each time)
+                    var currentPlayerCount = await DbContext.TournamentPlayers
+                        .CountAsync(tp => tp.QuadId == quadData.Quad.Id);
 
-                    DbContext.Quads.Add(currentQuad);
-                    await DbContext.SaveChangesAsync(); // Save to get ID
-                }
-
-                // Assign player to quad
-                var player = unassignedPlayers[playerCounter];
-                player.QuadId = currentQuad.Id;
-                player.QuadPosition = null; // Will be set when quad is complete
-
-                playerCounter++;
-
-                // When quad is full, set positions and create matches
-                if (playerCounter % 4 == 0)
-                {
-                    var quadPlayers = unassignedPlayers
-                        .Skip(playerCounter - 4)
-                        .Take(4)
-                        .OrderByDescending(p => p.Player.Ranking)
-                        .ToArray();
-
-                    // Set positions 1-4 based on ranking
-                    for (int i = 0; i < quadPlayers.Length; i++)
+                    // If this quad is full, move to next quad
+                    if (currentPlayerCount >= 4)
                     {
-                        quadPlayers[i].QuadPosition = i + 1;
+                        Console.WriteLine($"{quadData.Quad.Title} is now full with 4 players");
+                        break;
                     }
 
-                    CreateMatchesForQuad(currentQuad.Id, quadPlayers);
+                    // Assign ONE player to this quad
+                    var player = unassignedPlayers[playerIndex];
+                    player.QuadId = quadData.Quad.Id;
+                    player.QuadPosition = null; // Will be set when UpdateQuadAfterPlayerChange is called
+
+                    Console.WriteLine($"Assigning {player.Player.FirstName} {player.Player.LastName} to {quadData.Quad.Title} (now has {currentPlayerCount + 1}/4 players)");
+                    playerIndex++;
+
+                    // IMPORTANT: Save changes immediately so the count is updated for next iteration
+                    await DbContext.SaveChangesAsync();
+
+                    // If this quad is now full (4 players), set positions and create matches
+                    if (currentPlayerCount + 1 == 4)
+                    {
+                        Console.WriteLine($"{quadData.Quad.Title} is now complete, setting up matches");
+                        await UpdateQuadAfterPlayerChangeNoTransaction(quadData.Quad.Id);
+                        break; // Move to next quad
+                    }
+                }
+
+                // If we've run out of unassigned players, stop
+                if (playerIndex >= unassignedPlayers.Count)
+                {
+                    Console.WriteLine("Ran out of unassigned players");
+                    break;
+                }
+            }
+
+            // Create new quads for remaining players (only if we have multiples of 4)
+            var remainingPlayers = unassignedPlayers.Count - playerIndex;
+            var newQuadsToCreate = remainingPlayers / 4;
+
+            Console.WriteLine($"After filling incomplete quads: {remainingPlayers} players remaining, can create {newQuadsToCreate} new quads");
+
+            if (newQuadsToCreate > 0)
+            {
+                // Find the highest existing quad number by parsing titles
+                var existingQuads = await DbContext.Quads
+                    .Where(q => q.TournamentId == TournamentId)
+                    .Select(q => q.Title)
+                    .ToListAsync();
+
+                var highestQuadNumber = 0;
+                foreach (var title in existingQuads)
+                {
+                    // Extract number from "Quad X" format
+                    if (title.StartsWith("Quad ") && int.TryParse(title.Substring(5), out var quadNum))
+                    {
+                        highestQuadNumber = Math.Max(highestQuadNumber, quadNum);
+                    }
+                }
+
+                // Find highest quad group number for pagination
+                var maxGroupQuery = await DbContext.Quads
+                    .Where(q => q.TournamentId == TournamentId)
+                    .Select(q => q.QuadGroupNumber)
+                    .ToListAsync();
+
+                var highestGroupNumber = maxGroupQuery.Any() ? maxGroupQuery.Max() : 0;
+
+                // Create new quads
+                for (int quadIndex = 0; quadIndex < newQuadsToCreate; quadIndex++)
+                {
+                    // Create new quad with proper sequential numbering
+                    var newQuad = new Quad
+                        {
+                            Title = $"Quad {highestQuadNumber + quadIndex + 1}",
+                            TournamentId = TournamentId,
+                            QuadGroupNumber = highestGroupNumber + (int)Math.Ceiling((quadIndex + 1) / 4.0)
+                        };
+
+                    DbContext.Quads.Add(newQuad);
+                    await DbContext.SaveChangesAsync(); // Save to get ID
+
+                    // Assign 4 players to this new quad
+                    for (int i = 0; i < 4; i++)
+                    {
+                        var player = unassignedPlayers[playerIndex];
+                        player.QuadId = newQuad.Id;
+                        player.QuadPosition = null; // Will be set when UpdateQuadAfterPlayerChange is called
+                        playerIndex++;
+                    }
+
+                    // Set positions and create matches for the complete quad
+                    await UpdateQuadAfterPlayerChangeNoTransaction(newQuad.Id);
                 }
             }
 
             await DbContext.SaveChangesAsync();
             await transaction.CommitAsync();
+
+            // Count how many incomplete quads were actually completed
+            var quadsCompleted = 0;
+            foreach (var quadData in incompleteQuadsData)
+            {
+                var finalPlayerCount = await DbContext.TournamentPlayers
+                    .CountAsync(tp => tp.QuadId == quadData.Quad.Id);
+                if (finalPlayerCount == 4) quadsCompleted++;
+            }
+            quadsCompleted += newQuadsToCreate;
+            var playersAssigned = playerIndex;
+
+            Snackbar.Add($"Successfully organized {playersAssigned} players into {quadsCompleted} complete quads!", Severity.Success);
 
             // Reload everything
             await LoadData();
@@ -1190,7 +1412,7 @@
         {
             await transaction.RollbackAsync();
             Console.WriteLine($"Error generating quads: {ex.Message}");
-            Snackbar.Add("Error generating quads", Severity.Error);
+            Snackbar.Add($"Error generating quads: {ex.Message}", Severity.Error);
         }
     }
 

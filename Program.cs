@@ -31,9 +31,13 @@ builder.Services.AddRazorComponents()
 // Add global app state
 builder.Services.AddSingleton<AppStateService>();
 
-// Add Microsoft Identity authentication
-builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
+// no authentication in development mode
+if (!builder.Environment.IsDevelopment())
+{
+    // Add Microsoft Identity authentication
+    builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+        .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
+}
 
 // Add authorization with email restrictions
 builder.Services.AddAuthorization(options =>
@@ -82,20 +86,31 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-app.UseAuthentication();
+
+if (!app.Environment.IsDevelopment())
+{
+    // Use authentication only in production
+    app.UseAuthentication();
+}
+
 app.UseAuthorization();
-
-
 app.UseAntiforgery();
 
 app.MapStaticAssets();
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode()
-    .RequireAuthorization("AllowedUsers");
 
-#if RELEASE
-app.Urls.Add("http://localhost:5000");
-app.Urls.Add("https://localhost:5001");
-#endif
+if (!app.Environment.IsDevelopment())
+{
+    app.MapRazorComponents<App>()
+        .AddInteractiveServerRenderMode()
+        .RequireAuthorization("AllowedUsers");
+
+    app.Urls.Add("http://localhost:5000");
+    app.Urls.Add("https://localhost:5001");
+}
+else
+{
+    app.MapRazorComponents<App>()
+        .AddInteractiveServerRenderMode();
+}
 
 app.Run();

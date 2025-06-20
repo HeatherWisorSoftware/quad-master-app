@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.Identity.Web;
 using MudBlazor;
 using MudBlazor.Services;
 using QuadMasterApp.Components;
@@ -29,6 +31,36 @@ builder.Services.AddRazorComponents()
 // Add global app state
 builder.Services.AddSingleton<AppStateService>();
 
+// Add Microsoft Identity authentication
+builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
+
+// Add authorization with email restrictions
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AllowedUsers", policy =>
+        policy.RequireAssertion(context =>
+        {
+            // List of allowed email addresses
+            var allowedEmails = new[]
+            {
+                "heather@wisorsoftware.com",
+                "bobscaccia62@gmail.com",
+                "shawnie@wisorsoftware.com",
+                "bob.scaccia@usafirmware.com",
+                "jason.hoagland.jr@gmail.com"
+            };
+
+            // Get the user's email from the authentication claims
+            var userEmail = context.User.FindFirst("preferred_username")?.Value
+                            ?? context.User.FindFirst("email")?.Value
+                            ?? context.User.Identity?.Name;
+
+            // Check if user's email is in the allowed list
+            return allowedEmails.Contains(userEmail, StringComparer.OrdinalIgnoreCase);
+        }));
+});
+
 var app = builder.Build();
 
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
@@ -48,13 +80,18 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
 
 
 app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode()
+    .RequireAuthorization("AllowedUsers");
 
 #if RELEASE
 app.Urls.Add("http://localhost:5000");

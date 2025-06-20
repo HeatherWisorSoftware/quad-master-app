@@ -8,7 +8,14 @@
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
 		<SelfContained>false</SelfContained>
-		<PublishSingleFile>true</PublishSingleFile>
+		<PublishSingleFile>false</PublishSingleFile>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
 	</PropertyGroup>
 
   <ItemGroup>
@@ -36,12 +43,16 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.4" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="3.9.3" />
     <PackageReference Include="MudBlazor" Version="8.*" />
   </ItemGroup>
 
 
   <ItemGroup>
     <None Update="Scripts\StartQuadMasterDemo.bat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="tournament.db">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
@@ -52,8 +63,6 @@
 			<DemoFiles Include="$(MSBuildProjectDirectory)\ReadME.md" />
 		</ItemGroup>
 
-		<Copy SourceFiles="@(DemoFiles)"
-		      DestinationFolder="$(PublishDir)"
-		      Condition="Exists('%(FullPath)')" />
+		<Copy SourceFiles="@(DemoFiles)" DestinationFolder="$(PublishDir)" Condition="Exists('%(FullPath)')" />
 	</Target>
 </Project>

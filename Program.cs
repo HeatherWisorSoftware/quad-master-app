@@ -9,8 +9,25 @@ using QuadMasterApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure database connection with proper Azure path
 builder.Services.AddDbContext<TournamentContext>(options =>
-    options.UseSqlite("Data Source = tournament.db"));
+{
+    string dbPath;
+    if (builder.Environment.IsDevelopment())
+    {
+        // Local development
+        dbPath = "Data Source=tournament.db";
+    }
+    else
+    {
+        // Azure App Service - use writable persistent storage
+        var dataDir = "/home/data";
+        Directory.CreateDirectory(dataDir);
+        dbPath = $"Data Source={dataDir}/tournament.db";
+    }
+
+    options.UseSqlite(dbPath);
+});
 
 builder.Services.AddScoped<DatabaseSeeder>();
 
@@ -18,8 +35,6 @@ builder.Services.AddScoped<DatabaseSeeder>();
 builder.Services.AddMudServices();
 
 // Register ThemeProvider as a singleton service
-// Create a default MudTheme to initialize the provider
-// The actual theme will be set by MainLayout when it initializes
 var defaultTheme = new MudTheme();
 builder.Services.AddSingleton<IThemeProvider>(serviceProvider =>
     new ThemeProvider(defaultTheme, false));
@@ -31,7 +46,7 @@ builder.Services.AddRazorComponents()
 // Add global app state
 builder.Services.AddSingleton<AppStateService>();
 
-// no authentication in development mode
+// Add authentication only in production
 if (!builder.Environment.IsDevelopment())
 {
     // Add Microsoft Identity authentication
@@ -69,27 +84,38 @@ var app = builder.Build();
 
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
-// Get database reset configuration from appsettings.json
-var resetDatabase = builder.Configuration.GetValue<bool>("DatabaseOptions:ResetOnStartup");
+try
+{
+    logger.LogInformation("Starting database initialization...");
+    var resetDatabase = builder.Configuration.GetValue<bool>("DatabaseOptions:ResetOnStartup");
+    logger.LogInformation("Reset database setting: {ResetDatabase}", resetDatabase);
 
-// Initialize the database with the configuration setting
-await app.Services.InitializeDatabaseAsync(logger, resetDatabase);
+    await app.Services.InitializeDatabaseAsync(logger, resetDatabase);
+    logger.LogInformation("Database initialized successfully");
+}
+catch (Exception ex)
+{
+    logger.LogError(ex, "Failed to initialize database: {Message}", ex.Message);
+    throw; // Re-throw to see the actual error
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    // Azure handles HTTPS termination
+    app.UseForwardedHeaders();
+    // Temporarily show detailed errors for debugging
+    app.UseDeveloperExceptionPage();
+    //app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
+// Use authentication only in production
 if (!app.Environment.IsDevelopment())
 {
-    // Use authentication only in production
     app.UseAuthentication();
 }
 
@@ -98,17 +124,17 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 
+// Configure components with conditional authentication
 if (!app.Environment.IsDevelopment())
 {
+    // Production: Require authentication
     app.MapRazorComponents<App>()
         .AddInteractiveServerRenderMode()
         .RequireAuthorization("AllowedUsers");
-
-    app.Urls.Add("http://localhost:5000");
-    app.Urls.Add("https://localhost:5001");
 }
 else
 {
+    // Development: No authentication
     app.MapRazorComponents<App>()
         .AddInteractiveServerRenderMode();
 }

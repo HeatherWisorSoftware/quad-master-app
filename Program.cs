@@ -9,23 +9,25 @@ using QuadMasterApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services for Blazor Web App
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+builder.Services.AddDbContext<TournamentContext>(options =>
+    options.UseSqlite("Data Source = tournament.db"));
 
-// Add SignalR (required for Blazor Server)
-builder.Services.AddSignalR();
+builder.Services.AddScoped<DatabaseSeeder>();
 
 // Add MudBlazor services
 builder.Services.AddMudServices();
 
 // Register ThemeProvider with factory
-builder.Services.AddScoped<IThemeProvider>(provider =>
+builder.Services.AddSingleton<IThemeProvider>(provider =>
     new ThemeProvider(new MudTheme(), false));
 
+    
+// Add services to the container.
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
+ 
 // Register your other services
-builder.Services.AddScoped<AppStateService>();
-builder.Services.AddScoped<DatabaseSeeder>();
+builder.Services.AddSingleton<AppStateService>();
 
 // Add database context
 builder.Services.AddDbContext<TournamentContext>(options =>
@@ -33,43 +35,35 @@ builder.Services.AddDbContext<TournamentContext>(options =>
 
 var app = builder.Build();
 
-// Initialize database
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
-    {
-        var context = services.GetRequiredService<TournamentContext>();
-        var logger = services.GetRequiredService<ILogger<Program>>();
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
-        await context.Database.EnsureCreatedAsync();
+// Get database reset configuration from appsettings.json
+var resetDatabase = builder.Configuration.GetValue<bool>("DatabaseOptions:ResetOnStartup");
 
-        var seeder = services.GetRequiredService<DatabaseSeeder>();
-        await seeder.SeedDatabaseAsync();
+// Initialize the database with the configuration setting
+await app.Services.InitializeDatabaseAsync(logger, resetDatabase);
 
-        logger.LogInformation("Database initialized successfully");
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while initializing the database.");
-    }
-}
-
-// Configure pipeline
+// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
 }
 
+app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.UseRouting();
 app.UseAntiforgery();
-
-// IMPORTANT: Map SignalR hub for Blazor Server
-app.MapHub<Microsoft.AspNetCore.Components.Server.ComponentHub>("/_blazor");
+app.MapStaticAssets();
 
 // Route to your Components
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+#if RELEASE
+app.Urls.Add("http://localhost:5000");
+app.Urls.Add("https://localhost:5001");
+#endif
 
 app.Run();

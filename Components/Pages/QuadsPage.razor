@@ -16,12 +16,12 @@
     <!-- Pagination Controls -->
     <div class="pagination-controls d-flex align-items-center">
         <MudPagination Variant="Variant.Outlined"
-                       Count="@TotalPages"
-                       SelectedChanged="OnPageChanged"
-                       Selected="@CurrentPage"
-                       Color="Color.Primary"
-                       Size="Size.Medium"
-                       Class="my-2" />
+        Count="@TotalPages"
+        SelectedChanged="OnPageChanged"
+        Selected="@CurrentPage"
+        Color="Color.Primary"
+        Size="Size.Medium"
+        Class="my-2" />
 
         <MudText Typo="Typo.body2" Class="ml-4">
             Group @CurrentPage of @TotalPages | Total Quads: @(ViewModel?.AllQuads?.Count ?? 0)
@@ -30,17 +30,17 @@
 
     <div>
         <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   OnClick="GenerateQuads"
-                   Class="ml-2">
+        Color="Color.Primary"
+        OnClick="GenerateQuads"
+        Class="ml-2">
             Generate Quads
         </MudButton>
 
         <MudButton Variant="Variant.Outlined"
-                   Color="Color.Secondary"
-                   OnClick="PrintPage"
-                   StartIcon="@Icons.Material.Filled.Print"
-                   Class="ml-2">
+        Color="Color.Secondary"
+        OnClick="PrintPage"
+        StartIcon="@Icons.Material.Filled.Print"
+        Class="ml-2">
             Print Tournament
         </MudButton>
     </div>
@@ -48,9 +48,9 @@
 
 <div class="quad-container">
     <MudDropContainer T="TournamentPlayer"
-                      Items="@GetAllPlayersForDropContainer()"
-                      ItemDropped="PlayerMoved"
-                      Class="d-flex flex-column flex-grow-1">
+    Items="@GetAllPlayersForDropContainer()"
+    ItemDropped="PlayerMoved"
+    Class="d-flex flex-column flex-grow-1">
 
         <ChildContent>
             <div class="d-flex">
@@ -76,10 +76,10 @@
                                         </div>
 
                                         <MudDropZone T="TournamentPlayer"
-                                                     Identifier="@quad.Id.ToString()"
-                                                     ItemsSelector="@(p => p.QuadId == quad.Id)"
-                                                     AllowReorder="true"
-                                                     Class="quad-dropzone" />
+                                        Identifier="@quad.Id.ToString()"
+                                        ItemsSelector="@(p => p.QuadId == quad.Id)"
+                                        AllowReorder="true"
+                                        Class="quad-dropzone" />
                                     </div>
                                 </div>
                             </MudPaper>
@@ -93,19 +93,19 @@
                             <h3 class="text-center">Unassigned Players</h3>
                         </div>
                         <MudDropZone T="TournamentPlayer"
-                                     Identifier="unassigned"
-                                     ItemsSelector="@(p => !p.QuadId.HasValue)"
-                                     AllowReorder="true"
-                                     Class="unassigned-dropzone" />
+                        Identifier="unassigned"
+                        ItemsSelector="@(p => !p.QuadId.HasValue)"
+                        AllowReorder="true"
+                        Class="unassigned-dropzone" />
                     </MudPaper>
 
                     <div class="p-3 border-top">
                         <MudButton Variant="Variant.Outlined"
-                                   Class="mt-2"
-                                   Color="Color.Secondary"
-                                   OnClick="ResetAllPlayers"
-                                   StartIcon="@Icons.Material.Filled.RestartAlt"
-                                   FullWidth="true">
+                        Class="mt-2"
+                        Color="Color.Secondary"
+                        OnClick="ResetAllPlayers"
+                        StartIcon="@Icons.Material.Filled.RestartAlt"
+                        FullWidth="true">
                             Reset All Players
                         </MudButton>
                     </div>
@@ -129,13 +129,13 @@
                             <div class="opponent">@GetOpponentText(context, round)</div>
                             <div class="score-cell">
                                 <MudSelect T="string"
-                                           Class="score-select"
-                                           Value="@GetPlayerScore(context, round)"
-                                           ValueChanged="@(async (string value) => await SaveScore(context, round, value))"
-                                           Variant="Variant.Outlined"
-                                           Margin="Margin.Dense"
-                                           Dense="true"
-                                           Placeholder="score">
+                                Class="score-select"
+                                Value="@GetPlayerScore(context, round)"
+                                ValueChanged="@(async (string value) => await SaveScore(context, round, value))"
+                                Variant="Variant.Outlined"
+                                Margin="Margin.Dense"
+                                Dense="true"
+                                Placeholder="score">
                                     <MudSelectItem Value="@("")">-</MudSelectItem>
                                     <MudSelectItem Value="@("0")">Loss</MudSelectItem>
                                     <MudSelectItem Value="@("0.5")">Draw</MudSelectItem>
@@ -149,9 +149,9 @@
                     <div class="total-cell">
                         <span class="total-score">@GetTotalScore(context)</span>
                         <MudIconButton Icon="@Icons.Material.Filled.Close"
-                                       Size="Size.Small"
-                                       Class="remove-btn"
-                                       OnClick="@(() => RemovePlayer(context))" />
+                        Size="Size.Small"
+                        Class="remove-btn"
+                        OnClick="@(() => RemovePlayer(context))" />
                     </div>
                 </div>
             }
@@ -171,383 +171,383 @@
 
 <style>
     .score-cell {
-        padding: 4px !important;
-        text-align: center;
-        font-size: 18px;
-        font-weight: bold;
-        background-color: inherit;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-items: center;
-        justify-content: center;
+    padding: 4px !important;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    background-color: inherit;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-items: center;
+    justify-content: center;
     }
 
     .score-select {
-        width: 100%;
-        max-width: 90px;
+    width: 100%;
+    max-width: 90px;
     }
 
-        .score-select .mud-input-slot {
-            text-align: center;
-        }
+    .score-select .mud-input-slot {
+    text-align: center;
+    }
 
-        .score-select .mud-input {
-            text-align: center;
-            font-weight: bold;
-            font-size: 14px;
-        }
+    .score-select .mud-input {
+    text-align: center;
+    font-weight: bold;
+    font-size: 14px;
+    }
 
     .score-cell .mud-select {
-        flex: none;
+    flex: none;
     }
     /* Ensure dropdown panel appears above other elements */
     .mud-popover {
-        z-index: 9999;
+    z-index: 9999;
     }
 
     /* Mobile-friendly adjustments */
     @@media (max-width: 768px) {
-        .score-select {
-            max-width: 80px;
-        }
+    .score-select {
+    max-width: 80px;
+    }
 
-            .score-select .mud-input {
-                font-size: 16px; /* Prevents zoom on iOS */
-            }
+    .score-select .mud-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    }
 
-        .score-cell {
-            padding: 2px !important;
-        }
+    .score-cell {
+    padding: 2px !important;
+    }
     }
 
     .quad-container {
-        width: 100%;
+    width: 100%;
     }
 
     /* Layout for side-by-side display */
     .quads-section {
-        flex: 4;
+    flex: 4;
     }
 
     .unassigned-paper {
-        flex: 1;
-        min-width: 220px;
-        max-width: 300px;
-        height: fit-content;
-        margin-top: 0 !important;
+    flex: 1;
+    min-width: 220px;
+    max-width: 300px;
+    height: fit-content;
+    margin-top: 0 !important;
     }
 
     .quad-paper {
-        width: 48%;
-        margin: 0 1% 16px 1%;
-        border: 1px solid #ddd;
-        display: flex;
-        flex-direction: column;
+    width: 48%;
+    margin: 0 1% 16px 1%;
+    border: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
     }
 
     /* Quad table layout */
     .quad-table {
-        display: flex;
-        width: 100%;
-        height: 100%;
-        border-collapse: collapse;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    border-collapse: collapse;
     }
 
     .quad-side {
-        width: 70px;
-        /* Background color inherits from parent .quad-paper which has the color class */
-        border-right: 1px solid var(--mud-palette-divider);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        writing-mode: vertical-rl;
-        transform: rotate(180deg);
+    width: 70px;
+    /* Background color inherits from parent .quad-paper which has the color class */
+    border-right: 1px solid var(--mud-palette-divider);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
     }
 
     .quad-identifier {
-        font-size: 24px;
-        font-weight: bold;
-        text-align: center;
-        height: 100%;
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--mud-palette-text-primary);
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--mud-palette-text-primary);
     }
 
     .quad-main {
-        flex: 1;
+    flex: 1;
     }
 
     /* Quad header */
     .quad-header {
-        display: flex;
-        border-bottom: 1px solid var(--mud-palette-divider);
-        background-color: var(--mud-palette-surface);
+    display: flex;
+    border-bottom: 1px solid var(--mud-palette-divider);
+    background-color: var(--mud-palette-surface);
     }
 
     .quad-header-cell {
-        flex: 1;
-        padding: 8px;
-        text-align: center;
-        font-weight: bold;
-        border-right: 1px solid var(--mud-palette-divider);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    flex: 1;
+    padding: 8px;
+    text-align: center;
+    font-weight: bold;
+    border-right: 1px solid var(--mud-palette-divider);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     }
 
     .player-header {
-        flex: 2.45;
+    flex: 2.45;
     }
 
     /* Quad dropzone */
     .quad-dropzone {
-        min-height: 400px;
-        background-color: var(--mud-palette-background-grey);
+    min-height: 400px;
+    background-color: var(--mud-palette-background-grey);
     }
 
     /* Player row in quad */
     .quad-player-row {
-        display: flex;
-        border-bottom: 1px solid var(--mud-palette-divider);
-        background-color: var(--mud-palette-surface);
+    display: flex;
+    border-bottom: 1px solid var(--mud-palette-divider);
+    background-color: var(--mud-palette-surface);
     }
 
     .player-cell {
-        flex: 2;
-        padding: 8px;
-        border-right: 1px solid #ddd;
-        display: flex;
-        flex-direction: column;
+    flex: 2;
+    padding: 8px;
+    border-right: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
     }
 
     .player-position {
-        font-size: 18px;
-        font-weight: bold;
-        margin-right: 8px;
-        color: #666;
+    font-size: 18px;
+    font-weight: bold;
+    margin-right: 8px;
+    color: #666;
     }
 
     .player-name {
-        font-size: 18px;
-        font-weight: bold;
-        color: #666;
+    font-size: 18px;
+    font-weight: bold;
+    color: #666;
     }
 
     .player-rating {
-        font-size: 16px;
-        color: #333;
+    font-size: 16px;
+    color: #333;
     }
 
     .round-cell {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        border-right: 1px solid #ddd;
-        margin: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #ddd;
+    margin: 0;
     }
 
     .opponent {
-        padding: 4px;
-        text-align: center;
-        border-bottom: 1px solid #eee;
-        color: #666;
+    padding: 4px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+    color: #666;
     }
 
     .score-cell {
-        padding: 8px;
-        text-align: center;
-        font-size: 18px;
-        font-weight: bold;
-        background-color: inherit;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    padding: 8px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    background-color: inherit;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     }
 
     .table-number {
-        padding: 4px;
-        text-align: center;
-        border-top: 1px solid #eee;
-        color: #666;
+    padding: 4px;
+    text-align: center;
+    border-top: 1px solid #eee;
+    color: #666;
     }
 
     .total-cell {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
     }
 
     .total-score {
-        font-size: 32px;
-        font-weight: bold;
-        color: #666;
+    font-size: 32px;
+    font-weight: bold;
+    color: #666;
     }
 
     .remove-btn {
-        position: absolute;
-        top: 4px;
-        right: 4px;
+    position: absolute;
+    top: 4px;
+    right: 4px;
     }
 
     /* Unassigned players section */
     .unassigned-header {
-        background-color: #f0f0f0;
-        padding: 8px;
-        border-bottom: 1px solid #ddd;
+    background-color: #f0f0f0;
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
     }
 
     .unassigned-dropzone {
-        min-height: 400px;
-        padding: 8px;
-        overflow-y: auto;
+    min-height: 400px;
+    padding: 8px;
+    overflow-y: auto;
     }
 
     .player-card {
-        display: flex;
-        align-items: center;
-        margin-bottom: 8px;
-        padding: 6px;
-        background-color: #fff;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        width: 100%;
-        font-size: 14px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    padding: 6px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 100%;
+    font-size: 14px;
     }
 
     .player-number {
-        font-size: 20px;
-        font-weight: bold;
-        margin-right: 16px;
-        min-width: 24px;
-        text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+    margin-right: 16px;
+    min-width: 24px;
+    text-align: center;
     }
 
     .player-info {
-        flex-grow: 1;
+    flex-grow: 1;
     }
 
     /* Pagination styles */
     .pagination-controls {
-        margin-bottom: 12px;
-        display: flex;
-        align-items: center;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
     }
 
     .mud-pagination {
-        margin-right: 16px;
+    margin-right: 16px;
     }
 
     /* Theme color classes for quads - ORIGINAL MUDBLAZOR COLORS */
     /* Primary color */
     .quad-paper.mud-paper.quad-color-primary {
-        background-color: var(--mud-palette-primary-lighten) !important;
+    background-color: var(--mud-palette-primary-lighten) !important;
     }
 
-        .quad-paper.mud-paper.quad-color-primary .quad-side {
-            background-color: var(--mud-palette-primary-lighten) !important;
-        }
+    .quad-paper.mud-paper.quad-color-primary .quad-side {
+    background-color: var(--mud-palette-primary-lighten) !important;
+    }
 
-        .quad-paper.mud-paper.quad-color-primary .score-cell {
-            background-color: var(--mud-palette-primary-lighten) !important;
-        }
+    .quad-paper.mud-paper.quad-color-primary .score-cell {
+    background-color: var(--mud-palette-primary-lighten) !important;
+    }
 
     /* Secondary color */
     .quad-paper.mud-paper.quad-color-secondary {
-        background-color: var(--mud-palette-secondary-lighten) !important;
+    background-color: var(--mud-palette-secondary-lighten) !important;
     }
 
-        .quad-paper.mud-paper.quad-color-secondary .quad-side {
-            background-color: var(--mud-palette-secondary-lighten) !important;
-        }
+    .quad-paper.mud-paper.quad-color-secondary .quad-side {
+    background-color: var(--mud-palette-secondary-lighten) !important;
+    }
 
-        .quad-paper.mud-paper.quad-color-secondary .score-cell {
-            background-color: var(--mud-palette-secondary-lighten) !important;
-        }
+    .quad-paper.mud-paper.quad-color-secondary .score-cell {
+    background-color: var(--mud-palette-secondary-lighten) !important;
+    }
 
     /* Info color */
     .quad-paper.mud-paper.quad-color-info {
-        background-color: var(--mud-palette-info-lighten) !important;
+    background-color: var(--mud-palette-info-lighten) !important;
     }
 
-        .quad-paper.mud-paper.quad-color-info .quad-side {
-            background-color: var(--mud-palette-info-lighten) !important;
-        }
+    .quad-paper.mud-paper.quad-color-info .quad-side {
+    background-color: var(--mud-palette-info-lighten) !important;
+    }
 
-        .quad-paper.mud-paper.quad-color-info .score-cell {
-            background-color: var(--mud-palette-info-lighten) !important;
-        }
+    .quad-paper.mud-paper.quad-color-info .score-cell {
+    background-color: var(--mud-palette-info-lighten) !important;
+    }
 
     /* Success color */
     .quad-paper.mud-paper.quad-color-success {
-        background-color: var(--mud-palette-success-lighten) !important;
+    background-color: var(--mud-palette-success-lighten) !important;
     }
 
-        .quad-paper.mud-paper.quad-color-success .quad-side {
-            background-color: var(--mud-palette-success-lighten) !important;
-        }
+    .quad-paper.mud-paper.quad-color-success .quad-side {
+    background-color: var(--mud-palette-success-lighten) !important;
+    }
 
-        .quad-paper.mud-paper.quad-color-success .score-cell {
-            background-color: var(--mud-palette-success-lighten) !important;
-        }
+    .quad-paper.mud-paper.quad-color-success .score-cell {
+    background-color: var(--mud-palette-success-lighten) !important;
+    }
 
     /* Warning color */
     .quad-paper.mud-paper.quad-color-warning {
-        background-color: var(--mud-palette-warning-lighten) !important;
+    background-color: var(--mud-palette-warning-lighten) !important;
     }
 
-        .quad-paper.mud-paper.quad-color-warning .quad-side {
-            background-color: var(--mud-palette-warning-lighten) !important;
-        }
+    .quad-paper.mud-paper.quad-color-warning .quad-side {
+    background-color: var(--mud-palette-warning-lighten) !important;
+    }
 
-        .quad-paper.mud-paper.quad-color-warning .score-cell {
-            background-color: var(--mud-palette-warning-lighten) !important;
-        }
+    .quad-paper.mud-paper.quad-color-warning .score-cell {
+    background-color: var(--mud-palette-warning-lighten) !important;
+    }
 
     /* Surface color */
     .quad-paper.mud-paper.quad-color-surface {
-        background-color: var(--mud-palette-surface) !important;
+    background-color: var(--mud-palette-surface) !important;
     }
 
-        .quad-paper.mud-paper.quad-color-surface .quad-side {
-            background-color: var(--mud-palette-surface) !important;
-        }
+    .quad-paper.mud-paper.quad-color-surface .quad-side {
+    background-color: var(--mud-palette-surface) !important;
+    }
 
-        .quad-paper.mud-paper.quad-color-surface .score-cell {
-            background-color: var(--mud-palette-surface) !important;
-        }
+    .quad-paper.mud-paper.quad-color-surface .score-cell {
+    background-color: var(--mud-palette-surface) !important;
+    }
 
     /* Original colors */
     .quad-paper.mud-paper.quad-color-yellow {
-        background-color: #ffffcc !important;
+    background-color: #ffffcc !important;
     }
 
-        .quad-paper.mud-paper.quad-color-yellow .quad-side {
-            background-color: #ffffcc !important;
-        }
+    .quad-paper.mud-paper.quad-color-yellow .quad-side {
+    background-color: #ffffcc !important;
+    }
 
-        .quad-paper.mud-paper.quad-color-yellow .score-cell {
-            background-color: #ffffcc !important;
-        }
+    .quad-paper.mud-paper.quad-color-yellow .score-cell {
+    background-color: #ffffcc !important;
+    }
 
     .quad-paper.mud-paper.quad-color-blue {
-        background-color: #e6f7ff !important;
+    background-color: #e6f7ff !important;
     }
 
-        .quad-paper.mud-paper.quad-color-blue .quad-side {
-            background-color: #e6f7ff !important;
-        }
+    .quad-paper.mud-paper.quad-color-blue .quad-side {
+    background-color: #e6f7ff !important;
+    }
 
-        .quad-paper.mud-paper.quad-color-blue .score-cell {
-            background-color: #e6f7ff !important;
-        }
+    .quad-paper.mud-paper.quad-color-blue .score-cell {
+    background-color: #e6f7ff !important;
+    }
 </style>
 
 @code {
@@ -557,7 +557,7 @@
     public List<Quad> DisplayedQuads { get; set; } = new();
     private int CurrentPage { get; set; } = 1;
     private int TotalPages => ViewModel?.TotalPages ?? 1;
-
+    private bool IsPrintMode = false;
     protected override async Task OnInitializedAsync()
     {
         try
@@ -625,7 +625,12 @@
 
             var pageSize = 4;
             var skip = (CurrentPage - 1) * pageSize;
-            DisplayedQuads = allQuads.Skip(skip).Take(pageSize).ToList();
+
+            if(IsPrintMode)
+            { DisplayedQuads = allQuads; }
+            else
+            { DisplayedQuads = allQuads.Skip(skip).Take(pageSize).ToList(); }
+
 
             ViewModel = new QuadsViewModel
                 {
@@ -1011,7 +1016,11 @@
 
     private async Task PrintPage()
     {
+        IsPrintMode = true;
+        await LoadData();
         await JSRuntime.InvokeVoidAsync("window.print");
+        IsPrintMode = false;
+        await LoadData();
     }
 
     private List<TournamentPlayer> GetAllPlayersForDropContainer()

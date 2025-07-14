@@ -34,14 +34,38 @@
             }
             else
             {
-                <MudTable Items="@Tournaments" Hover="true" Striped="true" Bordered="false" Loading="@IsLoading"
+                <MudTable Items="@Tournaments"
+                          Hover="true"
+                          Striped="true"
+                          Bordered="false"
+                          Loading="@IsLoading"
                           LoadingProgressColor="Color.Primary">
                     <HeaderContent>
-                        <MudTh>Name</MudTh>
-                        <MudTh>Date</MudTh>
-                        <MudTh>Venue</MudTh>
-                        <MudTh>Location</MudTh>
-                        <MudTh>Players</MudTh>
+                        <MudTh>
+                            <MudTableSortLabel SortBy="new Func<Tournament, object>(x => x.Name)">
+                                Name
+                            </MudTableSortLabel>
+                        </MudTh>
+                        <MudTh>
+                            <MudTableSortLabel SortBy="new Func<Tournament, object>(x => x.Date ?? DateTime.MinValue)">
+                                Date
+                            </MudTableSortLabel>
+                        </MudTh>
+                        <MudTh>
+                            <MudTableSortLabel SortBy="new Func<Tournament, object>(x => x.VenueName ?? string.Empty)">
+                                Venue
+                            </MudTableSortLabel>
+                        </MudTh>
+                        <MudTh>
+                            <MudTableSortLabel SortBy="new Func<Tournament, object>(x => x.City ?? string.Empty)">
+                                Location
+                            </MudTableSortLabel>
+                        </MudTh>
+                        <MudTh>
+                            <MudTableSortLabel SortBy="new Func<Tournament, object>(x => TournamentPlayerCounts.ContainsKey(x.Id) ? TournamentPlayerCounts[x.Id] : 0)">
+                                Players
+                            </MudTableSortLabel>
+                        </MudTh>
                         <MudTh>Actions</MudTh>
                     </HeaderContent>
                     <RowTemplate>
@@ -60,6 +84,10 @@
                                                Color="Color.Secondary"
                                                Href="@($"/EditPlayerDetails{context.Id}")"
                                                Title="Manage Players" />
+                                <MudIconButton Icon="@Icons.Material.Filled.GridView"
+                                               Color="Color.Success"
+                                               Href="@($"/QuadsPage/{context.Id}")"
+                                               Title="View Quad" />
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                                Color="Color.Error"
                                                OnClick="@(async () => await DeleteTournament(context))"

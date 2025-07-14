@@ -186,34 +186,16 @@
         </MudGrid>
 
         <!-- Action Buttons -->
-        <MudPaper Elevation="2" Class="pa-4 mt-4">
-            <MudGrid AlignItems="Center">
-                <MudItem xs="12" md="8">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">
-                        Ready to create quads? You need at least 4 players (multiples of 4 work best).
-                    </MudText>
-                </MudItem>
-                <MudItem xs="12" md="4" Class="text-right">
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Secondary"
-                               OnClick="NavigateToTournamentList"
-                               StartIcon="@Icons.Material.Filled.ArrowBack"
-                               Class="mr-2">
-                        Back to Tournaments
-                    </MudButton>
-
-                    @if (TournamentPlayers.Count >= 4)
-                    {
-                        <MudButton Variant="Variant.Filled"
-                                   Color="Color.Primary"
-                                   OnClick="NavigateToQuads"
-                                   StartIcon="@Icons.Material.Filled.GridView">
-                            Manage Quads
-                        </MudButton>
-                    }
-                </MudItem>
-            </MudGrid>
+        <MudPaper Elevation="0" Class="pa-4 mt-4 d-flex justify-end">
+            <MudButton Variant="Variant.Text"
+                       Color="Color.Primary"
+                       OnClick="ReturnToList"
+                       StartIcon="@Icons.Material.Filled.ArrowBack">
+                Back to Tournaments
+            </MudButton>
         </MudPaper>
+            
+        
     }
 </MudContainer>
 
@@ -319,7 +301,10 @@
             Snackbar.Add($"Error adding player: {ex.Message}", Severity.Error);
         }
     }
-
+    private void ReturnToList()
+    {
+        NavigationManager.NavigateTo("/EditTournament");
+    }
     private async Task RemovePlayerFromTournament(int tournamentPlayerId)
     {
         try

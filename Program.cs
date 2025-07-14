@@ -13,10 +13,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Add SignalR (required for Blazor Server)
+builder.Services.AddSignalR();
+
 // Add MudBlazor services
 builder.Services.AddMudServices();
 
-// Register ThemeProvider with factory (handles constructor requirements)
+// Register ThemeProvider with factory
 builder.Services.AddScoped<IThemeProvider>(provider =>
     new ThemeProvider(new MudTheme(), false));
 
@@ -61,6 +64,9 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseAntiforgery();
+
+// IMPORTANT: Map SignalR hub for Blazor Server
+app.MapHub<Microsoft.AspNetCore.Components.Server.ComponentHub>("/_blazor");
 
 // Route to your Components
 app.MapRazorComponents<App>()

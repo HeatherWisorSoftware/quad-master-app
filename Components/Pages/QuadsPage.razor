@@ -1018,6 +1018,7 @@
     {
         IsPrintMode = true;
         await LoadData();
+        await Task.Delay(100);
         await JSRuntime.InvokeVoidAsync("window.print");
         IsPrintMode = false;
         await LoadData();

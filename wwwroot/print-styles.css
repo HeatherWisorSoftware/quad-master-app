@@ -53,6 +53,7 @@
         display: none !important;
     }
 
+    
     /* Hide drag and drop functionality */
     .mud-drop-container {
         pointer-events: none !important;
@@ -135,19 +136,22 @@
     body {
         background: white !important;
     }
+
+    
+    
     /* Force borders on MudDropContainer cells */
-    .mud-drop-container,
+    /*.mud-drop-container,
     .mud-drop-container .mud-table-cell,
     .mud-drop-container td,
     .mud-drop-container th,
     .mud-dropzone {
         border: 1px solid #ccc !important;
-    }
+    }*/
 
-        /* Trying to make sure borders are visible */
-        .mud-drop-container .mud-table .mud-table-cell {
+        /* deleting this to see if fix */
+/*        .mud-drop-container .mud-table .mud-table-cell {
             border: 1px solid #ccc !important;
-        }
+        }*/
     .mud-drop-container {
         pointer-events: none !important;
     }
@@ -160,9 +164,10 @@
         pointer-events: none !important;
     }
 
-    .mud-dropzone {
+/*    .mud-dropzone {
         background: transparent !important;
         min-height: auto !important;
         border: 1px solid #ccc !important;
-    }
+    }*/
+
 }

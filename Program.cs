@@ -1,5 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using MudBlazor;
 using MudBlazor.Services;
@@ -32,6 +33,12 @@ builder.Services.AddSingleton<AppStateService>();
 // Add database context
 builder.Services.AddDbContext<TournamentContext>(options =>
     options.UseSqlite("Data Source=tournament.db"));
+
+// Add data protection configuration
+builder.Services.AddDataProtection()
+    .SetApplicationName("quad-master-app")
+    .PersistKeysToFileSystem(new DirectoryInfo("/app/keys"))
+    .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
 
 var app = builder.Build();
 

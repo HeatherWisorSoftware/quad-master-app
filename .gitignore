@@ -2,3 +2,6 @@
 /WebUi.Server/obj/*
 /.vs/*
 /WebUi.Server/wwwroot/lib/*
+/obj/
+/Properties/PublishProfiles/
+/Properties/ServiceDependencies/

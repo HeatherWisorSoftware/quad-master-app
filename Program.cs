@@ -1,7 +1,5 @@
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Web;
 using MudBlazor;
 using MudBlazor.Services;
 using QuadMasterApp.Components;
@@ -58,7 +56,12 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// Only use HTTPS redirection in development
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAntiforgery();
@@ -67,10 +70,5 @@ app.MapStaticAssets();
 // Route to your Components
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
-#if RELEASE
-app.Urls.Add("http://localhost:5000");
-app.Urls.Add("https://localhost:5001");
-#endif
 
 app.Run();

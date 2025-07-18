@@ -169,7 +169,451 @@
 </div>
 
 
+@* <style> *@
+@*     .score-cell { *@
+@*         padding: 4px !important; *@
+@*         text-align: center; *@
+@*         font-size: 18px; *@
+@*         font-weight: bold; *@
+@*         background-color: inherit; *@
+@*         height: 40px; *@
+@*         display: flex; *@
+@*         align-items: center; *@
+@*         justify-items: center; *@
+@*         justify-content: center; *@
+@*     } *@
+
+@*     .score-select { *@
+@*         width: 100%; *@
+@*         max-width: 90px; *@
+@*     } *@
+
+@*         .score-select .mud-input-slot { *@
+@*             text-align: center; *@
+@*         } *@
+
+@*         .score-select .mud-input { *@
+@*             text-align: center; *@
+@*             font-weight: bold; *@
+@*             font-size: 14px; *@
+@*         } *@
+
+@*     .score-cell .mud-select { *@
+@*         flex: none; *@
+@*     } *@
+@*     /* Ensure dropdown panel appears above other elements */ *@
+@*     .mud-popover { *@
+@*         z-index: 9999; *@
+@*     } *@
+
+@*     /* Mobile-friendly adjustments */ *@
+@*     @@media (max-width: 768px) { *@
+@*         .score-select *@
+
+@*     { *@
+@*         max-width: 80px; *@
+@*     } *@
+
+@*     .score-select .mud-input { *@
+@*         font-size: 16px; /* Prevents zoom on iOS */ *@
+@*     } *@
+
+@*     .score-cell { *@
+@*         padding: 2px !important; *@
+@*     } *@
+
+@*     } *@
+
+@*     .quad-container { *@
+@*         width: 100%; *@
+@*     } *@
+
+@*     /* Layout for side-by-side display */ *@
+@*     .quads-section { *@
+@*         flex: 4; *@
+@*         background: #fff; *@
+@*     } *@
+
+@*     /* Formatting for the Unassigned Players section */ *@
+@*     .unassigned-paper { *@
+@*         flex: 1; *@
+@*         min-width: 220px; *@
+@*         max-width: 300px; *@
+@*         height: fit-content; *@
+@*         margin-top: 0 !important; *@
+@*     } *@
+
+@*     .quad-paper { *@
+@*         width: 48%; *@
+@*         margin: 0 1% 16px 1%; *@
+@*         border: 1px solid #ddd; *@
+@*         display: flex; *@
+@*         flex-direction: column; *@
+@*     } *@
+
+@*     /* Responsive quad stacking - stack quads when container gets narrow */ *@
+@*     @@media (max-width: 1200px) { *@
+@*         /* Make quads stack vertically within the quads section */ *@
+@*         .quads-section .d-flex.flex-wrap *@
+
+@*     { *@
+@*         flex-direction: column !important; *@
+@*     } *@
+
+@*     .quad-paper { *@
+@*         width: 98% !important; /* Full width within the quads section */ *@
+@*         min-width: 500px; /* Minimum readable width */ *@
+@*         margin: 0 1% 16px 1% !important; *@
+@*     } *@
+
+@*     /* Keep unassigned players area in normal position */ *@
+@*     .unassigned-paper { *@
+@*         flex: 1; *@
+@*         min-width: 220px; *@
+@*         max-width: 300px; *@
+@*         height: fit-content; *@
+@*         margin-top: 0 !important; *@
+@*     } *@
+
+@*     } *@
+
+@*     /* For very narrow screens, adjust minimum widths */ *@
+@*     @@media (max-width: 800px) { *@
+@*         .quad-paper *@
+
+@*     { *@
+@*         min-width: 400px !important; *@
+@*     } *@
+
+@*     } *@
+
+@*     @@media (max-width: 600px) { *@
+@*         .quad-paper *@
+
+@*     { *@
+@*         min-width: 300px !important; *@
+@*     } *@
+
+@*     } *@
+
+@*     /* Quad table layout */ *@
+@*     .quad-table { *@
+@*         display: flex; *@
+@*         width: 100%; *@
+@*         height: 100%; *@
+@*         border-collapse: collapse; *@
+@*     } *@
+
+@*     .quad-side { *@
+@*         width: 70px; *@
+@*         /* Background color inherits from parent .quad-paper which has the color class */ *@
+@*         border-right: 1px solid var(--mud-palette-divider); *@
+@*         display: flex; *@
+@*         align-items: center; *@
+@*         justify-content: center; *@
+@*         writing-mode: vertical-rl; *@
+@*         transform: rotate(180deg); *@
+@*     } *@
+
+@*     /* Addresses the right and bottom print lines between quads */ *@
+@*     @@media print { *@
+@*         /* Target the main MudDropContainer */ *@
+@*         .mud-drop-container.d-flex.flex-column.flex-grow-1 *@
+
+@*     { *@
+@*         background: white !important; *@
+@*         border: none !important; *@
+@*         outline: none !important; *@
+@*     } *@
+@*     /* Places a border on the right side */ *@
+@*     .total-cell { *@
+@*         border-right: 1px solid #ddd !important; *@
+@*     } *@
+
+@*     } *@
+
+@*     /* Vertical Quad1, Quad 2 identifier */ *@
+@*     .quad-identifier { *@
+@*         font-size: 24px; *@
+@*         font-weight: bold; *@
+@*         text-align: center; *@
+@*         height: 100%; *@
+@*         width: 100%; *@
+@*         display: flex; *@
+@*         align-items: center; *@
+@*         justify-content: center; *@
+@*         color: var(--mud-palette-text-primary); *@
+@*     } *@
+
+@*     .quad-main { *@
+@*         flex: 1; *@
+@*     } *@
+
+@*     /* Quad header */ *@
+@*     .quad-header { *@
+@*         display: flex; *@
+@*         border-bottom: 1px solid var(--mud-palette-divider); *@
+@*         background-color: var(--mud-palette-surface); *@
+@*     } *@
+
+@*     /* Cells for Player Rd1 Rd2, Rd3, Total */ *@
+@*     .quad-header-cell { *@
+@*         flex: 1; *@
+@*         padding: 8px; *@
+@*         text-align: center; *@
+@*         font-weight: bold; *@
+@*         border-right: 1px solid var(--mud-palette-divider); *@
+@*         display: flex; *@
+@*         align-items: center; *@
+@*         justify-content: center; *@
+@*     } *@
+
+@*     /* Adds formatting for cells for Player, Rd1, Rd2, Rd3, Total */ *@
+@*     .player-header { *@
+@*         flex: 2.45; *@
+@*     } *@
+
+@*     /* Quad dropzone */ *@
+@*     .quad-dropzone { *@
+@*         min-height: 400px; *@
+@*         background-color: var(--mud-palette-background-grey); *@
+@*     } *@
+
+@*     /* Player row in quad - this is each player row in a quad */ *@
+@*     .quad-player-row { *@
+@*         display: flex; *@
+@*         border-bottom: 1px solid var(--mud-palette-divider); *@
+@*         background-color: var(--mud-palette-surface); *@
+@*     } *@
+
+@*     .player-cell { *@
+@*         flex: 2; *@
+@*         padding: 8px; *@
+@*         border-right: 1px solid #ddd; *@
+@*         display: flex; *@
+@*         flex-direction: column; *@
+@*     } *@
+
+@*     .player-position { *@
+@*         font-size: 18px; *@
+@*         font-weight: bold; *@
+@*         margin-right: 8px; *@
+@*         color: #666; *@
+@*     } *@
+
+@*     .player-name { *@
+@*         font-size: 18px; *@
+@*         font-weight: bold; *@
+@*         color: #666; *@
+@*     } *@
+
+@*     .player-rating { *@
+@*         font-size: 16px; *@
+@*         color: #333; *@
+@*     } *@
+
+@*     /* Adds a border around score cells */ *@
+@*     .round-cell { *@
+@*         flex: 1; *@
+@*         display: flex; *@
+@*         flex-direction: column; *@
+@*         border-right: 1px solid #ddd; *@
+@*         margin: 0; *@
+@*     } *@
+
+@*     .opponent { *@
+@*         padding: 4px; *@
+@*         text-align: center; *@
+@*         border-bottom: 1px solid #eee; *@
+@*         color: #666; *@
+@*     } *@
+
+@*     /* Under score TBL 1 TBL 2 etc */ *@
+@*     .table-number { *@
+@*         padding: 4px; *@
+@*         text-align: center; *@
+@*         border-top: 1px solid #eee; *@
+@*         color: #666; *@
+@*     } *@
+
+@*     /* The Total Cells alignment */ *@
+@*     .total-cell { *@
+@*         flex: 1; *@
+@*         display: flex; *@
+@*         flex-direction: column; *@
+@*         align-items: center; *@
+@*         justify-content: center; *@
+@*         position: relative; *@
+@*     } *@
+
+@*     .total-score { *@
+@*         font-size: 32px; *@
+@*         font-weight: bold; *@
+@*         color: #666; *@
+@*     } *@
+
+@*     .remove-btn { *@
+@*         position: absolute; *@
+@*         top: 4px; *@
+@*         right: 4px; *@
+@*     } *@
+
+@*     /* Unassigned players section */ *@
+@*     .unassigned-header { *@
+@*         background-color: #f0f0f0; *@
+@*         padding: 8px; *@
+@*         border-bottom: 1px solid #ddd; *@
+@*     } *@
+
+@*     .unassigned-dropzone { *@
+@*         min-height: 400px; *@
+@*         padding: 8px; *@
+@*         overflow-y: auto; *@
+@*     } *@
+
+@*     .player-card { *@
+@*         display: flex; *@
+@*         align-items: center; *@
+@*         margin-bottom: 8px; *@
+@*         padding: 6px; *@
+@*         background-color: #fff; *@
+@*         border: 1px solid #ddd; *@
+@*         border-radius: 4px; *@
+@*         width: 100%; *@
+@*         font-size: 14px; *@
+@*     } *@
+
+@*     .player-number { *@
+@*         font-size: 20px; *@
+@*         font-weight: bold; *@
+@*         margin-right: 16px; *@
+@*         min-width: 24px; *@
+@*         text-align: center; *@
+@*     } *@
+
+@*     .player-info { *@
+@*         flex-grow: 1; *@
+@*     } *@
+
+@*     /* Pagination styles */ *@
+@*     .pagination-controls { *@
+@*         margin-bottom: 12px; *@
+@*         display: flex; *@
+@*         align-items: center; *@
+@*     } *@
+
+@*     .mud-pagination { *@
+@*         margin-right: 16px; *@
+@*     } *@
+
+@*     /* Theme color classes for quads - ORIGINAL MUDBLAZOR COLORS */ *@
+@*     /* Primary color */ *@
+@*     .quad-paper.mud-paper.quad-color-primary { *@
+@*         background-color: var(--mud-palette-primary-lighten) !important; *@
+@*     } *@
+
+@*         .quad-paper.mud-paper.quad-color-primary .quad-side { *@
+@*             background-color: var(--mud-palette-primary-lighten) !important; *@
+@*         } *@
+
+@*         .quad-paper.mud-paper.quad-color-primary .score-cell { *@
+@*             background-color: var(--mud-palette-primary-lighten) !important; *@
+@*         } *@
+
+@*     /* Secondary color */ *@
+@*     .quad-paper.mud-paper.quad-color-secondary { *@
+@*         background-color: var(--mud-palette-secondary-lighten) !important; *@
+@*     } *@
+
+@*         .quad-paper.mud-paper.quad-color-secondary .quad-side { *@
+@*             background-color: var(--mud-palette-secondary-lighten) !important; *@
+@*         } *@
+
+@*         .quad-paper.mud-paper.quad-color-secondary .score-cell { *@
+@*             background-color: var(--mud-palette-secondary-lighten) !important; *@
+@*         } *@
+
+@*     /* Info color */ *@
+@*     .quad-paper.mud-paper.quad-color-info { *@
+@*         background-color: var(--mud-palette-info-lighten) !important; *@
+@*     } *@
+
+@*         .quad-paper.mud-paper.quad-color-info .quad-side { *@
+@*             background-color: var(--mud-palette-info-lighten) !important; *@
+@*         } *@
+
+@*         .quad-paper.mud-paper.quad-color-info .score-cell { *@
+@*             background-color: var(--mud-palette-info-lighten) !important; *@
+@*         } *@
+
+@*     /* Success color */ *@
+@*     .quad-paper.mud-paper.quad-color-success { *@
+@*         background-color: var(--mud-palette-success-lighten) !important; *@
+@*     } *@
+
+@*         .quad-paper.mud-paper.quad-color-success .quad-side { *@
+@*             background-color: var(--mud-palette-success-lighten) !important; *@
+@*         } *@
+
+@*         .quad-paper.mud-paper.quad-color-success .score-cell { *@
+@*             background-color: var(--mud-palette-success-lighten) !important; *@
+@*         } *@
+
+@*     /* Warning color */ *@
+@*     .quad-paper.mud-paper.quad-color-warning { *@
+@*         background-color: var(--mud-palette-warning-lighten) !important; *@
+@*     } *@
+
+@*         .quad-paper.mud-paper.quad-color-warning .quad-side { *@
+@*             background-color: var(--mud-palette-warning-lighten) !important; *@
+@*         } *@
+
+@*         .quad-paper.mud-paper.quad-color-warning .score-cell { *@
+@*             background-color: var(--mud-palette-warning-lighten) !important; *@
+@*         } *@
+
+@*     /* Surface color */ *@
+@*     .quad-paper.mud-paper.quad-color-surface { *@
+@*         background-color: var(--mud-palette-surface) !important; *@
+@*     } *@
+
+@*         .quad-paper.mud-paper.quad-color-surface .quad-side { *@
+@*             background-color: var(--mud-palette-surface) !important; *@
+@*         } *@
+
+@*         .quad-paper.mud-paper.quad-color-surface .score-cell { *@
+@*             background-color: var(--mud-palette-surface) !important; *@
+@*         } *@
+
+@*     /* Original colors */ *@
+@*     .quad-paper.mud-paper.quad-color-yellow { *@
+@*         background-color: #ffffcc !important; *@
+@*     } *@
+
+@*         .quad-paper.mud-paper.quad-color-yellow .quad-side { *@
+@*             background-color: #ffffcc !important; *@
+@*         } *@
+
+@*         .quad-paper.mud-paper.quad-color-yellow .score-cell { *@
+@*             background-color: #ffffcc !important; *@
+@*         } *@
+
+@*     .quad-paper.mud-paper.quad-color-blue { *@
+@*         background-color: #e6f7ff !important; *@
+@*     } *@
+
+@*         .quad-paper.mud-paper.quad-color-blue .quad-side { *@
+@*             background-color: #e6f7ff !important; *@
+@*         } *@
+
+@*         .quad-paper.mud-paper.quad-color-blue .score-cell { *@
+@*             background-color: #e6f7ff !important; *@
+@*         } *@
+@* </style> *@
+
+
 <style>
+    /* Score cell styling */
     .score-cell {
         padding: 4px !important;
         text-align: center;
@@ -186,6 +630,7 @@
     .score-select {
         width: 100%;
         max-width: 90px;
+        flex-shrink: 0; /* Prevent shrinking that affects alignment */
     }
 
         .score-select .mud-input-slot {
@@ -201,6 +646,7 @@
     .score-cell .mud-select {
         flex: none;
     }
+
     /* Ensure dropdown panel appears above other elements */
     .mud-popover {
         z-index: 9999;
@@ -315,6 +761,12 @@
         transform: rotate(180deg);
     }
 
+    /* SOLUTION 1: Fix quad-main to account for the 70px side column */
+    .quad-main {
+        flex: 1;
+        width: calc(100% - 70px); /* Account for quad-side */
+    }
+
     /* Addresses the right and bottom print lines between quads */
     @@media print {
         /* Target the main MudDropContainer */
@@ -345,32 +797,48 @@
         color: var(--mud-palette-text-primary);
     }
 
-    .quad-main {
-        flex: 1;
+    /* SOLUTION 1: Force both header and data rows to use full available width in quad-main */
+    .quad-header,
+    .quad-player-row {
+        width: 100%; /* Use full available width in quad-main */
+        display: flex;
+        line-height: 1.2; /* Consistent line height */
     }
 
     /* Quad header */
     .quad-header {
-        display: flex;
         border-bottom: 1px solid var(--mud-palette-divider);
         background-color: var(--mud-palette-surface);
+    }
+
+    /* Ensure consistent border width and box-sizing across all elements */
+    .quad-header-cell,
+    .player-cell,
+    .round-cell,
+    .total-cell {
+        border-right: 1px solid #ddd; /* Consistent border */
+        box-sizing: border-box; /* Include borders in width calculation */
+        min-width: 0; /* Prevents flex items from overflowing */
+        word-wrap: break-word; /* Handle long content gracefully */
+        margin: 0 !important;
+        padding: 8px !important;
     }
 
     /* Cells for Player Rd1 Rd2, Rd3, Total */
     .quad-header-cell {
         flex: 1;
-        padding: 8px;
         text-align: center;
         font-weight: bold;
-        border-right: 1px solid var(--mud-palette-divider);
         display: flex;
         align-items: center;
         justify-content: center;
+        width: auto !important; /* Remove width calculations that don't account for side column */
     }
 
-    /* Adds formatting for cells for Player, Rd1, Rd2, Rd3, Total */
+    /* Player header column - keep the 2.45 that aligns properly */
     .player-header {
         flex: 2.45;
+        width: auto !important; /* Remove the calc() that was causing issues */
     }
 
     /* Quad dropzone */
@@ -381,17 +849,15 @@
 
     /* Player row in quad - this is each player row in a quad */
     .quad-player-row {
-        display: flex;
         border-bottom: 1px solid var(--mud-palette-divider);
         background-color: var(--mud-palette-surface);
     }
 
     .player-cell {
-        flex: 2;
-        padding: 8px;
-        border-right: 1px solid #ddd;
+        flex: 2.45; /* Match the .player-header flex value */
         display: flex;
         flex-direction: column;
+        width: auto !important; /* Remove width calculations that don't account for side column */
     }
 
     .player-position {
@@ -414,11 +880,11 @@
 
     /* Adds a border around score cells */
     .round-cell {
-        flex: 1;
+        flex: 1; /* Match the header cells exactly */
         display: flex;
         flex-direction: column;
-        border-right: 1px solid #ddd;
         margin: 0;
+        width: auto !important; /* Remove width calculations that don't account for side column */
     }
 
     .opponent {
@@ -438,12 +904,13 @@
 
     /* The Total Cells alignment */
     .total-cell {
-        flex: 1;
+        flex: 1; /* Match the header cells exactly */
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         position: relative;
+        width: auto !important; /* Remove width calculations that don't account for side column */
     }
 
     .total-score {
@@ -504,6 +971,25 @@
 
     .mud-pagination {
         margin-right: 16px;
+    }
+
+    /* Responsive alignment adjustments */
+    @@media (max-width: 768px) {
+        /* Maintain proportions on smaller screens */
+        .player-header, .player-cell
+
+    {
+        flex: 2.45;
+        min-width: 120px; /* Ensure minimum readable width */
+    }
+
+    .quad-header-cell,
+    .round-cell,
+    .total-cell {
+        flex: 1;
+        min-width: 80px; /* Ensure minimum readable width */
+    }
+
     }
 
     /* Theme color classes for quads - ORIGINAL MUDBLAZOR COLORS */
@@ -610,6 +1096,8 @@
             background-color: #e6f7ff !important;
         }
 </style>
+
+
 
 @code {
     [Parameter] public int TournamentId { get; set; }

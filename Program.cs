@@ -8,8 +8,14 @@ using QuadMasterApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure database path for different environments
+var dbPath = builder.Environment.IsDevelopment() 
+    ? "tournament.db" 
+    : Path.Combine("/tmp", "tournament.db");
+
+// Single DbContext registration
 builder.Services.AddDbContext<TournamentContext>(options =>
-    options.UseSqlite("Data Source = tournament.db"));
+    options.UseSqlite($"Data Source={dbPath}"));
 
 builder.Services.AddScoped<DatabaseSeeder>();
 
@@ -28,25 +34,36 @@ builder.Services.AddRazorComponents()
 // Register your other services
 builder.Services.AddSingleton<AppStateService>();
 
-// Add database context
-builder.Services.AddDbContext<TournamentContext>(options =>
-    options.UseSqlite("Data Source=tournament.db"));
+// Configure data protection for different environments
+var dataProtectionPath = builder.Environment.IsDevelopment() 
+    ? Path.Combine(Directory.GetCurrentDirectory(), "keys")
+    : "/tmp/keys";
 
-// Add data protection configuration
+// Ensure the directory exists
+Directory.CreateDirectory(dataProtectionPath);
+
 builder.Services.AddDataProtection()
     .SetApplicationName("quad-master-app")
-    .PersistKeysToFileSystem(new DirectoryInfo("/app/keys"))
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionPath))
     .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
 
 var app = builder.Build();
 
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
-// Get database reset configuration from appsettings.json
-var resetDatabase = builder.Configuration.GetValue<bool>("DatabaseOptions:ResetOnStartup");
+try
+{
+    // Get database reset configuration from appsettings.json
+    var resetDatabase = builder.Configuration.GetValue<bool>("DatabaseOptions:ResetOnStartup");
 
-// Initialize the database with the configuration setting
-await app.Services.InitializeDatabaseAsync(logger, resetDatabase);
+    // Initialize the database with the configuration setting
+    await app.Services.InitializeDatabaseAsync(logger, resetDatabase);
+}
+catch (Exception ex)
+{
+    logger.LogError(ex, "Failed to initialize database during startup");
+    // Don't crash the app, but log the error for debugging
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

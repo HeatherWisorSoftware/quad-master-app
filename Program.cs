@@ -11,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Configure database path for different environments
 var dbPath = builder.Environment.IsDevelopment() 
     ? "tournament.db" 
-    : Path.Combine("/tmp", "tournament.db");
+    : Path.Combine("/app", "tournament.db");
 
 // Single DbContext registration
 builder.Services.AddDbContext<TournamentContext>(options =>

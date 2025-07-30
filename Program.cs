@@ -84,8 +84,6 @@ if (!app.Environment.IsDevelopment())
     // Only use HTTPS redirection in development
     logger.LogInformation("Before UseHsts");
     app.UseHsts();
-    logger.LogInformation("Before UseHttpsRedirection");
-    app.UseHttpsRedirection();
 
 }
 

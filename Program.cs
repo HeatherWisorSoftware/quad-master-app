@@ -41,9 +41,9 @@ builder.Services.AddSingleton<IThemeProvider>(provider =>
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
- 
+
 // Register your other services
-builder.Services.AddSingleton<AppStateService>();
+builder.Services.AddScoped<AppStateService>();
 
 if (builder.Environment.IsDevelopment())
 {

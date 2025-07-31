@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
+using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor;
 using MudBlazor.Services;
@@ -13,16 +15,13 @@ var dbPath = builder.Environment.IsDevelopment()
     ? "tournament.db" 
     : Path.Combine("/app", "tournament.db");
 
-// Single DbContext registration
 builder.Services.AddDbContext<TournamentContext>(options =>
-    options.UseSqlite($"Data Source={dbPath}"));
+    options.UseSqlite($"Data Source={dbPath}")
+           .EnableSensitiveDataLogging() // Log SQLite errors
+           .EnableDetailedErrors());
 
 builder.Services.AddScoped<DatabaseSeeder>();
-
-// Add MudBlazor services
 builder.Services.AddMudServices();
-
-// Register ThemeProvider with factory
 builder.Services.AddSingleton<IThemeProvider>(provider =>
     new ThemeProvider(new MudTheme(), false));
 
@@ -35,34 +34,47 @@ builder.Services.AddRazorComponents()
 builder.Services.AddSingleton<AppStateService>();
 
 // Configure data protection for different environments
-var dataProtectionPath = builder.Environment.IsDevelopment() 
-    ? Path.Combine(Directory.GetCurrentDirectory(), "keys")
-    : "/tmp/keys";
-
-// Ensure the directory exists
-Directory.CreateDirectory(dataProtectionPath);
-
-builder.Services.AddDataProtection()
-    .SetApplicationName("quad-master-app")
-    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionPath))
-    .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
-
+var dataProtectionKey = Environment.GetEnvironmentVariable("DataProtection__Key");
+if (!string.IsNullOrEmpty(dataProtectionKey))
+{
+    builder.Services.AddDataProtection()
+        .SetApplicationName("quad-master-app")
+        .UseCryptographicAlgorithms(new AuthenticatedEncryptorConfiguration
+        {
+            EncryptionAlgorithm = EncryptionAlgorithm.AES_256_CBC,
+            ValidationAlgorithm = ValidationAlgorithm.HMACSHA256
+        })
+        .SetDefaultKeyLifetime(TimeSpan.FromDays(365));
+}
+else
+{
+    var dataProtectionPath = builder.Environment.IsDevelopment()
+        ? Path.Combine(Directory.GetCurrentDirectory(), "keys")
+        : "/app/keys";
+    Directory.CreateDirectory(dataProtectionPath);
+    builder.Services.AddDataProtection()
+        .SetApplicationName("quad-master-app")
+        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionPath))
+        .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
+}
 var app = builder.Build();
 
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
 try
 {
-    // Get database reset configuration from appsettings.json
-    var resetDatabase = builder.Configuration.GetValue<bool>("DatabaseOptions:ResetOnStartup");
-
-    // Initialize the database with the configuration setting
-    await app.Services.InitializeDatabaseAsync(logger, resetDatabase);
+    var resetDatabase = builder.Configuration.GetValue<bool>
+        ("DatabaseOptions:ResetOnStartup");
+        logger.LogInformation("Initializing database" +
+            " with ResetOnStartup: {ResetOnStartup}, " +
+            "Path: {DbPath}", resetDatabase, dbPath);
+        await app.Services.InitializeDatabaseAsync(logger, resetDatabase);
 }
 catch (Exception ex)
 {
     logger.LogError(ex, "Failed to initialize database during startup");
     // Don't crash the app, but log the error for debugging
+    throw;
 }
 
 // Configure the HTTP request pipeline.
@@ -80,11 +92,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseStaticFiles();
-//app.UseRouting();
+app.UseRouting();
 app.UseAntiforgery();
 app.MapStaticAssets();
-
-// Route to your Components
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

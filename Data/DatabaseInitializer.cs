@@ -36,23 +36,23 @@ namespace QuadMasterApp.Data
                                 await context.Database.EnsureCreatedAsync();
                                 logger.LogInformation("Database created successfully");
                             }
-                            else if (context.Database.GetPendingMigrations().Any())
-                            {
-                                logger.LogInformation("Applying pending migrations to existing database...");
-                                try
-                                {
-                                    await context.Database.MigrateAsync();
-                                    logger.LogInformation("Migrations applied successfully");
-                                }
-                                catch (Exception migrationEx)
-                                {
-                                    logger.LogError(migrationEx, "Error applying migrations. Recreating database from model...");
-                                    // If migrations fail, recreate the database
-                                    await context.Database.EnsureDeletedAsync();
-                                    await context.Database.EnsureCreatedAsync();
-                                    logger.LogInformation("Database recreated after migration failure");
-                                }
-                            }
+                            //else if (context.Database.GetPendingMigrations().Any())
+                            //{
+                            //    logger.LogInformation("Applying pending migrations to existing database...");
+                            //    try
+                            //    {
+                            //        await context.Database.MigrateAsync();
+                            //        logger.LogInformation("Migrations applied successfully");
+                            //    }
+                            //    catch (Exception migrationEx)
+                            //    {
+                            //        logger.LogError(migrationEx, "Error applying migrations. Recreating database from model...");
+                            //        // If migrations fail, recreate the database
+                            //        await context.Database.EnsureDeletedAsync();
+                            //        await context.Database.EnsureCreatedAsync();
+                            //        logger.LogInformation("Database recreated after migration failure");
+                            //    }
+                            //}
                             else
                             {
                                 // Database exists and no pending migrations

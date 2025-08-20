@@ -269,9 +269,9 @@
         }
     }
 
-    private void ManageTournament(int tournamentId)
+    private void ManageTournament(int name)
     {
-        NavigationManager.NavigateTo($"/QuadsPage/{tournamentId}/Quads");
+        NavigationManager.NavigateTo($"/EditTournamentDetails{name}");
     }
 
     private void ReturnToList()

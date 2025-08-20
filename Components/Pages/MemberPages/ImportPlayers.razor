@@ -1004,7 +1004,7 @@
     // Phone number validation method
     private bool IsValidPhoneNumber(string phoneNumber, out string standardizedPhone)
     {
-        standardizedPhone = null;
+        standardizedPhone = string.Empty;
 
         if (string.IsNullOrWhiteSpace(phoneNumber))
             return false;

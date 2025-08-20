@@ -125,7 +125,7 @@
     [Parameter]
     public int PlayerId { get; set; }
 
-    private Player Player { get; set; }
+    private Player? Player { get; set; }
     private List<TournamentPlayer> PlayerTournaments { get; set; } = new();
     private bool IsLoading { get; set; } = true;
     private int AssignedToQuads => PlayerTournaments.Count(tp => tp.QuadId.HasValue && tp.Quad != null);

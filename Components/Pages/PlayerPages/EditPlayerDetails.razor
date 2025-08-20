@@ -203,7 +203,7 @@
     [Parameter]
     public int Id { get; set; }
 
-    private Tournament Tournament { get; set; }
+    private Tournament? Tournament { get; set; }
     private List<TournamentPlayer> TournamentPlayers { get; set; } = new();
     private List<Player> AvailablePlayers { get; set; } = new();
     private bool IsLoading { get; set; } = true;

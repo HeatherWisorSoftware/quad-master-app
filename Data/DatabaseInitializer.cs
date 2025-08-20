@@ -36,27 +36,34 @@ namespace QuadMasterApp.Data
                                 await context.Database.EnsureCreatedAsync();
                                 logger.LogInformation("Database created successfully");
                             }
-                            //else if (context.Database.GetPendingMigrations().Any())
-                            //{
-                            //    logger.LogInformation("Applying pending migrations to existing database...");
-                            //    try
-                            //    {
-                            //        await context.Database.MigrateAsync();
-                            //        logger.LogInformation("Migrations applied successfully");
-                            //    }
-                            //    catch (Exception migrationEx)
-                            //    {
-                            //        logger.LogError(migrationEx, "Error applying migrations. Recreating database from model...");
-                            //        // If migrations fail, recreate the database
-                            //        await context.Database.EnsureDeletedAsync();
-                            //        await context.Database.EnsureCreatedAsync();
-                            //        logger.LogInformation("Database recreated after migration failure");
-                            //    }
-                            //}
-                            else
+                            else 
                             {
-                                // Database exists and no pending migrations
-                                logger.LogInformation("Database exists and is up to date");
+                                // Database exists, but let's verify the schema is complete
+                                try
+                                {
+                                    // Test if we can query the Players table (this will fail if table doesn't exist)
+                                    var playerCount = await context.Players.CountAsync();
+                                    logger.LogInformation($"Database schema verified. Found {playerCount} players.");
+                                    
+                                    // Check for pending migrations
+                                    if (context.Database.GetPendingMigrations().Any())
+                                    {
+                                        logger.LogInformation("Applying pending migrations to existing database...");
+                                        await context.Database.MigrateAsync();
+                                        logger.LogInformation("Migrations applied successfully");
+                                    }
+                                    else
+                                    {
+                                        logger.LogInformation("Database exists and is up to date");
+                                    }
+                                }
+                                catch (Exception schemaEx)
+                                {
+                                    logger.LogWarning(schemaEx, "Database exists but schema is incomplete or corrupted. Recreating...");
+                                    await context.Database.EnsureDeletedAsync();
+                                    await context.Database.EnsureCreatedAsync();
+                                    logger.LogInformation("Database recreated due to schema issues");
+                                }
                             }
                         }
                         catch (Exception dbEx)
@@ -64,6 +71,7 @@ namespace QuadMasterApp.Data
                             logger.LogError(dbEx, "Error checking database status. Attempting to create new database...");
                             try
                             {
+                                await context.Database.EnsureDeletedAsync();
                                 await context.Database.EnsureCreatedAsync();
                                 logger.LogInformation("Database created after connection error");
                             }
@@ -85,7 +93,7 @@ namespace QuadMasterApp.Data
                     catch (Exception seedEx)
                     {
                         logger.LogError(seedEx, "Error during database seeding");
-                        // Don't fail startup for seeding errors
+                        // Don't fail startup for seeding errors, but log them
                     }
                 }
             }

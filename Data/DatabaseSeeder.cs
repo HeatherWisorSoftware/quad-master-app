@@ -20,26 +20,60 @@ namespace QuadMasterApp.Data
 
         public async Task SeedDatabaseAsync()
         {
-            // Only seed if the database is empty
-            if (!_context.Players.Any() && !_context.Tournaments.Any())
+            try
             {
-                // Seed players
-                await SeedPlayersAsync();
+                // Verify tables exist before attempting to query them
+                var hasPlayers = false;
+                var hasTournaments = false;
 
-                // Seed tournaments
-                await SeedTournamentsAsync();
+                try
+                {
+                    hasPlayers = await _context.Players.AnyAsync();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error checking Players table: {ex.Message}");
+                    return; // Exit if we can't access the Players table
+                }
 
-                // Seed tournament players
-                await SeedTournamentPlayersAsync();
+                try
+                {
+                    hasTournaments = await _context.Tournaments.AnyAsync();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error checking Tournaments table: {ex.Message}");
+                    return; // Exit if we can't access the Tournaments table
+                }
 
-                // Seed quads for some tournaments
-                await SeedQuadsAsync();
+                // Only seed if the database is empty
+                if (!hasPlayers && !hasTournaments)
+                {
+                    Console.WriteLine("Database is empty. Starting seeding process...");
+                    
+                    // Seed players
+                    await SeedPlayersAsync();
 
-                Console.WriteLine("Database seeding completed successfully!");
+                    // Seed tournaments
+                    await SeedTournamentsAsync();
+
+                    // Seed tournament players
+                    await SeedTournamentPlayersAsync();
+
+                    // Seed quads for some tournaments
+                    await SeedQuadsAsync();
+
+                    Console.WriteLine("Database seeding completed successfully!");
+                }
+                else
+                {
+                    Console.WriteLine($"Database already contains data. Players: {hasPlayers}, Tournaments: {hasTournaments}. Skipping seeding process.");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine("Database already contains data. Skipping seeding process.");
+                Console.WriteLine($"Error during database seeding: {ex.Message}");
+                throw; // Re-throw to let the caller handle it
             }
         }
 

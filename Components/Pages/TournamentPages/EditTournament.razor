@@ -1,0 +1,230 @@
+﻿@page "/EditTournament"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@inject TournamentContext DbContext
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Tournament Management</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h3" Class="mb-4" Style="color: var(--mud-palette-primary)">Tournaments</MudText>
+
+    @if (IsLoading)
+    {
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    }
+    else
+    {
+        <MudPaper Elevation="3" Class="pa-4">
+            <MudToolBar DisableGutters="true" Class="mb-4">
+                <MudText Typo="Typo.h6">Tournament List</MudText>
+                <MudSpacer />
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Href="/CreateTournament">
+                    Create Tournament
+                </MudButton>
+            </MudToolBar>
+
+            @if (!Tournaments.Any())
+            {
+                <MudAlert Severity="Severity.Info">No tournaments found. Click 'Create Tournament' to add a new one.</MudAlert>
+            }
+            else
+            {
+                <MudTable Items="@Tournaments"
+                          Hover="true"
+                          Striped="true"
+                          Bordered="false"
+                          Loading="@IsLoading"
+                          LoadingProgressColor="Color.Primary">
+                    <HeaderContent>
+                        <MudTh>
+                            <MudTableSortLabel SortBy="new Func<Tournament, object>(x => x.Name)">
+                                Name
+                            </MudTableSortLabel>
+                        </MudTh>
+                        <MudTh>
+                            <MudTableSortLabel SortBy="new Func<Tournament, object>(x => x.Date ?? DateTime.MinValue)">
+                                Date
+                            </MudTableSortLabel>
+                        </MudTh>
+                        <MudTh>
+                            <MudTableSortLabel SortBy="new Func<Tournament, object>(x => x.VenueName ?? string.Empty)">
+                                Venue
+                            </MudTableSortLabel>
+                        </MudTh>
+                        <MudTh>
+                            <MudTableSortLabel SortBy="new Func<Tournament, object>(x => x.City ?? string.Empty)">
+                                Location
+                            </MudTableSortLabel>
+                        </MudTh>
+                        <MudTh>
+                            <MudTableSortLabel SortBy="new Func<Tournament, object>(x => TournamentPlayerCounts.ContainsKey(x.Id) ? TournamentPlayerCounts[x.Id] : 0)">
+                                Players
+                            </MudTableSortLabel>
+                        </MudTh>
+                        <MudTh>Actions</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Name">@context.Name</MudTd>
+                        <MudTd DataLabel="Date">@(context.Date.HasValue ? context.Date.Value.ToShortDateString() : "Not set")</MudTd>
+                        <MudTd DataLabel="Venue">@context.VenueName</MudTd>
+                        <MudTd DataLabel="Location">@($"{context.City}, {context.State}")</MudTd>
+                        <MudTd DataLabel="Players">@(TournamentPlayerCounts.ContainsKey(context.Id) ? TournamentPlayerCounts[context.Id] : 0)</MudTd>
+                        <MudTd DataLabel="Actions">
+                            <MudButtonGroup Variant="Variant.Text" Size="Size.Small">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Color="Color.Primary"
+                                               Href="@($"/EditTournamentDetails{context.Id}")"
+                                               Title="Edit Tournament" />
+                                <MudIconButton Icon="@Icons.Material.Filled.People"
+                                               Color="Color.Secondary"
+                                               Href="@($"/EditPlayerDetails{context.Id}")"
+                                               Title="Manage Players" />
+                                <MudIconButton Icon="@Icons.Material.Filled.GridView"
+                                               Color="Color.Success"
+                                               Href="@($"/QuadsPage/{context.Id}")"
+                                               Title="View Quad" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Color="Color.Error"
+                                               OnClick="@(async () => await DeleteTournament(context))"
+                                               Title="Delete Tournament" />
+                            </MudButtonGroup>
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager />
+                    </PagerContent>
+                </MudTable>
+            }
+        </MudPaper>
+    }
+
+    <MudPaper Elevation="0" Class="pa-4 mt-4 d-flex justify-end">
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Primary"
+                   OnClick="ReturnToList"
+                   StartIcon="@Icons.Material.Filled.ArrowBack">
+            Back to Home
+        </MudButton>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<Tournament> Tournaments { get; set; } = new();
+    private Dictionary<int, int> TournamentPlayerCounts { get; set; } = new();
+    private bool IsLoading { get; set; } = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTournaments();
+    }
+
+    private void ReturnToList()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+
+    private async Task DeleteTournament(Tournament tournament)
+    {
+        try
+        {
+            // Check if any players are assigned to quads (business rule validation)
+            var playersInQuads = await DbContext.TournamentPlayers
+                .Where(tp => tp.TournamentId == tournament.Id && tp.QuadId != null)
+                .ToListAsync();
+
+            if (playersInQuads.Any())
+            {
+                Snackbar.Add("Cannot delete tournament with assigned quad players", Severity.Error);
+                return;
+            }
+
+            // Get all related data that needs to be deleted
+            var tournamentPlayers = await DbContext.TournamentPlayers
+                .Where(tp => tp.TournamentId == tournament.Id)
+                .ToListAsync();
+
+            var quads = await DbContext.Quads
+                .Where(q => q.TournamentId == tournament.Id)
+                .ToListAsync();
+
+            var quadIds = quads.Select(q => q.Id).ToList();
+            var quadMatches = await DbContext.QuadMatches
+                .Where(qm => quadIds.Contains(qm.QuadId))
+                .ToListAsync();
+
+            // Delete everything in the right order
+            if (quadMatches.Any())
+                DbContext.QuadMatches.RemoveRange(quadMatches);
+
+            if (quads.Any())
+                DbContext.Quads.RemoveRange(quads);
+
+            if (tournamentPlayers.Any())
+                DbContext.TournamentPlayers.RemoveRange(tournamentPlayers);
+
+            DbContext.Tournaments.Remove(tournament);
+            await DbContext.SaveChangesAsync();
+
+            Snackbar.Add($"Tournament '{tournament.Name}' deleted successfully!", Severity.Success);
+
+            // Refresh the list
+            await LoadTournaments();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error deleting tournament: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task LoadTournaments()
+    {
+        try
+        {
+            IsLoading = true;
+
+            // Load all tournaments
+            Tournaments = await DbContext.Tournaments.ToListAsync();
+
+            // Get player counts for each tournament
+            var playerCounts = await DbContext.TournamentPlayers
+                .GroupBy(tp => tp.TournamentId)
+                .Select(g => new { TournamentId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(g => g.TournamentId, g => g.Count);
+
+            TournamentPlayerCounts = playerCounts;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading tournaments: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            // Check if we need to force refresh based on query parameter
+            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+            var queryParams = QueryHelpers.ParseQuery(uri.Query);
+            if (queryParams.TryGetValue("reload", out var _))
+            {
+                await LoadTournaments();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error refreshing data: {ex.Message}", Severity.Error);
+        }
+
+        await base.OnParametersSetAsync();
+    }
+}

@@ -1,0 +1,173 @@
+﻿@media print {
+    /* Force color printing */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Page setup */
+    @page {
+        margin-top: .8in;
+        margin-bottom: 0.10in;
+        margin-left: .5in;
+        margin-right: .5in;
+        /* Try to hide headers/footers */
+        @top-left {content: "";}
+        @top-center {content: "";}
+        @top-right {content: "";}
+        @bottom-left {content: "";}
+        @bottom-center {content: "";}
+        @bottom-right {content: "";}
+    }
+
+    @page :first {
+        margin-top: 0.8in; /* Smaller top margin for first page */
+        margin-bottom: 0.10in;
+        margin-left: .5in;
+        margin-right: .5in;
+        @top-left {content: "";}
+        @top-center {content: "";}
+        @top-right {content: "";}
+        @bottom-left {content: "";}
+        @bottom-center {content: "";}
+        @bottom-right {content: "";}
+        
+    }
+    /* Hide navigation and interactive elements */
+    .mud-button,
+    .mud-icon-button,
+    .pagination-controls,
+    .unassigned-paper,
+    .unassigned-header,
+    .unassigned-dropzone,
+    .remove-btn,
+    .mud-appbar,
+    .mud-drawer,
+    .mud-drawer-container,
+    .navmenu,
+    .nav-menu,
+    .mud-expansion-panel,
+    .d-flex.flex-wrap.justify-content-between.mb-4,
+    .no-print {
+        display: none !important;
+    }
+
+    
+    /* Hide drag and drop functionality */
+    .mud-drop-container {
+        pointer-events: none !important;
+    }
+
+    .mud-dropzone {
+        background: transparent !important;
+        min-height: auto !important;
+    }
+
+    /* Tournament title */
+    h1 {
+        text-align: center;
+        font-size: 24px;
+        font-weight: bold;
+        margin: -50px 0 0 0;
+        color: black !important;
+        page-break-after: avoid;
+    }
+
+    /* Quad layout for print - full width, one per row */
+    .quad-paper {
+        width: 100% !important;
+        margin: 0px 0 20px 0 !important;
+        display: block !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+/*    .quad-paper:first-of-type {
+        margin-top: 20px !important;
+
+    }
+
+    .quad-paper:not(:first-of-type){
+        margin-top: 20px !important;
+    }*/
+
+        /* Page break after every 2 quads */
+        /*.quad-paper:nth-child(2n) {
+            page-break-after: always;
+        }*/
+
+    /* Clean up MudTextField for print - remove borders but keep content */
+    .mud-input,
+    .mud-input-control,
+    .mud-textfield {
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        outline: none !important;
+        padding: 0 !important;
+    }
+
+        .mud-input-control input {
+            text-align: center !important;
+            font-weight: bold !important;
+            border: none !important;
+            background: transparent !important;
+            padding: 0 !important;
+        }
+
+    /* Remove MudBlazor shadows and effects */
+    .mud-paper {
+        box-shadow: none !important;
+    }
+
+    /* Hide any remaining interactive elements */
+    .mud-icon-button {
+        display: none !important;
+    }
+
+    /* Ensure page breaks work */
+    .quad-paper {
+        orphans: 3;
+        widows: 3;
+    }
+
+    /* Clean up backgrounds for print */
+    body {
+        background: white !important;
+    }
+
+    
+    
+    /* Force borders on MudDropContainer cells */
+    /*.mud-drop-container,
+    .mud-drop-container .mud-table-cell,
+    .mud-drop-container td,
+    .mud-drop-container th,
+    .mud-dropzone {
+        border: 1px solid #ccc !important;
+    }*/
+
+        /* deleting this to see if fix */
+/*        .mud-drop-container .mud-table .mud-table-cell {
+            border: 1px solid #ccc !important;
+        }*/
+    .mud-drop-container {
+        pointer-events: none !important;
+    }
+
+    .mud-dropzone {
+        background: transparent !important;
+        min-height: auto !important;
+    }
+    .mud-drop-container {
+        pointer-events: none !important;
+    }
+
+/*    .mud-dropzone {
+        background: transparent !important;
+        min-height: auto !important;
+        border: 1px solid #ccc !important;
+    }*/
+
+}

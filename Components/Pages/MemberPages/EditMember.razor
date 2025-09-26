@@ -1,0 +1,108 @@
+﻿@page "/MemberPages/EditMember/{PlayerId:int}"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@inject TournamentContext DbContext
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>@PageTitle</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudCard>
+        <MudCardHeader>
+            <MudText Typo="Typo.h4">@PageTitle</MudText>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudForm @ref="form" @bind-IsValid="@success">
+                <MudTextField T="string" Label="First Name" Required RequiredError="First name is required"
+                              @bind-Value="player.FirstName" />
+                <MudTextField T="string" Label="Last Name" Required RequiredError="Last name is required"
+                              @bind-Value="player.LastName" Class="mt-3" />
+                <MudTextField T="int" Label="Rating" Required RequiredError="Rating is required"
+                              @bind-Value="player.Ranking" Class="mt-3" />
+                <MudTextField T="int" Label="USCF ID" Required RequiredError="USCF ID is required"
+                              @bind-Value="player.UscfId" Class="mt-3" />
+                <MudTextField T="string" Label="Email" Required RequiredError="Email is required"
+                              @bind-Value="player.Email" Class="mt-3" InputType="InputType.Email" />
+            </MudForm>
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton Variant="Variant.Outlined" Color="Color.Secondary"
+                       OnClick="Cancel" Class="ml-auto">Cancel</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       OnClick="SavePlayer" Disabled="@(!success)" Class="ml-2">Save</MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>
+
+@code {
+    [Parameter]
+    public int PlayerId { get; set; }
+
+    private Player player = new Player();
+    private MudForm form;
+    private bool success;
+    private string PageTitle => PlayerId == 0 ? "Add New Player" : "Edit Player";
+    private bool IsLoading { get; set; } = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        IsLoading = true;
+
+        if (PlayerId != 0)
+        {
+            // Editing existing player
+            var existingPlayer = await DbContext.Players
+                .FirstOrDefaultAsync(p => p.Id == PlayerId);
+
+            if (existingPlayer != null)
+            {
+                player = existingPlayer;
+            }
+            else
+            {
+                Snackbar.Add("Player not found", Severity.Error);
+                NavigationManager.NavigateTo("/MemberPages/MemberView");
+            }
+        }
+        else
+        {
+            // Adding new player
+            player = new Player();
+        }
+
+        IsLoading = false;
+    }
+
+    private async Task SavePlayer()
+    {
+        try
+        {
+            if (PlayerId == 0)
+            {
+                // Add new player
+                DbContext.Players.Add(player);
+                await DbContext.SaveChangesAsync();
+                Snackbar.Add("Player added successfully", Severity.Success);
+            }
+            else
+            {
+                // Update existing player
+                DbContext.Players.Update(player);
+                await DbContext.SaveChangesAsync();
+                Snackbar.Add("Player updated successfully", Severity.Success);
+            }
+
+            NavigationManager.NavigateTo("/MemberPages/MemberView");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error saving player: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/MemberPages/MemberView");
+    }
+}

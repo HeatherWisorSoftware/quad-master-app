@@ -1,0 +1,211 @@
+﻿@page "/MemberPages/AddMember"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@inject TournamentContext DbContext
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Add New Player</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h3" Class="mb-4" Style="color: var(--mud-palette-primary)">Add New Member</MudText>
+
+    @if (!string.IsNullOrEmpty(ValidationErrors))
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-4">@ValidationErrors</MudAlert>
+    }
+
+    <MudPaper Elevation="3" Class="pa-4 mb-4">
+        <EditForm Model="@player" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudText Typo="Typo.h5" Class="mb-4">Player Details</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="First Name" @bind-Value="player.FirstName"
+                                  Required RequiredError="First name is required"
+                                  For="@(() => player.FirstName)" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Last Name" @bind-Value="player.LastName"
+                                  Required RequiredError="Last name is required"
+                                  For="@(() => player.LastName)" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField T="int" Label="Rating" @bind-Value="player.Ranking"
+                                  Required RequiredError="Rating is required"
+                                  For="@(() => player.Ranking)" />
+                </MudItem>
+                
+                <MudItem xs="12" md="6">
+                    <MudTextField T="int" Label="USCF ID" @bind-Value="player.UscfId"
+                                  Required RequiredError="USCF ID is required"
+                                  For="@(() => player.UscfId)" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Email Address"
+                                  @bind-Value="player.Email"
+                                  Required="true"
+                                  RequiredError="Email address is required"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Email"
+                                  AdornmentColor="Color.Primary"
+                                  Placeholder="name@example.com"
+                                  InputType="InputType.Email"
+                                  OnBlur="@ValidateEmailField" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Phone Number"
+                                  @bind-Value="player.Phone"
+                                  Required="true"
+                                  RequiredError="Phone number is required"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Phone"
+                                  AdornmentColor="Color.Primary"
+                                  Pattern="^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$"
+                                  PatternError="Please enter a valid phone number"
+                                  Placeholder="(555) 123-4567"
+                                  InputType="InputType.Telephone"
+                                  Immediate="true"
+                                  OnBlur="FormatPhoneNumber" />
+                </MudItem>
+
+                <MudItem xs="12" Class="d-flex justify-start mt-6">
+                    <MudButton ButtonType="ButtonType.Submit"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Size="Size.Large"
+                               Class="mr-4">
+                        Save Player
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+    </MudPaper>
+
+    @if (IsSaved)
+    {
+        <MudPaper Elevation="3" Class="pa-4 mt-4">
+            <MudText Typo="Typo.h5" Class="mb-4">Player Summary</MudText>
+
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudCard Elevation="2" Class="mb-4">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6" Color="Color.Primary">Player Details</MudText>
+                            </CardHeaderContent>
+                            <CardHeaderActions>
+                                <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Primary" />
+                            </CardHeaderActions>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudList T="string">
+                                <MudListItem>
+                                    <MudText><b>Name:</b> @player.FirstName @player.LastName</MudText>
+                                </MudListItem>
+                                <MudListItem>
+                                    <MudText><b>Rating:</b> @player.Ranking</MudText>
+                                </MudListItem>
+                                <MudListItem>
+                                    <MudText><b>Email:</b> @player.Email</MudText>
+                                </MudListItem>
+                            </MudList>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    }
+
+    <MudPaper Elevation="0" Class="pa-4 mt-4 d-flex justify-end">
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Primary"
+                   OnClick="ReturnToList"
+                   StartIcon="@Icons.Material.Filled.ArrowBack">
+            Back to Players
+        </MudButton>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private Player player = new Player();
+    private string ValidationErrors { get; set; } = string.Empty;
+    private bool IsSaved { get; set; } = false;
+
+    protected override void OnInitialized()
+    {
+        // Initialize a new player
+        player = new Player();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            // Add new player
+            DbContext.Players.Add(player);
+            await DbContext.SaveChangesAsync();
+
+            // Show success message
+            Snackbar.Add("Player added successfully", Severity.Success);
+            IsSaved = true;
+        }
+        catch (Exception ex)
+        {
+            ValidationErrors = $"Error saving player: {ex.Message}";
+            Snackbar.Add("Error saving player", Severity.Error);
+        }
+    }
+
+    private void FormatPhoneNumber(FocusEventArgs args)
+    {
+        if (string.IsNullOrWhiteSpace(player.Phone))
+            return;
+
+        // Remove any non-digit characters
+        string digitsOnly = new string(player.Phone.Where(char.IsDigit).ToArray());
+
+        // Format based on length
+        if (digitsOnly.Length == 10)
+        {
+            // Format as (XXX) XXX-XXXX
+            player.Phone = $"({digitsOnly.Substring(0, 3)}) {digitsOnly.Substring(3, 3)}-{digitsOnly.Substring(6)}";
+        }
+        else if (digitsOnly.Length > 10)
+        {
+            // Handle longer numbers (with country code, etc.)
+            string countryCode = digitsOnly.Substring(0, digitsOnly.Length - 10);
+            string areaCode = digitsOnly.Substring(digitsOnly.Length - 10, 3);
+            string prefix = digitsOnly.Substring(digitsOnly.Length - 7, 3);
+            string lineNumber = digitsOnly.Substring(digitsOnly.Length - 4);
+
+            player.Phone = $"+{countryCode} ({areaCode}) {prefix}-{lineNumber}";
+        }
+        // If less than 10 digits, leave as is
+    }
+    private void ValidateEmailField(FocusEventArgs args)
+    {
+        if (string.IsNullOrWhiteSpace(player.Email))
+            return;
+
+        // Check for the presence of @ and a domain ending
+        if (!player.Email.Contains('@') || !player.Email.Contains('.'))
+        {
+            // Show an error message using MudBlazor's Snackbar if you have it injected
+        }
+    }
+    private void ReturnToList()
+    {
+        NavigationManager.NavigateTo("/MemberPages/MemberView");
+    }
+}

@@ -1,0 +1,253 @@
+﻿@page "/PublicView/Index"
+@using Microsoft.AspNetCore.Components.Web
+@rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.EntityFrameworkCore
+@using QuadMasterApp.Data.Models
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@inject TournamentContext DbContext
+
+<PageTitle>QuadMaster - Chess Tournament Management App</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="pa-0" Style="overflow-x: hidden;">
+    <!-- Header Navigation -->
+    <MudAppBar Elevation="0" Color="Color.Transparent" Dense="false">
+        <MudStack Row="true" AlignItems="AlignItems.Center">
+            <MudAvatar Color="Color.Primary" Size="Size.Medium">QM</MudAvatar>
+            <MudText Typo="Typo.h6" Class="ml-2">QuadMaster</MudText>
+        </MudStack>
+        <MudSpacer />
+        <MudStack Row="true" Spacing="4">
+            <MudLink Href="/features" Underline="Underline.None" Color="Color.Dark">Features</MudLink>
+            <MudLink Href="/pricing" Underline="Underline.None" Color="Color.Dark">Pricing</MudLink>
+            <MudLink Href="/docs" Underline="Underline.None" Color="Color.Dark">Docs</MudLink>
+            <MudLink Href="/about" Underline="Underline.None" Color="Color.Dark">About</MudLink>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                       Class="rounded-pill ml-2" Href="/signin">Sign In</MudButton>
+            <MudIconButton Icon="@Icons.Material.Filled.DarkMode" Color="Color.Dark" />
+        </MudStack>
+    </MudAppBar>
+
+    <!-- Main Content Wrapper -->
+    <div class="position-relative">
+        <!-- Background diagonal split -->
+        <div class="diagonal-background"></div>
+
+        <!-- Main Content Grid -->
+        <MudGrid Class="pa-4 mt-16">
+            <MudItem xs="12" md="6" Class="d-flex flex-column justify-center">
+                <MudText Typo="Typo.h2" Color="Color.Dark" Style="font-weight: 700;">The Chess</MudText>
+                <MudText Typo="Typo.h2" Color="Color.Primary" Style="font-weight: 700;">Tournament</MudText>
+                <MudText Typo="Typo.h2" Color="Color.Dark" Style="font-weight: 700;">Management App</MudText>
+
+                <MudText Typo="Typo.body1" Class="mt-4" Style="font-size: 18px; line-height: 1.6;">
+                    With custom quads generation, player management,<br />
+                    and advanced tournament tracking, QuadMaster enables<br />
+                    chess clubs to run professional tournaments with ease.
+                </MudText>
+
+                <MudStack Row="true" Class="mt-8">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                               Href="/register">Get started</MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Large"
+                               Href="/demo">Try Demo</MudButton>
+                </MudStack>
+
+                <!-- Trial Badge -->
+                <MudPaper Elevation="0" Class="mt-8 pa-4" Style="background-color: var(--mud-palette-background-grey);">
+                    <MudStack Row="true" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.h6" Color="Color.Error">30-DAY FREE TRIAL</MudText>
+                        <MudText Class="ml-4">No credit card required to get started</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <!-- Device Mockup -->
+            <MudItem xs="12" md="6">
+                <div class="device-mockup">
+                    <div class="device-frame">
+                        <div class="device-status-bar">
+                            <span class="device-dot dot-red"></span>
+                            <span class="device-dot dot-yellow"></span>
+                            <span class="device-dot dot-green"></span>
+                        </div>
+
+                        <!-- App UI -->
+                        <div class="app-content">
+                            <!-- App Header -->
+                            <MudAppBar Color="Color.Primary" Elevation="0" Dense="true">
+                                <MudText Typo="Typo.h6">Tournament Dashboard</MudText>
+                            </MudAppBar>
+
+                            <!-- Tournament Stats Cards -->
+                            <MudGrid Class="pa-2 mt-2">
+                                <MudItem xs="6">
+                                    <MudCard Elevation="2" Class="rounded-lg h-100">
+                                        <MudCardHeader>
+                                            <CardHeaderContent>
+                                                <MudText Typo="Typo.subtitle2" Color="Color.Primary">Tournaments</MudText>
+                                            </CardHeaderContent>
+                                        </MudCardHeader>
+                                        <MudCardContent Class="pa-0">
+                                            <MudText Typo="Typo.h3" Align="Align.Center">12</MudText>
+                                        </MudCardContent>
+                                    </MudCard>
+                                </MudItem>
+
+                                <MudItem xs="6">
+                                    <MudCard Elevation="2" Class="rounded-lg h-100">
+                                        <MudCardHeader>
+                                            <CardHeaderContent>
+                                                <MudText Typo="Typo.subtitle2" Color="Color.Success">Players</MudText>
+                                            </CardHeaderContent>
+                                        </MudCardHeader>
+                                        <MudCardContent Class="pa-0">
+                                            <MudText Typo="Typo.h3" Align="Align.Center">48</MudText>
+                                        </MudCardContent>
+                                    </MudCard>
+                                </MudItem>
+                            </MudGrid>
+
+                            <!-- Quad Display -->
+                            <MudCard Elevation="1" Class="ma-2 mt-4">
+                                <MudCardHeader Style="background-color: rgba(216, 107, 107, 0.1);">
+                                    <MudText Typo="Typo.h6" Color="Color.Error">Quad #1</MudText>
+                                </MudCardHeader>
+                                <MudCardContent Class="pa-0">
+                                    <MudSimpleTable Hover="true" Dense="true" FixedHeader="true">
+                                        <thead>
+                                            <tr>
+                                                <th>Player</th>
+                                                <th>Rating</th>
+                                                <th>Score</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Smith, John</td>
+                                                <td>1850</td>
+                                                <td>3</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Lee, Sarah</td>
+                                                <td>1790</td>
+                                                <td>2</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Jones, Michael</td>
+                                                <td>1710</td>
+                                                <td>1</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Garcia, Ana</td>
+                                                <td>1680</td>
+                                                <td>0</td>
+                                            </tr>
+                                        </tbody>
+                                    </MudSimpleTable>
+                                </MudCardContent>
+                                <MudCardActions>
+                                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small">Add Player</MudButton>
+                                    <MudSpacer />
+                                    <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Small">Generate Quads</MudButton>
+                                </MudCardActions>
+                            </MudCard>
+
+                            <!-- Pagination Dots -->
+                            <div class="d-flex justify-center mt-2">
+                                <span class="pagination-dot dot-active"></span>
+                                <span class="pagination-dot"></span>
+                                <span class="pagination-dot"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Footer -->
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="text-center pt-8 pb-4">
+            <MudText Typo="Typo.body2" Color="Color.Dark" Style="opacity: 0.6;">
+                Trusted by chess clubs and tournaments worldwide
+            </MudText>
+        </MudContainer>
+    </div>
+</MudContainer>
+
+<style>
+    /* Diagonal Background */
+    .diagonal-background {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 60%;
+        background-image: linear-gradient(135deg, rgba(126, 111, 255, 0.8), rgba(126, 111, 255, 0.7));
+        clip-path: polygon(0 60%, 100% 0, 100% 100%, 0% 100%);
+        z-index: -1;
+    }
+
+    /* Device Mockup Styles */
+    .device-mockup {
+        width: 320px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    .device-frame {
+        border: 3px solid #e0e0e0;
+        border-radius: 20px;
+        overflow: hidden;
+        background-color: white;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .device-status-bar {
+        height: 30px;
+        background-color: #f0f0f3;
+        display: flex;
+        align-items: center;
+        padding: 0 15px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .device-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 5px;
+    }
+
+    .dot-red {
+        background-color: #D86B6B;
+    }
+
+    .dot-yellow {
+        background-color: #60BEAA;
+    }
+
+    .dot-green {
+        background-color: #e0e0e0;
+    }
+
+    .app-content {
+        height: 600px;
+        overflow-y: auto;
+    }
+
+    /* Pagination Dots */
+    .pagination-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #e0e0e0;
+        margin: 0 5px;
+        display: inline-block;
+    }
+
+    .dot-active {
+        background-color: var(--mud-palette-primary);
+    }
+</style>

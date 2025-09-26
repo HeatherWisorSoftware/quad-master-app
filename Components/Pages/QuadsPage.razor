@@ -1,0 +1,1700 @@
+﻿@page "/QuadsPage/{TournamentId:int}"
+@using Microsoft.EntityFrameworkCore
+@using QuadMasterApp.Services
+@inject NavigationManager NavigationManager
+@inject TournamentContext DbContext
+@inject IThemeProvider ThemeProvider
+@inject AppStateService AppState
+
+<HeadContent>
+    <link href="print-styles.css" rel="stylesheet" media="print" />
+</HeadContent>
+
+<h1>Tournament Quads: @ViewModel?.TournamentName</h1>
+
+<div class="d-flex flex-wrap justify-content-between mb-4">
+    <!-- Pagination Controls -->
+    <div class="pagination-controls d-flex align-items-center">
+        <MudPagination Variant="Variant.Outlined"
+        Count="@TotalPages"
+        SelectedChanged="OnPageChanged"
+        Selected="@CurrentPage"
+        Color="Color.Primary"
+        Size="Size.Medium"
+        Class="my-2" />
+
+        <MudText Typo="Typo.body2" Class="ml-4">
+            Group @CurrentPage of @TotalPages | Total Quads: @(ViewModel?.AllQuads?.Count ?? 0)
+        </MudText>
+    </div>
+
+    <div>
+        <MudButton Variant="Variant.Filled"
+        Color="Color.Primary"
+        OnClick="GenerateQuads"
+        Class="ml-2">
+            Generate Quads
+        </MudButton>
+
+        <MudButton Variant="Variant.Outlined"
+        Color="Color.Secondary"
+        OnClick="PrintPage"
+        StartIcon="@Icons.Material.Filled.Print"
+        Class="ml-2">
+            Print Tournament
+        </MudButton>
+    </div>
+</div>
+
+<div class="quad-container">
+    <MudDropContainer T="TournamentPlayer"
+    Items="@GetAllPlayersForDropContainer()"
+    ItemDropped="PlayerMoved"
+    Class="d-flex flex-column flex-grow-1">
+
+        <ChildContent>
+            <div class="d-flex">
+                <div class="quads-section">
+                    <div class="d-flex flex-wrap">
+                        @foreach (var quad in DisplayedQuads)
+                        {
+                            var quadColorClass = GetThemeColorClass(quad.Id);
+                            <MudPaper Class="@($"quad-paper ma-2 {quadColorClass}")" Elevation="3">
+                                <div class="quad-table">
+                                    <div class="quad-side">
+                                        <div class="quad-identifier">
+                                            <span>@quad.Title</span>
+                                        </div>
+                                    </div>
+                                    <div class="quad-main">
+                                        <div class="quad-header">
+                                            <div class="quad-header-cell player-header">Player</div>
+                                            <div class="quad-header-cell">Rd 1</div>
+                                            <div class="quad-header-cell">Rd 2</div>
+                                            <div class="quad-header-cell">Rd 3</div>
+                                            <div class="quad-header-cell">Total</div>
+                                        </div>
+
+                                        <MudDropZone T="TournamentPlayer"
+                                        Identifier="@quad.Id.ToString()"
+                                        ItemsSelector="@(p => p.QuadId == quad.Id)"
+                                        AllowReorder="true"
+                                        Class="quad-dropzone" />
+                                    </div>
+                                </div>
+                            </MudPaper>
+                        }
+                    </div>
+                </div>
+
+                <div>
+                    <MudPaper Class="unassigned-paper ma-2" Elevation="2">
+                        <div class="unassigned-header">
+                            <h3 class="text-center">Unassigned Players</h3>
+                        </div>
+                        <MudDropZone T="TournamentPlayer"
+                        Identifier="unassigned"
+                        ItemsSelector="@(p => !p.QuadId.HasValue)"
+                        AllowReorder="true"
+                        Class="unassigned-dropzone" />
+                    </MudPaper>
+
+                    <div class="p-3 border-top">
+                        <MudButton Variant="Variant.Outlined"
+                        Class="mt-2"
+                        Color="Color.Secondary"
+                        OnClick="ResetAllPlayers"
+                        StartIcon="@Icons.Material.Filled.RestartAlt"
+                        FullWidth="true">
+                            Reset All Players
+                        </MudButton>
+                    </div>
+                </div>
+            </div>
+        </ChildContent>
+
+        <ItemRenderer>
+            @if (context.QuadId.HasValue)
+            {
+                <div class="quad-player-row">
+                    <div class="player-cell">
+                        <div class="player-position">@GetPlayerPositionInTable(context)</div>
+                        <div class="player-name">@context.Player.LastName @context.Player.FirstName</div>
+                        <div class="player-rating">@context.Player.Ranking</div>
+                    </div>
+
+                    @foreach (var round in new[] { 1, 2, 3 })
+                    {
+                        <div class="round-cell">
+                            <div class="opponent">@GetOpponentText(context, round)</div>
+                            <div class="score-cell">
+                                <MudSelect T="string"
+                                Class="score-select"
+                                Value="@GetPlayerScore(context, round)"
+                                ValueChanged="@(async (string value) => await SaveScore(context, round, value))"
+                                Variant="Variant.Outlined"
+                                Margin="Margin.Dense"
+                                Dense="true"
+                                Placeholder="score">
+                                    <MudSelectItem Value="@("")">-</MudSelectItem>
+                                    <MudSelectItem Value="@("0")">Loss</MudSelectItem>
+                                    <MudSelectItem Value="@("0.5")">Draw</MudSelectItem>
+                                    <MudSelectItem Value="@("1")">Win</MudSelectItem>
+                                </MudSelect>
+                            </div>
+                            <div class="table-number">TBL @GetTableNumber(context, round)</div>
+                        </div>
+                    }
+
+                    <div class="total-cell">
+                        <span class="total-score">@GetTotalScore(context)</span>
+                        <MudIconButton Icon="@Icons.Material.Filled.Close"
+                        Size="Size.Small"
+                        Class="remove-btn"
+                        OnClick="@(() => RemovePlayer(context))" />
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="player-card unassigned">
+                    <div class="player-info">
+                        <div class="player-name">@context.Player.LastName @context.Player.FirstName</div>
+                        <div class="player-rating">@context.Player.Ranking</div>
+                    </div>
+                </div>
+            }
+        </ItemRenderer>
+    </MudDropContainer>
+</div>
+
+
+@* <style> *@
+@*     .score-cell { *@
+@*         padding: 4px !important; *@
+@*         text-align: center; *@
+@*         font-size: 18px; *@
+@*         font-weight: bold; *@
+@*         background-color: inherit; *@
+@*         height: 40px; *@
+@*         display: flex; *@
+@*         align-items: center; *@
+@*         justify-items: center; *@
+@*         justify-content: center; *@
+@*     } *@
+
+@*     .score-select { *@
+@*         width: 100%; *@
+@*         max-width: 90px; *@
+@*     } *@
+
+@*         .score-select .mud-input-slot { *@
+@*             text-align: center; *@
+@*         } *@
+
+@*         .score-select .mud-input { *@
+@*             text-align: center; *@
+@*             font-weight: bold; *@
+@*             font-size: 14px; *@
+@*         } *@
+
+@*     .score-cell .mud-select { *@
+@*         flex: none; *@
+@*     } *@
+@*     /* Ensure dropdown panel appears above other elements */ *@
+@*     .mud-popover { *@
+@*         z-index: 9999; *@
+@*     } *@
+
+@*     /* Mobile-friendly adjustments */ *@
+@*     @@media (max-width: 768px) { *@
+@*         .score-select *@
+
+@*     { *@
+@*         max-width: 80px; *@
+@*     } *@
+
+@*     .score-select .mud-input { *@
+@*         font-size: 16px; /* Prevents zoom on iOS */ *@
+@*     } *@
+
+@*     .score-cell { *@
+@*         padding: 2px !important; *@
+@*     } *@
+
+@*     } *@
+
+@*     .quad-container { *@
+@*         width: 100%; *@
+@*     } *@
+
+@*     /* Layout for side-by-side display */ *@
+@*     .quads-section { *@
+@*         flex: 4; *@
+@*         background: #fff; *@
+@*     } *@
+
+@*     /* Formatting for the Unassigned Players section */ *@
+@*     .unassigned-paper { *@
+@*         flex: 1; *@
+@*         min-width: 220px; *@
+@*         max-width: 300px; *@
+@*         height: fit-content; *@
+@*         margin-top: 0 !important; *@
+@*     } *@
+
+@*     .quad-paper { *@
+@*         width: 48%; *@
+@*         margin: 0 1% 16px 1%; *@
+@*         border: 1px solid #ddd; *@
+@*         display: flex; *@
+@*         flex-direction: column; *@
+@*     } *@
+
+@*     /* Responsive quad stacking - stack quads when container gets narrow */ *@
+@*     @@media (max-width: 1200px) { *@
+@*         /* Make quads stack vertically within the quads section */ *@
+@*         .quads-section .d-flex.flex-wrap *@
+
+@*     { *@
+@*         flex-direction: column !important; *@
+@*     } *@
+
+@*     .quad-paper { *@
+@*         width: 98% !important; /* Full width within the quads section */ *@
+@*         min-width: 500px; /* Minimum readable width */ *@
+@*         margin: 0 1% 16px 1% !important; *@
+@*     } *@
+
+@*     /* Keep unassigned players area in normal position */ *@
+@*     .unassigned-paper { *@
+@*         flex: 1; *@
+@*         min-width: 220px; *@
+@*         max-width: 300px; *@
+@*         height: fit-content; *@
+@*         margin-top: 0 !important; *@
+@*     } *@
+
+@*     } *@
+
+@*     /* For very narrow screens, adjust minimum widths */ *@
+@*     @@media (max-width: 800px) { *@
+@*         .quad-paper *@
+
+@*     { *@
+@*         min-width: 400px !important; *@
+@*     } *@
+
+@*     } *@
+
+@*     @@media (max-width: 600px) { *@
+@*         .quad-paper *@
+
+@*     { *@
+@*         min-width: 300px !important; *@
+@*     } *@
+
+@*     } *@
+
+@*     /* Quad table layout */ *@
+@*     .quad-table { *@
+@*         display: flex; *@
+@*         width: 100%; *@
+@*         height: 100%; *@
+@*         border-collapse: collapse; *@
+@*     } *@
+
+@*     .quad-side { *@
+@*         width: 70px; *@
+@*         /* Background color inherits from parent .quad-paper which has the color class */ *@
+@*         border-right: 1px solid var(--mud-palette-divider); *@
+@*         display: flex; *@
+@*         align-items: center; *@
+@*         justify-content: center; *@
+@*         writing-mode: vertical-rl; *@
+@*         transform: rotate(180deg); *@
+@*     } *@
+
+@*     /* Addresses the right and bottom print lines between quads */ *@
+@*     @@media print { *@
+@*         /* Target the main MudDropContainer */ *@
+@*         .mud-drop-container.d-flex.flex-column.flex-grow-1 *@
+
+@*     { *@
+@*         background: white !important; *@
+@*         border: none !important; *@
+@*         outline: none !important; *@
+@*     } *@
+@*     /* Places a border on the right side */ *@
+@*     .total-cell { *@
+@*         border-right: 1px solid #ddd !important; *@
+@*     } *@
+
+@*     } *@
+
+@*     /* Vertical Quad1, Quad 2 identifier */ *@
+@*     .quad-identifier { *@
+@*         font-size: 24px; *@
+@*         font-weight: bold; *@
+@*         text-align: center; *@
+@*         height: 100%; *@
+@*         width: 100%; *@
+@*         display: flex; *@
+@*         align-items: center; *@
+@*         justify-content: center; *@
+@*         color: var(--mud-palette-text-primary); *@
+@*     } *@
+
+@*     .quad-main { *@
+@*         flex: 1; *@
+@*     } *@
+
+@*     /* Quad header */ *@
+@*     .quad-header { *@
+@*         display: flex; *@
+@*         border-bottom: 1px solid var(--mud-palette-divider); *@
+@*         background-color: var(--mud-palette-surface); *@
+@*     } *@
+
+@*     /* Cells for Player Rd1 Rd2, Rd3, Total */ *@
+@*     .quad-header-cell { *@
+@*         flex: 1; *@
+@*         padding: 8px; *@
+@*         text-align: center; *@
+@*         font-weight: bold; *@
+@*         border-right: 1px solid var(--mud-palette-divider); *@
+@*         display: flex; *@
+@*         align-items: center; *@
+@*         justify-content: center; *@
+@*     } *@
+
+@*     /* Adds formatting for cells for Player, Rd1, Rd2, Rd3, Total */ *@
+@*     .player-header { *@
+@*         flex: 2.45; *@
+@*     } *@
+
+@*     /* Quad dropzone */ *@
+@*     .quad-dropzone { *@
+@*         min-height: 400px; *@
+@*         background-color: var(--mud-palette-background-grey); *@
+@*     } *@
+
+@*     /* Player row in quad - this is each player row in a quad */ *@
+@*     .quad-player-row { *@
+@*         display: flex; *@
+@*         border-bottom: 1px solid var(--mud-palette-divider); *@
+@*         background-color: var(--mud-palette-surface); *@
+@*     } *@
+
+@*     .player-cell { *@
+@*         flex: 2; *@
+@*         padding: 8px; *@
+@*         border-right: 1px solid #ddd; *@
+@*         display: flex; *@
+@*         flex-direction: column; *@
+@*     } *@
+
+@*     .player-position { *@
+@*         font-size: 18px; *@
+@*         font-weight: bold; *@
+@*         margin-right: 8px; *@
+@*         color: #666; *@
+@*     } *@
+
+@*     .player-name { *@
+@*         font-size: 18px; *@
+@*         font-weight: bold; *@
+@*         color: #666; *@
+@*     } *@
+
+@*     .player-rating { *@
+@*         font-size: 16px; *@
+@*         color: #333; *@
+@*     } *@
+
+@*     /* Adds a border around score cells */ *@
+@*     .round-cell { *@
+@*         flex: 1; *@
+@*         display: flex; *@
+@*         flex-direction: column; *@
+@*         border-right: 1px solid #ddd; *@
+@*         margin: 0; *@
+@*     } *@
+
+@*     .opponent { *@
+@*         padding: 4px; *@
+@*         text-align: center; *@
+@*         border-bottom: 1px solid #eee; *@
+@*         color: #666; *@
+@*     } *@
+
+@*     /* Under score TBL 1 TBL 2 etc */ *@
+@*     .table-number { *@
+@*         padding: 4px; *@
+@*         text-align: center; *@
+@*         border-top: 1px solid #eee; *@
+@*         color: #666; *@
+@*     } *@
+
+@*     /* The Total Cells alignment */ *@
+@*     .total-cell { *@
+@*         flex: 1; *@
+@*         display: flex; *@
+@*         flex-direction: column; *@
+@*         align-items: center; *@
+@*         justify-content: center; *@
+@*         position: relative; *@
+@*     } *@
+
+@*     .total-score { *@
+@*         font-size: 32px; *@
+@*         font-weight: bold; *@
+@*         color: #666; *@
+@*     } *@
+
+@*     .remove-btn { *@
+@*         position: absolute; *@
+@*         top: 4px; *@
+@*         right: 4px; *@
+@*     } *@
+
+@*     /* Unassigned players section */ *@
+@*     .unassigned-header { *@
+@*         background-color: #f0f0f0; *@
+@*         padding: 8px; *@
+@*         border-bottom: 1px solid #ddd; *@
+@*     } *@
+
+@*     .unassigned-dropzone { *@
+@*         min-height: 400px; *@
+@*         padding: 8px; *@
+@*         overflow-y: auto; *@
+@*     } *@
+
+@*     .player-card { *@
+@*         display: flex; *@
+@*         align-items: center; *@
+@*         margin-bottom: 8px; *@
+@*         padding: 6px; *@
+@*         background-color: #fff; *@
+@*         border: 1px solid #ddd; *@
+@*         border-radius: 4px; *@
+@*         width: 100%; *@
+@*         font-size: 14px; *@
+@*     } *@
+
+@*     .player-number { *@
+@*         font-size: 20px; *@
+@*         font-weight: bold; *@
+@*         margin-right: 16px; *@
+@*         min-width: 24px; *@
+@*         text-align: center; *@
+@*     } *@
+
+@*     .player-info { *@
+@*         flex-grow: 1; *@
+@*     } *@
+
+@*     /* Pagination styles */ *@
+@*     .pagination-controls { *@
+@*         margin-bottom: 12px; *@
+@*         display: flex; *@
+@*         align-items: center; *@
+@*     } *@
+
+@*     .mud-pagination { *@
+@*         margin-right: 16px; *@
+@*     } *@
+
+@*     /* Theme color classes for quads - ORIGINAL MUDBLAZOR COLORS */ *@
+@*     /* Primary color */ *@
+@*     .quad-paper.mud-paper.quad-color-primary { *@
+@*         background-color: var(--mud-palette-primary-lighten) !important; *@
+@*     } *@
+
+@*         .quad-paper.mud-paper.quad-color-primary .quad-side { *@
+@*             background-color: var(--mud-palette-primary-lighten) !important; *@
+@*         } *@
+
+@*         .quad-paper.mud-paper.quad-color-primary .score-cell { *@
+@*             background-color: var(--mud-palette-primary-lighten) !important; *@
+@*         } *@
+
+@*     /* Secondary color */ *@
+@*     .quad-paper.mud-paper.quad-color-secondary { *@
+@*         background-color: var(--mud-palette-secondary-lighten) !important; *@
+@*     } *@
+
+@*         .quad-paper.mud-paper.quad-color-secondary .quad-side { *@
+@*             background-color: var(--mud-palette-secondary-lighten) !important; *@
+@*         } *@
+
+@*         .quad-paper.mud-paper.quad-color-secondary .score-cell { *@
+@*             background-color: var(--mud-palette-secondary-lighten) !important; *@
+@*         } *@
+
+@*     /* Info color */ *@
+@*     .quad-paper.mud-paper.quad-color-info { *@
+@*         background-color: var(--mud-palette-info-lighten) !important; *@
+@*     } *@
+
+@*         .quad-paper.mud-paper.quad-color-info .quad-side { *@
+@*             background-color: var(--mud-palette-info-lighten) !important; *@
+@*         } *@
+
+@*         .quad-paper.mud-paper.quad-color-info .score-cell { *@
+@*             background-color: var(--mud-palette-info-lighten) !important; *@
+@*         } *@
+
+@*     /* Success color */ *@
+@*     .quad-paper.mud-paper.quad-color-success { *@
+@*         background-color: var(--mud-palette-success-lighten) !important; *@
+@*     } *@
+
+@*         .quad-paper.mud-paper.quad-color-success .quad-side { *@
+@*             background-color: var(--mud-palette-success-lighten) !important; *@
+@*         } *@
+
+@*         .quad-paper.mud-paper.quad-color-success .score-cell { *@
+@*             background-color: var(--mud-palette-success-lighten) !important; *@
+@*         } *@
+
+@*     /* Warning color */ *@
+@*     .quad-paper.mud-paper.quad-color-warning { *@
+@*         background-color: var(--mud-palette-warning-lighten) !important; *@
+@*     } *@
+
+@*         .quad-paper.mud-paper.quad-color-warning .quad-side { *@
+@*             background-color: var(--mud-palette-warning-lighten) !important; *@
+@*         } *@
+
+@*         .quad-paper.mud-paper.quad-color-warning .score-cell { *@
+@*             background-color: var(--mud-palette-warning-lighten) !important; *@
+@*         } *@
+
+@*     /* Surface color */ *@
+@*     .quad-paper.mud-paper.quad-color-surface { *@
+@*         background-color: var(--mud-palette-surface) !important; *@
+@*     } *@
+
+@*         .quad-paper.mud-paper.quad-color-surface .quad-side { *@
+@*             background-color: var(--mud-palette-surface) !important; *@
+@*         } *@
+
+@*         .quad-paper.mud-paper.quad-color-surface .score-cell { *@
+@*             background-color: var(--mud-palette-surface) !important; *@
+@*         } *@
+
+@*     /* Original colors */ *@
+@*     .quad-paper.mud-paper.quad-color-yellow { *@
+@*         background-color: #ffffcc !important; *@
+@*     } *@
+
+@*         .quad-paper.mud-paper.quad-color-yellow .quad-side { *@
+@*             background-color: #ffffcc !important; *@
+@*         } *@
+
+@*         .quad-paper.mud-paper.quad-color-yellow .score-cell { *@
+@*             background-color: #ffffcc !important; *@
+@*         } *@
+
+@*     .quad-paper.mud-paper.quad-color-blue { *@
+@*         background-color: #e6f7ff !important; *@
+@*     } *@
+
+@*         .quad-paper.mud-paper.quad-color-blue .quad-side { *@
+@*             background-color: #e6f7ff !important; *@
+@*         } *@
+
+@*         .quad-paper.mud-paper.quad-color-blue .score-cell { *@
+@*             background-color: #e6f7ff !important; *@
+@*         } *@
+@* </style> *@
+
+
+<style>
+    /* Score cell styling */
+    .score-cell {
+        padding: 4px !important;
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+        background-color: inherit;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-items: center;
+        justify-content: center;
+    }
+
+    .score-select {
+        width: 100%;
+        max-width: 90px;
+        flex-shrink: 0; /* Prevent shrinking that affects alignment */
+    }
+
+        .score-select .mud-input-slot {
+            text-align: center;
+        }
+
+        .score-select .mud-input {
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+    .score-cell .mud-select {
+        flex: none;
+    }
+
+    /* Ensure dropdown panel appears above other elements */
+    .mud-popover {
+        z-index: 9999;
+    }
+
+    /* Mobile-friendly adjustments */
+    @@media (max-width: 768px) {
+        .score-select
+
+    {
+        max-width: 80px;
+    }
+
+    .score-select .mud-input {
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+
+    .score-cell {
+        padding: 2px !important;
+    }
+
+    }
+
+    .quad-container {
+        width: 100%;
+    }
+
+    /* Layout for side-by-side display */
+    .quads-section {
+        flex: 4;
+        background: #fff;
+    }
+
+    /* Formatting for the Unassigned Players section */
+    .unassigned-paper {
+        flex: 1;
+        min-width: 220px;
+        max-width: 300px;
+        height: fit-content;
+        margin-top: 0 !important;
+    }
+
+    .quad-paper {
+        width: 48%;
+        margin: 0 1% 16px 1%;
+        border: 1px solid #ddd;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Responsive quad stacking - stack quads when container gets narrow */
+    @@media (max-width: 1200px) {
+        /* Make quads stack vertically within the quads section */
+        .quads-section .d-flex.flex-wrap
+
+    {
+        flex-direction: column !important;
+    }
+
+    .quad-paper {
+        width: 98% !important; /* Full width within the quads section */
+        min-width: 500px; /* Minimum readable width */
+        margin: 0 1% 16px 1% !important;
+    }
+
+    /* Keep unassigned players area in normal position */
+    .unassigned-paper {
+        flex: 1;
+        min-width: 220px;
+        max-width: 300px;
+        height: fit-content;
+        margin-top: 0 !important;
+    }
+
+    }
+
+    /* For very narrow screens, adjust minimum widths */
+    @@media (max-width: 800px) {
+        .quad-paper
+
+    {
+        min-width: 400px !important;
+    }
+
+    }
+
+    @@media (max-width: 600px) {
+        .quad-paper
+
+    {
+        min-width: 300px !important;
+    }
+
+    }
+
+    /* Quad table layout */
+    .quad-table {
+        display: flex;
+        width: 100%;
+        height: 100%;
+        border-collapse: collapse;
+    }
+
+    .quad-side {
+        width: 70px;
+        /* Background color inherits from parent .quad-paper which has the color class */
+        border-right: 1px solid var(--mud-palette-divider);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+    }
+
+    /* SOLUTION 1: Fix quad-main to account for the 70px side column */
+    .quad-main {
+        flex: 1;
+        width: calc(100% - 70px); /* Account for quad-side */
+    }
+
+    /* Addresses the right and bottom print lines between quads */
+    @@media print {
+        /* Target the main MudDropContainer */
+        .mud-drop-container.d-flex.flex-column.flex-grow-1
+
+    {
+        background: white !important;
+        border: none !important;
+        outline: none !important;
+    }
+    /* Places a border on the right side */
+    .total-cell {
+        border-right: 1px solid #ddd !important;
+    }
+
+    }
+
+    /* Vertical Quad1, Quad 2 identifier */
+    .quad-identifier {
+        font-size: 24px;
+        font-weight: bold;
+        text-align: center;
+        height: 100%;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--mud-palette-text-primary);
+    }
+
+    /* SOLUTION 1: Force both header and data rows to use full available width in quad-main */
+    .quad-header,
+    .quad-player-row {
+        width: 100%; /* Use full available width in quad-main */
+        display: flex;
+        line-height: 1.2; /* Consistent line height */
+    }
+
+    /* Quad header */
+    .quad-header {
+        border-bottom: 1px solid var(--mud-palette-divider);
+        background-color: var(--mud-palette-surface);
+    }
+
+    /* Ensure consistent border width and box-sizing across all elements */
+    .quad-header-cell,
+    .player-cell,
+    .round-cell,
+    .total-cell {
+        border-right: 1px solid #ddd; /* Consistent border */
+        box-sizing: border-box; /* Include borders in width calculation */
+        min-width: 0; /* Prevents flex items from overflowing */
+        word-wrap: break-word; /* Handle long content gracefully */
+        margin: 0 !important;
+        padding: 8px !important;
+    }
+
+    /* Cells for Player Rd1 Rd2, Rd3, Total */
+    .quad-header-cell {
+        flex: 1;
+        text-align: center;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: auto !important; /* Remove width calculations that don't account for side column */
+    }
+
+    /* Player header column - keep the 2.45 that aligns properly */
+    .player-header {
+        flex: 2.45;
+        width: auto !important; /* Remove the calc() that was causing issues */
+    }
+
+    /* Quad dropzone */
+    .quad-dropzone {
+        min-height: 400px;
+        background-color: var(--mud-palette-background-grey);
+    }
+
+    /* Player row in quad - this is each player row in a quad */
+    .quad-player-row {
+        border-bottom: 1px solid var(--mud-palette-divider);
+        background-color: var(--mud-palette-surface);
+    }
+
+    .player-cell {
+        flex: 2.45; /* Match the .player-header flex value */
+        display: flex;
+        flex-direction: column;
+        width: auto !important; /* Remove width calculations that don't account for side column */
+    }
+
+    .player-position {
+        font-size: 18px;
+        font-weight: bold;
+        margin-right: 8px;
+        color: #666;
+    }
+
+    .player-name {
+        font-size: 18px;
+        font-weight: bold;
+        color: #666;
+    }
+
+    .player-rating {
+        font-size: 16px;
+        color: #333;
+    }
+
+    /* Adds a border around score cells */
+    .round-cell {
+        flex: 1; /* Match the header cells exactly */
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        width: auto !important; /* Remove width calculations that don't account for side column */
+    }
+
+    .opponent {
+        padding: 4px;
+        text-align: center;
+        border-bottom: 1px solid #eee;
+        color: #666;
+    }
+
+    /* Under score TBL 1 TBL 2 etc */
+    .table-number {
+        padding: 4px;
+        text-align: center;
+        border-top: 1px solid #eee;
+        color: #666;
+    }
+
+    /* The Total Cells alignment */
+    .total-cell {
+        flex: 1; /* Match the header cells exactly */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        width: auto !important; /* Remove width calculations that don't account for side column */
+    }
+
+    .total-score {
+        font-size: 32px;
+        font-weight: bold;
+        color: #666;
+    }
+
+    .remove-btn {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+    }
+
+    /* Unassigned players section */
+    .unassigned-header {
+        background-color: #f0f0f0;
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .unassigned-dropzone {
+        min-height: 400px;
+        padding: 8px;
+        overflow-y: auto;
+    }
+
+    .player-card {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        padding: 6px;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        width: 100%;
+        font-size: 14px;
+    }
+
+    .player-number {
+        font-size: 20px;
+        font-weight: bold;
+        margin-right: 16px;
+        min-width: 24px;
+        text-align: center;
+    }
+
+    .player-info {
+        flex-grow: 1;
+    }
+
+    /* Pagination styles */
+    .pagination-controls {
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+    }
+
+    .mud-pagination {
+        margin-right: 16px;
+    }
+
+    /* Responsive alignment adjustments */
+    @@media (max-width: 768px) {
+        /* Maintain proportions on smaller screens */
+        .player-header, .player-cell
+
+    {
+        flex: 2.45;
+        min-width: 120px; /* Ensure minimum readable width */
+    }
+
+    .quad-header-cell,
+    .round-cell,
+    .total-cell {
+        flex: 1;
+        min-width: 80px; /* Ensure minimum readable width */
+    }
+
+    }
+
+    /* Theme color classes for quads - ORIGINAL MUDBLAZOR COLORS */
+    /* Primary color */
+    .quad-paper.mud-paper.quad-color-primary {
+        background-color: var(--mud-palette-primary-lighten) !important;
+    }
+
+        .quad-paper.mud-paper.quad-color-primary .quad-side {
+            background-color: var(--mud-palette-primary-lighten) !important;
+        }
+
+        .quad-paper.mud-paper.quad-color-primary .score-cell {
+            background-color: var(--mud-palette-primary-lighten) !important;
+        }
+
+    /* Secondary color */
+    .quad-paper.mud-paper.quad-color-secondary {
+        background-color: var(--mud-palette-secondary-lighten) !important;
+    }
+
+        .quad-paper.mud-paper.quad-color-secondary .quad-side {
+            background-color: var(--mud-palette-secondary-lighten) !important;
+        }
+
+        .quad-paper.mud-paper.quad-color-secondary .score-cell {
+            background-color: var(--mud-palette-secondary-lighten) !important;
+        }
+
+    /* Info color */
+    .quad-paper.mud-paper.quad-color-info {
+        background-color: var(--mud-palette-info-lighten) !important;
+    }
+
+        .quad-paper.mud-paper.quad-color-info .quad-side {
+            background-color: var(--mud-palette-info-lighten) !important;
+        }
+
+        .quad-paper.mud-paper.quad-color-info .score-cell {
+            background-color: var(--mud-palette-info-lighten) !important;
+        }
+
+    /* Success color */
+    .quad-paper.mud-paper.quad-color-success {
+        background-color: var(--mud-palette-success-lighten) !important;
+    }
+
+        .quad-paper.mud-paper.quad-color-success .quad-side {
+            background-color: var(--mud-palette-success-lighten) !important;
+        }
+
+        .quad-paper.mud-paper.quad-color-success .score-cell {
+            background-color: var(--mud-palette-success-lighten) !important;
+        }
+
+    /* Warning color */
+    .quad-paper.mud-paper.quad-color-warning {
+        background-color: var(--mud-palette-warning-lighten) !important;
+    }
+
+        .quad-paper.mud-paper.quad-color-warning .quad-side {
+            background-color: var(--mud-palette-warning-lighten) !important;
+        }
+
+        .quad-paper.mud-paper.quad-color-warning .score-cell {
+            background-color: var(--mud-palette-warning-lighten) !important;
+        }
+
+    /* Surface color */
+    .quad-paper.mud-paper.quad-color-surface {
+        background-color: var(--mud-palette-surface) !important;
+    }
+
+        .quad-paper.mud-paper.quad-color-surface .quad-side {
+            background-color: var(--mud-palette-surface) !important;
+        }
+
+        .quad-paper.mud-paper.quad-color-surface .score-cell {
+            background-color: var(--mud-palette-surface) !important;
+        }
+
+    /* Original colors */
+    .quad-paper.mud-paper.quad-color-yellow {
+        background-color: #ffffcc !important;
+    }
+
+        .quad-paper.mud-paper.quad-color-yellow .quad-side {
+            background-color: #ffffcc !important;
+        }
+
+        .quad-paper.mud-paper.quad-color-yellow .score-cell {
+            background-color: #ffffcc !important;
+        }
+
+    .quad-paper.mud-paper.quad-color-blue {
+        background-color: #e6f7ff !important;
+    }
+
+        .quad-paper.mud-paper.quad-color-blue .quad-side {
+            background-color: #e6f7ff !important;
+        }
+
+        .quad-paper.mud-paper.quad-color-blue .score-cell {
+            background-color: #e6f7ff !important;
+        }
+</style>
+
+
+
+@code {
+    [Parameter] public int TournamentId { get; set; }
+
+    private QuadsViewModel ViewModel { get; set; } = new();
+    public List<Quad> DisplayedQuads { get; set; } = new();
+    private int CurrentPage { get; set; } = 1;
+    private int TotalPages => ViewModel?.TotalPages ?? 1;
+    private bool IsPrintMode = false;
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Database error: {ex.Message}", Severity.Error);
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (TournamentId != ViewModel?.TournamentId)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            DbContext.ChangeTracker.Clear();
+            AppState.TournamentId = TournamentId;
+
+            var tournament = await DbContext.Tournaments
+                .FirstOrDefaultAsync(t => t.Id == TournamentId);
+
+            if (tournament == null)
+            {
+                NavigationManager.NavigateTo("/tournaments");
+                return;
+            }
+
+            var allQuads = await DbContext.Quads
+                .Where(q => q.TournamentId == TournamentId)
+                .OrderBy(q => q.QuadGroupNumber)
+                .ToListAsync();
+
+            foreach (var quad in allQuads)
+            {
+                quad.Players = await DbContext.TournamentPlayers
+                    .Include(tp => tp.Player)
+                    .Where(tp => tp.QuadId == quad.Id)
+                    .OrderBy(tp => tp.QuadPosition ?? 999)
+                    .ToListAsync();
+
+                if (quad.Players.Count == 4)
+                {
+                    var matchCount = await DbContext.QuadMatches.CountAsync(m => m.QuadId == quad.Id);
+                    if (matchCount == 0)
+                    {
+                        await UpdateQuad(quad.Id);
+                    }
+                }
+            }
+
+            var unassignedPlayers = await DbContext.TournamentPlayers
+                .Include(tp => tp.Player)
+                .Where(tp => tp.TournamentId == TournamentId && !tp.QuadId.HasValue)
+                .OrderByDescending(tp => tp.Player.Ranking)
+                .ToListAsync();
+
+            var pageSize = 4;
+            var skip = (CurrentPage - 1) * pageSize;
+
+            if(IsPrintMode)
+            { DisplayedQuads = allQuads; }
+            else
+            { DisplayedQuads = allQuads.Skip(skip).Take(pageSize).ToList(); }
+
+
+            ViewModel = new QuadsViewModel
+                {
+                    Tournament = tournament,
+                    TournamentId = TournamentId,
+                    TournamentName = tournament.Name,
+                    AllQuads = allQuads,
+                    UnassignedPlayers = unassignedPlayers,
+                    CurrentPage = CurrentPage,
+                    TotalPages = (int)Math.Ceiling(allQuads.Count / 4.0)
+                };
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading data: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task PlayerMoved(MudItemDropInfo<TournamentPlayer> dropInfo)
+    {
+        try
+        {
+            var playerId = dropInfo.Item.Id;
+
+            if (dropInfo.DropzoneIdentifier == "unassigned")
+            {
+                await MovePlayerToUnassigned(playerId);
+            }
+            else if (int.TryParse(dropInfo.DropzoneIdentifier, out var quadId))
+            {
+                if (dropInfo.Item.QuadId == quadId)
+                {
+                    await ReorderPlayerInQuad(playerId, quadId, dropInfo.IndexInZone);
+                }
+                else
+                {
+                    await MovePlayerToQuadAtPosition(playerId, quadId, dropInfo.IndexInZone);
+                }
+            }
+
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error moving player: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task MovePlayerToUnassigned(int playerId)
+    {
+        try
+        {
+            var player = await DbContext.TournamentPlayers.FindAsync(playerId);
+            if (player == null) return;
+
+            var oldQuadId = player.QuadId;
+            player.QuadId = null;
+            player.QuadPosition = null;
+
+            await DbContext.SaveChangesAsync();
+
+            if (oldQuadId.HasValue)
+            {
+                await UpdateQuad(oldQuadId.Value);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task MovePlayerToQuadAtPosition(int playerId, int quadId, int targetPosition)
+    {
+        try
+        {
+            var player = await DbContext.TournamentPlayers.FindAsync(playerId);
+            if (player == null) return;
+
+            var currentCount = await DbContext.TournamentPlayers.CountAsync(tp => tp.QuadId == quadId);
+            if (currentCount >= 4)
+            {
+                Snackbar.Add("Quad is full", Severity.Warning);
+                return;
+            }
+
+            var oldQuadId = player.QuadId;
+            player.QuadId = quadId;
+            player.QuadPosition = targetPosition + 1;
+
+            await DbContext.SaveChangesAsync();
+
+            if (oldQuadId.HasValue)
+            {
+                await UpdateQuad(oldQuadId.Value);
+            }
+            await UpdateQuad(quadId);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ReorderPlayerInQuad(int playerId, int quadId, int newIndex)
+    {
+        try
+        {
+            var players = await DbContext.TournamentPlayers
+                .Where(tp => tp.QuadId == quadId)
+                .OrderBy(tp => tp.QuadPosition ?? 999)
+                .ToListAsync();
+
+            var draggedPlayer = players.FirstOrDefault(p => p.Id == playerId);
+            if (draggedPlayer == null) return;
+
+            players.Remove(draggedPlayer);
+            players.Insert(Math.Min(newIndex, players.Count), draggedPlayer);
+
+            for (int i = 0; i < players.Count; i++)
+            {
+                players[i].QuadPosition = i + 1;
+            }
+
+            await DbContext.SaveChangesAsync();
+            await UpdateQuad(quadId);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error reordering player: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task UpdateQuad(int quadId)
+    {
+        try
+        {
+            var players = await DbContext.TournamentPlayers
+                .Include(tp => tp.Player)
+                .Where(tp => tp.QuadId == quadId)
+                .OrderBy(tp => tp.QuadPosition ?? 999)
+                .ToListAsync();
+
+            var oldMatches = await DbContext.QuadMatches
+                .Where(m => m.QuadId == quadId)
+                .ToListAsync();
+
+            if (oldMatches.Count > 0)
+            {
+                DbContext.QuadMatches.RemoveRange(oldMatches);
+            }
+
+            for (int i = 0; i < players.Count; i++)
+            {
+                players[i].QuadPosition = i + 1;
+            }
+
+            if (players.Count == 4)
+            {
+                CreateMatches(quadId, players);
+            }
+
+            await DbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error updating quad: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void CreateMatches(int quadId, List<TournamentPlayer> players)
+    {
+        // Round 1: 1v4, 2v3
+        AddMatch(quadId, players[0], players[3], 1, 1, "W");
+        AddMatch(quadId, players[1], players[2], 1, 2, "W");
+
+        // Round 2: 1v3, 2v4
+        AddMatch(quadId, players[0], players[2], 2, 1, "B");
+        AddMatch(quadId, players[1], players[3], 2, 2, "B");
+
+        // Round 3: 1v2, 3v4
+        AddMatch(quadId, players[0], players[1], 3, 1, "W");
+        AddMatch(quadId, players[2], players[3], 3, 2, "W");
+    }
+
+    private void AddMatch(int quadId, TournamentPlayer p1, TournamentPlayer p2, int round, int table, string p1Color)
+    {
+        var match = new QuadMatch
+            {
+                QuadId = quadId,
+                PlayerOneId = p1.Id,
+                PlayerTwoId = p2.Id,
+                RoundNumber = round,
+                TableNumber = table,
+                PlayerOneName = $"{p1.Player.LastName} {p1.Player.FirstName}",
+                PlayerTwoName = $"{p2.Player.LastName} {p2.Player.FirstName}",
+                PlayerOneRanking = p1.Player.Ranking,
+                PlayerTwoRanking = p2.Player.Ranking,
+                PlayerOneColor = p1Color,
+                IsComplete = false
+            };
+
+        DbContext.QuadMatches.Add(match);
+    }
+
+    private async Task SaveScore(TournamentPlayer player, int round, string scoreValue)
+    {
+        try
+        {
+            if (!player.QuadId.HasValue) return;
+
+            var match = await DbContext.QuadMatches
+                .FirstOrDefaultAsync(m => m.QuadId == player.QuadId &&
+                                        m.RoundNumber == round &&
+                                        (m.PlayerOneId == player.Id || m.PlayerTwoId == player.Id));
+
+            if (match == null)
+            {
+                Snackbar.Add($"Match not found for Round {round}", Severity.Error);
+                return;
+            }
+
+            match.PlayerOneScore = null;
+            match.PlayerTwoScore = null;
+            match.IsComplete = false;
+            match.CompletedAt = null;
+
+            if (!string.IsNullOrEmpty(scoreValue))
+            {
+                var playerScore = decimal.Parse(scoreValue);
+                var opponentScore = 1 - playerScore;
+
+                if (match.PlayerOneId == player.Id)
+                {
+                    match.PlayerOneScore = playerScore;
+                    match.PlayerTwoScore = opponentScore;
+                }
+                else
+                {
+                    match.PlayerTwoScore = playerScore;
+                    match.PlayerOneScore = opponentScore;
+                }
+
+                match.IsComplete = true;
+                match.CompletedAt = DateTime.UtcNow;
+            }
+
+            await DbContext.SaveChangesAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error saving score: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task RemovePlayer(TournamentPlayer player)
+    {
+        await MovePlayerToUnassigned(player.Id);
+        await LoadData();
+    }
+
+    private async Task ResetAllPlayers()
+    {
+        try
+        {
+            var allPlayers = await DbContext.TournamentPlayers
+                .Where(tp => tp.TournamentId == TournamentId)
+                .ToListAsync();
+
+            foreach (var player in allPlayers)
+            {
+                player.QuadId = null;
+                player.QuadPosition = null;
+            }
+
+            var allMatches = await DbContext.QuadMatches
+                .Where(m => DbContext.Quads.Any(q => q.Id == m.QuadId && q.TournamentId == TournamentId))
+                .ToListAsync();
+
+            DbContext.QuadMatches.RemoveRange(allMatches);
+            await DbContext.SaveChangesAsync();
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error resetting players: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task GenerateQuads()
+    {
+        try
+        {
+            var unassigned = await DbContext.TournamentPlayers
+                .Include(tp => tp.Player)
+                .Where(tp => tp.TournamentId == TournamentId && !tp.QuadId.HasValue)
+                .OrderByDescending(tp => tp.Player.Ranking)
+                .ToListAsync();
+
+            if (unassigned.Count == 0)
+            {
+                return;
+            }
+
+            var incompleteQuads = await DbContext.Quads
+                .Where(q => q.TournamentId == TournamentId)
+                .Where(q => DbContext.TournamentPlayers.Count(tp => tp.QuadId == q.Id) < 4)
+                .OrderBy(q => q.QuadGroupNumber)
+                .ToListAsync();
+
+            int playerIndex = 0;
+
+            foreach (var quad in incompleteQuads)
+            {
+                var currentCount = await DbContext.TournamentPlayers.CountAsync(tp => tp.QuadId == quad.Id);
+
+                while (currentCount < 4 && playerIndex < unassigned.Count)
+                {
+                    await MovePlayerToQuadAtPosition(unassigned[playerIndex].Id, quad.Id, currentCount);
+                    playerIndex++;
+                    currentCount++;
+                }
+            }
+
+            var remaining = unassigned.Count - playerIndex;
+            var newQuads = remaining / 4;
+
+            if (newQuads > 0)
+            {
+                var existingTitles = await DbContext.Quads
+                .Where(q => q.TournamentId == TournamentId)
+                .Select(q => q.Title)
+                .ToListAsync();
+
+                var highestQuadNum = existingTitles
+                    .Where(title => title.StartsWith("Quad "))
+                    .Select(title => int.TryParse(title.Substring(5), out var num) ? num : 0)
+                    .DefaultIfEmpty(0)
+                    .Max();
+
+                var existingGroupNumbers = await DbContext.Quads
+                    .Where(q => q.TournamentId == TournamentId)
+                    .Select(q => q.QuadGroupNumber)
+                    .ToListAsync();
+
+                var maxGroupNumber = existingGroupNumbers.DefaultIfEmpty(0).Max();
+
+                for (int i = 0; i < newQuads; i++)
+                {
+                    var newQuad = new Quad
+                        {
+                            Title = $"Quad {highestQuadNum + i + 1}",
+                            TournamentId = TournamentId,
+                            QuadGroupNumber = maxGroupNumber + (i / 4) + 1
+                        };
+
+                    DbContext.Quads.Add(newQuad);
+                    await DbContext.SaveChangesAsync();
+
+                    for (int j = 0; j < 4; j++)
+                    {
+                        await MovePlayerToQuadAtPosition(unassigned[playerIndex].Id, newQuad.Id, j);
+                        playerIndex++;
+                    }
+                }
+            }
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error generating quads: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        CurrentPage = page;
+        await LoadData();
+    }
+
+    private async Task PrintPage()
+    {
+        IsPrintMode = true;
+        await LoadData();
+        await Task.Delay(100);
+        await JSRuntime.InvokeVoidAsync("window.print");
+        IsPrintMode = false;
+        await LoadData();
+    }
+
+    private List<TournamentPlayer> GetAllPlayersForDropContainer()
+    {
+        var allPlayers = new List<TournamentPlayer>();
+
+        if (ViewModel?.UnassignedPlayers != null)
+        {
+            allPlayers.AddRange(ViewModel.UnassignedPlayers.Where(p => !p.QuadId.HasValue));
+        }
+
+        if (DisplayedQuads != null)
+        {
+            foreach (var quad in DisplayedQuads)
+            {
+                if (quad.Players != null)
+                {
+                    allPlayers.AddRange(quad.Players.Where(p => p.QuadId.HasValue));
+                }
+            }
+        }
+
+        return allPlayers;
+    }
+
+    private string GetThemeColorClass(int quadNumber)
+    {
+        switch (quadNumber % 4)
+        {
+            case 0: return "quad-color-primary";
+            case 1: return "quad-color-success";
+            case 2: return "quad-color-secondary";
+            case 3: return "quad-color-info";
+            default: return "quad-color-surface";
+        }
+    }
+
+    private string GetOpponentText(TournamentPlayer player, int round)
+    {
+        var position = GetPlayerPositionInTable(player);
+        if (string.IsNullOrEmpty(position)) return "";
+
+        return int.Parse(position) switch
+        {
+            1 => round switch { 1 => "W v 4", 2 => "B v 3", 3 => "W v 2", _ => "" },
+            2 => round switch { 1 => "W v 3", 2 => "B v 4", 3 => "B v 1", _ => "" },
+            3 => round switch { 1 => "B v 2", 2 => "W v 1", 3 => "W v 4", _ => "" },
+            4 => round switch { 1 => "B v 1", 2 => "W v 2", 3 => "B v 3", _ => "" },
+            _ => ""
+        };
+    }
+
+    private int GetTableNumber(TournamentPlayer player, int round)
+    {
+        var position = GetPlayerPositionInTable(player);
+        if (string.IsNullOrEmpty(position)) return 1;
+
+        return int.Parse(position) switch
+        {
+            1 => round == 1 ? 1 : round == 2 ? 1 : 1,
+            2 => round == 1 ? 2 : round == 2 ? 2 : 1,
+            3 => round == 1 ? 2 : round == 2 ? 1 : 2,
+            4 => round == 1 ? 1 : round == 2 ? 2 : 2,
+            _ => 1
+        };
+    }
+
+    private string GetPlayerPositionInTable(TournamentPlayer player)
+    {
+        if (!player.QuadId.HasValue) return "";
+
+        var quad = DisplayedQuads.FirstOrDefault(q => q.Id == player.QuadId.Value);
+        if (quad?.Players == null || quad.Players.Count == 0) return "";
+
+        var playerIndex = quad.Players.FindIndex(p => p.Id == player.Id);
+        return playerIndex >= 0 ? (playerIndex + 1).ToString() : "";
+    }
+
+    private string GetPlayerScore(TournamentPlayer player, int round)
+    {
+        try
+        {
+            if (!player.QuadId.HasValue) return "";
+
+            var match = DbContext.QuadMatches
+                .FirstOrDefault(m => m.QuadId == player.QuadId &&
+                                   m.RoundNumber == round &&
+                                   (m.PlayerOneId == player.Id || m.PlayerTwoId == player.Id));
+
+            if (match == null) return "";
+
+            var score = match.PlayerOneId == player.Id ? match.PlayerOneScore : match.PlayerTwoScore;
+            if (!score.HasValue) return "";
+
+            if (score == 0) return "0";
+            if (score == 0.5m) return "0.5";
+            if (score == 1) return "1";
+            return "";
+        }
+        catch (Exception ex)
+        {
+            return "";
+        }
+    }
+
+    private string GetTotalScore(TournamentPlayer player)
+    {
+        try
+        {
+            if (!player.QuadId.HasValue) return "";
+
+            decimal total = 0;
+            for (int round = 1; round <= 3; round++)
+            {
+                if (decimal.TryParse(GetPlayerScore(player, round), out var score))
+                {
+                    total += score;
+                }
+            }
+            return total.ToString("0.#");
+        }
+        catch (Exception ex)
+        {
+            return "";
+        }
+    }
+}

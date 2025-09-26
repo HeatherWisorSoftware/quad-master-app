@@ -1,0 +1,159 @@
+﻿@page "/EditTournamentDetails{Id:int}"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@inject TournamentContext DbContext
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Edit Tournament</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h3" Class="mb-4" Style="color: var(--mud-palette-primary)">Edit Tournament</MudText>
+    
+    @if (IsLoading)
+    {
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (Tournament == null)
+    {
+        <MudAlert Severity="Severity.Error">Tournament not found.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="3" Class="pa-4">
+            <EditForm Model="@Tournament" OnValidSubmit="SaveChanges">
+                <DataAnnotationsValidator />
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.h5" Class="mb-4">Tournament Details</MudText>
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudTextField Label="Tournament Name" @bind-Value="Tournament.Name"
+                                      Required RequiredError="Tournament name is required"
+                                      For="@(() => Tournament.Name)" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudDatePicker Label="Tournament Date" @bind-Date="Tournament.Date"
+                                       Required RequiredError="Tournament date is required" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.h5" Class="mt-4 mb-4">Venue Information</MudText>
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudTextField Label="Venue Name" @bind-Value="Tournament.VenueName"
+                                      Required RequiredError="Venue name is required"
+                                      For="@(() => Tournament.VenueName)" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudTextField Label="Street" @bind-Value="Tournament.Street"
+                                      Required RequiredError="Street address is required"
+                                      For="@(() => Tournament.Street)" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="4">
+                        <MudTextField Label="City" @bind-Value="Tournament.City"
+                                      Required RequiredError="City is required"
+                                      For="@(() => Tournament.City)" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="4">
+                        <MudTextField Label="State" @bind-Value="Tournament.State"
+                                      Required RequiredError="State is required"
+                                      For="@(() => Tournament.State)" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="4">
+                        <MudTextField Label="Postal Code" @bind-Value="Tournament.PostalCode"
+                                      Required RequiredError="Postal code is required"
+                                      For="@(() => Tournament.PostalCode)" />
+                    </MudItem>
+
+                    <MudItem xs="12" Class="d-flex justify-space-between mt-6">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Secondary"
+                                   OnClick="Cancel"
+                                   StartIcon="@Icons.Material.Filled.Cancel"
+                                   Class="mr-2">
+                            Cancel
+                        </MudButton>
+                        <MudButton ButtonType="ButtonType.Submit"
+                                   Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Save">
+                            Save Changes
+                        </MudButton>
+                    </MudItem>
+                </MudGrid>
+            </EditForm>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Tournament Tournament { get; set; }
+    private bool IsLoading { get; set; } = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTournament();
+    }
+
+    private async Task LoadTournament()
+    {
+        try
+        {
+            IsLoading = true;
+
+            // Load tournament by ID
+            Tournament = await DbContext.Tournaments
+                .FirstOrDefaultAsync(t => t.Id == Id);
+
+            if (Tournament == null)
+            {
+                Snackbar.Add("Tournament not found.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading tournament: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task SaveChanges()
+    {
+        try
+        {
+            if (Tournament == null) return;
+
+            // Update tournament in database
+            DbContext.Tournaments.Update(Tournament);
+            await DbContext.SaveChangesAsync();
+
+            Snackbar.Add("Tournament updated successfully!", Severity.Success);
+
+            // Navigate back to the list
+            NavigationManager.NavigateTo("/EditTournament?reload=" + DateTime.Now.Ticks);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error updating tournament: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/EditTournament?reload=" + DateTime.Now.Ticks);
+    }
+}

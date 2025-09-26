@@ -1,0 +1,299 @@
+﻿@page "/CreateTournament"
+@using Microsoft.EntityFrameworkCore
+@rendermode InteractiveServer
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@inject TournamentContext DbContext
+
+<PageTitle>Create Tournament</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h3" Class="mb-4" Style="color: var(--mud-palette-primary)">Create Tournament</MudText>
+
+    @if (!string.IsNullOrEmpty(ValidationErrors))
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-4">@ValidationErrors</MudAlert>
+    }
+
+    <MudPaper Elevation="3" Class="pa-4 mb-4">
+        <EditForm Model="@Tournament" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator/>
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudText Typo="Typo.h5" Class="mb-4">Tournament Details</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Tournament Name" @bind-Value="Tournament.Name"
+                                  Required RequiredError="Tournament name is required"
+                                  For="@(() => Tournament.Name)"/>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudDatePicker Label="Tournament Date" @bind-Date="Tournament.Date"
+                                   Required="true"
+                                   RequiredError="Date must be selected"/>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudText Typo="Typo.h5" Class="mt-4 mb-4">Venue Information</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Venue Name" @bind-Value="Tournament.VenueName"
+                                  Required RequiredError="Venue name is required"
+                                  For="@(() => Tournament.VenueName)"/>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Street" @bind-Value="Tournament.Street"
+                                  Required RequiredError="Street address is required"
+                                  For="@(() => Tournament.Street)"/>
+                </MudItem>
+
+                <MudItem xs="12" md="4">
+                    <MudTextField Label="City" @bind-Value="Tournament.City"
+                                  Required RequiredError="City is required"
+                                  For="@(() => Tournament.City)"/>
+                </MudItem>
+
+                <MudItem xs="12" md="4">
+                    <MudTextField Label="State" @bind-Value="Tournament.State"
+                                  Required RequiredError="State is required"
+                                  For="@(() => Tournament.State)"/>
+                </MudItem>
+
+                <MudItem xs="12" md="4">
+                    <MudTextField Label="Postal Code" @bind-Value="Tournament.PostalCode"
+                                  Required RequiredError="Postal code is required"
+                                  For="@(() => Tournament.PostalCode)"/>
+                </MudItem>
+
+                <MudItem xs="12" Class="mt-4">
+                    <MudText Typo="Typo.h5" Class="mb-4">Player Selection</MudText>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudSelect T="int" Label="Select Players" MultiSelection="true"
+                               @bind-SelectedValues="SelectedPlayerIds"
+                               Class="mt-2"
+                               ToStringFunc="GetPlayerName">
+                        @foreach (var player in Players)
+                        {
+                            <MudSelectItem Value="@player.Id">@player.FirstName @player.LastName</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                </MudItem>
+
+                <MudItem xs="12" Class="d-flex justify-start mt-6">
+                    <MudButton ButtonType="ButtonType.Submit"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Size="Size.Large"
+                               Class="mr-4">
+                        Create Tournament
+                    </MudButton>
+
+                    @if (Tournament.Id > 0)
+                    {
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Success"
+                                   Size="Size.Large"
+                                   OnClick="() => ManageTournament(Tournament.Id)">
+                            Manage Tournament
+                        </MudButton>
+                    }
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+    </MudPaper>
+
+    @if (IsSaved)
+    {
+        <MudPaper Elevation="3" Class="pa-4 mt-4">
+            <MudText Typo="Typo.h5" Class="mb-4">Tournament Summary</MudText>
+
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudCard Elevation="2" Class="mb-4">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6" Color="Color.Primary">Tournament Details</MudText>
+                            </CardHeaderContent>
+                            <CardHeaderActions>
+                                <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Primary"/>
+                            </CardHeaderActions>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudList T="string">
+                                <MudListItem >
+                                    <MudText>
+                                        <b>Name:</b> @Tournament.Name
+                                    </MudText>
+                                </MudListItem>
+                                <MudListItem >
+                                    <MudText>
+                                        <b>Date:</b> @Tournament.Date
+                                    </MudText>
+                                </MudListItem>
+                                <MudListItem>
+                                    <MudText>
+                                        <b>Venue:</b> @Tournament.VenueName
+                                    </MudText>
+                                </MudListItem>
+                                <MudListItem>
+                                    <MudText><b>Address:</b> @Tournament.Street, @Tournament.City, @Tournament.State @Tournament.PostalCode</MudText>
+                                </MudListItem>
+                            </MudList>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudCard Elevation="2" Class="mb-4">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6" Color="Color.Secondary">Registered Players</MudText>
+                            </CardHeaderContent>
+                            <CardHeaderActions>
+                                <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Secondary"/>
+                            </CardHeaderActions>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            @if (TournamentPlayers.Any())
+                            {
+                                <MudList T="string">
+                                    @foreach (var tp in TournamentPlayers)
+                                    {
+                                        <MudListItem>
+                                            <MudText>@tp.Player.FirstName @tp.Player.LastName (Ranking: @tp.Player.Ranking)</MudText>
+                                        </MudListItem>
+                                    }
+                                </MudList>
+                            }
+                            else
+                            {
+                                <MudText>No players selected</MudText>
+                            }
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    }
+
+    <MudPaper Elevation="0" Class="pa-4 mt-4 d-flex justify-end">
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Primary"
+                   OnClick="ReturnToList"
+                   StartIcon="@Icons.Material.Filled.ArrowBack">
+            Back to Tournaments
+        </MudButton>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private Tournament Tournament { get; } = new() { Date = DateTime.Today };
+    private IEnumerable<int> SelectedPlayerIds { get; set; } = new List<int>();
+    private List<Player> Players { get; set; } = new();
+    private List<TournamentPlayer> TournamentPlayers { get; set; } = new();
+    private string ValidationErrors { get; set; } = string.Empty;
+    private bool IsSaved { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Load all players from the database
+            Players = await DbContext.Players.OrderBy(p => p.Ranking).ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            ValidationErrors = $"Error loading players: {ex.Message}";
+            Snackbar.Add("Error loading players", Severity.Error);
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            // Begin transaction
+            using var transaction = await DbContext.Database.BeginTransactionAsync();
+
+            try
+            {
+                // Add the tournament
+                await DbContext.Tournaments.AddAsync(Tournament);
+                await DbContext.SaveChangesAsync();
+
+                // Add tournament players
+                TournamentPlayers.Clear();
+                foreach (var playerId in SelectedPlayerIds)
+                {
+                    var player = await DbContext.Players.FindAsync(playerId);
+                    if (player != null)
+                    {
+                        var tournamentPlayer = new TournamentPlayer
+                        {
+                            TournamentId = Tournament.Id,
+                            PlayerId = playerId,
+                            Tournament = Tournament,
+                            Player = player
+                        };
+
+                        await DbContext.TournamentPlayers.AddAsync(tournamentPlayer);
+                        TournamentPlayers.Add(tournamentPlayer);
+                    }
+                }
+
+                await DbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // Show success message
+                Snackbar.Add("Tournament created successfully!", Severity.Success);
+                IsSaved = true;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+        catch (Exception ex)
+        {
+            ValidationErrors = $"Error creating tournament: {ex.Message}";
+            Snackbar.Add("Error creating tournament", Severity.Error);
+        }
+    }
+
+    private void ManageTournament(int name)
+    {
+        NavigationManager.NavigateTo($"/EditTournamentDetails{name}");
+    }
+
+    private void ReturnToList()
+    {
+        NavigationManager.NavigateTo("/EditTournament");
+    }
+
+    private async Task RefreshPlayersList()
+    {
+        if (Tournament.Id > 0)
+        {
+            TournamentPlayers = await DbContext.TournamentPlayers
+                .Include(tp => tp.Player)
+                .Where(tp => tp.TournamentId == Tournament.Id)
+                .ToListAsync();
+        }
+    }
+
+    private string GetPlayerName(int id)
+    {
+        var player = Players.FirstOrDefault(p => p.Id == id);
+        return player != null ? $"{player.FirstName} {player.LastName}" : id.ToString();
+    }
+
+}
